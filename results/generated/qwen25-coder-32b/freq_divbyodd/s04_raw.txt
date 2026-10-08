@@ -1,0 +1,69 @@
+Certainly! Below is the complete Verilog code for the `freq_divbyodd` module as per your specifications. This module takes an input clock (`clk`), an active-low reset (`rst_n`), and divides the frequency by an odd number defined by the parameter `NUM_DIV` (defaulting to 5).
+
+```verilog
+module freq_divbyodd #(
+    parameter NUM_DIV = 5  // Ensure NUM_DIV is an odd number
+)(
+    input wire clk,
+    input wire rst_n,
+    output reg clk_div
+);
+
+// Ensure NUM_DIV is an odd number
+generate
+    if (NUM_DIV % 2 == 0) begin : check_odd
+        $error("NUM_DIV must be an odd number.");
+    end
+endgenerate
+
+reg [31:0] cnt1;  // Counter for rising edge
+reg [31:0] cnt2;  // Counter for falling edge
+reg clk_div1;       // Clock divider for rising edge
+reg clk_div2;       // Clock divider for falling edge
+
+// Half of the divisor for edge toggling
+localparam HALF_DIV = (NUM_DIV / 2) + 1;
+
+// Reset and counter logic
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        cnt1 <= 0;
+        cnt2 <= 0;
+        clk_div1 <= 0;
+        clk_div2 <= 0;
+        clk_div <= 0;
+    end else begin
+        // Counting on rising edge
+        if (clk) begin
+            if (cnt1 == NUM_DIV - 1) begin
+                cnt1 <= 0;
+                clk_div1 <= ~clk_div1;
+            end else begin
+                cnt1 <= cnt1 + 1;
+            end
+        end else begin
+            // Counting on falling edge
+            if (cnt2 == NUM_DIV - 1) begin
+                cnt2 <= 0;
+                clk_div2 <= ~clk_div2;
+            end else begin
+                cnt2 <= cnt2 + 1;
+            end
+        end
+
+        // Final divided clock output
+        clk_div <= clk_div1 | clk_div2;
+    end
+end
+
+endmodule
+```
+
+### Explanation:
+1. **Parameter `NUM_DIV`:** This is the divisor value that must be an odd number. The module checks if `NUM_DIV` is odd and throws an error if it is not.
+2. **Counters `cnt1` and `cnt2`:** These counters track the number of clock cycles on rising and falling edges, respectively.
+3. **Clock Dividers `clk_div1` and `clk_div2`:** These are toggled when their respective counters reach `NUM_DIV - 1`.
+4. **Final Clock Output `clk_div`:** This is derived by logically OR-ing `clk_div1` and `clk_div2` to ensure both clock edges are considered.
+5. **Reset Logic:** The active-low reset signal (`rst_n`) initializes all counters and clock dividers to zero.
+
+This module ensures that the input clock is divided by an odd number as specified by the `NUM_DIV` parameter.

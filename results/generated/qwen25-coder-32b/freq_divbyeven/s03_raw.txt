@@ -1,0 +1,73 @@
+Certainly! Below is the complete Verilog code for the `freq_diveven` module, which divides the input clock frequency by an even number specified by the `NUM_DIV` parameter.
+
+```verilog
+module freq_diveven #(
+    parameter NUM_DIV = 8  // Must be an even number
+) (
+    input wire clk,       // Input clock signal
+    input wire rst_n,     // Active-low reset signal
+    output reg clk_div    // Divided clock output signal
+);
+
+    // Ensure NUM_DIV is even
+    generate
+        if (NUM_DIV % 2 != 0) begin
+            $error("NUM_DIV must be an even number.");
+        end
+    endgenerate
+
+    // Define the counter width based on NUM_DIV
+    localparam CNT_WIDTH = $clog2(NUM_DIV);
+    reg [CNT_WIDTH-1:0] cnt;  // Counter to track clock cycles
+
+    // Initialize the counter and divided clock on reset
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            cnt <= 0;
+            clk_div <= 0;
+        end else begin
+            if (cnt < (NUM_DIV / 2 - 1)) begin
+                cnt <= cnt + 1;
+            end else begin
+                cnt <= 0;
+                clk_div <= ~clk_div;  // Toggle the divided clock output
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Parameter Definition**:
+   - `NUM_DIV`: This parameter specifies the division factor and must be an even number.
+
+2. **Assertion for Even Division Factor**:
+   - A `generate` block checks if `NUM_DIV` is even. If not, it throws an error during synthesis or simulation.
+
+3. **Counter Width Calculation**:
+   - `CNT_WIDTH` is calculated using `$clog2(NUM_DIV)`, which determines the minimum number of bits required to count up to `NUM_DIV / 2`.
+
+4. **Register Declaration**:
+   - `cnt`: A register to count the number of clock cycles.
+   - `clk_div`: A register to store the divided clock output.
+
+5. **Reset and Clock Logic**:
+   - On the negative edge of `rst_n`, the counter and `clk_div` are reset to zero.
+   - On the positive edge of `clk`, the counter increments until it reaches `(NUM_DIV / 2 - 1)`.
+   - Once the counter reaches the limit, it resets to zero and toggles the `clk_div` output, effectively dividing the input clock frequency by `NUM_DIV`.
+
+### Usage Example:
+To use this module, instantiate it in your design with the desired `NUM_DIV` value. For example, to divide a 50 MHz clock by 8 to get a 6.25 MHz clock:
+
+```verilog
+freq_diveven #(
+    .NUM_DIV(8)
+) u_freq_div (
+    .clk(clk_50MHz),
+    .rst_n(rst_n),
+    .clk_div(clk_6_25MHz)
+);
+```
+
+This instantiation will create a frequency divider that divides the 50 MHz input clock by 8, producing a 6.25 MHz output clock.

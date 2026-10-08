@@ -1,0 +1,54 @@
+Certainly! Below is the complete Verilog code for the `edge_detect` module as per your requirements:
+
+```verilog
+module edge_detect (
+    input wire clk,       // Clock signal
+    input wire rst_n,     // Reset signal (active low)
+    input wire a,         // Input signal
+    output reg rise,      // Output signal indicating a rising edge
+    output reg down       // Output signal indicating a falling edge
+);
+
+reg a_dff;  // DFF to store the previous value of 'a'
+
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        a_dff <= 0;  // Reset the DFF to 0 on reset
+        rise <= 0;   // Reset the rise signal
+        down <= 0;   // Reset the down signal
+    end else begin
+        // Detect rising edge
+        if (a && !a_dff) begin
+            rise <= 1;  // Set rise to 1 if a rising edge is detected
+        end else begin
+            rise <= 0;  // Otherwise, set rise to 0
+        end
+
+        // Detect falling edge
+        if (!a && a_dff) begin
+            down <= 1;  // Set down to 1 if a falling edge is detected
+        end else begin
+            down <= 0;  // Otherwise, set down to 0
+        end
+
+        // Update the DFF with the current value of 'a'
+        a_dff <= a;
+    end
+end
+
+endmodule
+```
+
+### Explanation:
+1. **Register Declaration**:
+   - `a_dff`: This register is used to store the previous value of the input signal `a`. It helps in detecting the transition from `0` to `1` (rising edge) and from `1` to `0` (falling edge).
+
+2. **Always Block**:
+   - The `always` block is triggered on every positive edge of the clock (`posedge clk`) and on the negative edge of the reset signal (`negedge rst_n`).
+   - When the reset signal `rst_n` is active low (`0`), the `a_dff`, `rise`, and `down` registers are reset to `0`.
+   - If the reset signal is not active (`rst_n` is `1`), the module checks for rising and falling edges:
+     - **Rising Edge Detection**: If `a` is `1` and `a_dff` is `0`, a rising edge is detected, and the `rise` signal is set to `1`. Otherwise, it is set to `0`.
+     - **Falling Edge Detection**: If `a` is `0` and `a_dff` is `1`, a falling edge is detected, and the `down` signal is set to `1`. Otherwise, it is set to `0`.
+   - The `a_dff` register is updated with the current value of `a` at the end of the block.
+
+This module will correctly detect rising and falling edges in the input signal `a` and generate the corresponding `rise` and `down` signals.

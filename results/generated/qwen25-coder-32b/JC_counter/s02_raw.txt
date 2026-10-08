@@ -1,0 +1,42 @@
+Sure, below is the complete Verilog code for a 64-bit Johnson counter (torsional ring counter) with the specified functionality:
+
+```verilog
+module JC_counter (
+    input clk,      // Clock signal used for synchronous operation
+    input rst_n,    // Active-low reset signal to initialize the counter
+    output reg [63:0] Q // 64-bit register representing the current count value
+);
+
+// Synchronous logic to update the counter value
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        // If the reset signal is low, set the counter value to 0
+        Q <= 64'b0;
+    end else begin
+        // Update the counter value based on the current state
+        if (Q[0] == 1'b0) begin
+            // If the least significant bit is 0, shift right and append 1 at MSB
+            Q <= {Q[62:0], 1'b1};
+        end else begin
+            // If the least significant bit is 1, shift right and append 0 at MSB
+            Q <= {Q[62:0], 1'b0};
+        end
+    end
+end
+
+endmodule
+```
+
+### Explanation:
+1. **Module Declaration**: The module is named `JC_counter` with three ports:
+   - `clk`: The clock signal.
+   - `rst_n`: The active-low reset signal.
+   - `Q`: A 64-bit output register that holds the current state of the counter.
+
+2. **Synchronous Block**: The `always` block is sensitive to the rising edge of `clk` and the falling edge of `rst_n`.
+   - **Reset Condition**: When `rst_n` is low, the counter is reset to `0` (64'b0).
+   - **Counter Update**: 
+     - If the least significant bit (`Q[0]`) is `0`, the counter increments by shifting the bits of `Q` to the right and setting the most significant bit (`Q[63]`) to `1`.
+     - If the least significant bit (`Q[0]`) is `1`, the counter decrements by shifting the bits of `Q` to the right and setting the most significant bit (`Q[63]`) to `0`.
+
+This implementation ensures that the counter toggles between incrementing and decrementing in a torsional ring fashion, creating the Johnson counter pattern.

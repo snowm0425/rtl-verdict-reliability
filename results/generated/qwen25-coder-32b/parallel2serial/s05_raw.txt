@@ -1,0 +1,62 @@
+Certainly! Below is the complete Verilog code for the `parallel2serial` module that performs the parallel-to-serial conversion as described:
+
+```verilog
+module parallel2serial (
+    input clk,          // Clock signal
+    input rst_n,        // Active-low reset signal
+    input [3:0] d,      // 4-bit parallel input data
+    output reg valid_out, // Valid signal indicating the availability of serial output
+    output reg dout       // Serial output
+);
+
+    reg [3:0] data; // Data register to hold the parallel input
+    reg [1:0] cnt;  // Counter to keep track of the bit position
+
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            // Reset the counter and valid signal
+            cnt <= 2'b00;
+            valid_out <= 0;
+            data <= 4'b0000;
+            dout <= 0;
+        end else begin
+            // Shift the data register to the left and assign the most significant bit to dout
+            dout <= data[3];
+            data <= {d[0], data[3:1]};
+            
+            if (cnt == 2'b11) begin // If counter reaches 3 (binary 11)
+                // Load the new parallel input data into the data register
+                data <= d;
+                // Reset the counter
+                cnt <= 2'b00;
+                // Set the valid signal to indicate the availability of valid serial output
+                valid_out <= 1;
+            end else begin
+                // Increment the counter
+                cnt <= cnt + 1;
+                // Clear the valid signal
+                valid_out <= 0;
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Registers:**
+   - `data`: A 4-bit register to hold the parallel input data.
+   - `cnt`: A 2-bit counter to track the bit position being output.
+
+2. **Reset Logic:**
+   - When `rst_n` is low (active reset), the counter `cnt` and the `valid_out` signal are reset to 0. The `data` and `dout` registers are also initialized to 0.
+
+3. **Serial Output:**
+   - On each clock cycle, the most significant bit of the `data` register is assigned to `dout`.
+   - The `data` register is then shifted left by one bit, with the least significant bit being filled with the least significant bit of the `d` input.
+
+4. **Counter Logic:**
+   - When `cnt` reaches 3 (binary `11`), it indicates that the last bit of the current parallel input has been output. In this case, the `data` register is updated with the new parallel input `d`, the counter is reset to 0, and the `valid_out` signal is set to 1.
+   - Otherwise, the counter is incremented, and `valid_out` is set to 0.
+
+This module ensures that the parallel-to-serial conversion is performed correctly and efficiently, with the `valid_out` signal indicating the availability of valid serial output.

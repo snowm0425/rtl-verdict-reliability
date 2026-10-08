@@ -1,0 +1,64 @@
+module barrel_shifter (
+    input  [7:0] in,
+    input  [2:0] ctrl,
+    output [7:0] out
+);
+
+    // Internal wires for each stage
+    wire [7:0] stage1;
+    wire [7:0] stage2;
+    wire [7:0] stage3;
+
+    // Stage 1: Shift by 4 positions if ctrl[2] is high
+    // For each output bit i, if ctrl[2] is 1, take in[(i+4)%8], otherwise take in[i]
+    // This is a circular shift by 4
+    genvar i;
+    generate
+        for (i = 0; i < 8; i = i + 1) begin : gen_stage1
+            mux2X1 #(1) u_mux1 (
+                .d0 (in[i]),
+                .d1 (in[(i + 4) % 8]),
+                .sel (ctrl[2]),
+                .y  (stage1[i])
+            );
+        end
+    endgenerate
+
+    // Stage 2: Shift by 2 positions if ctrl[1] is high
+    generate
+        for (i = 0; i < 8; i = i + 1) begin : gen_stage2
+            mux2X1 #(1) u_mux2 (
+                .d0 (stage1[i]),
+                .d1 (stage1[(i + 2) % 8]),
+                .sel (ctrl[1]),
+                .y  (stage2[i])
+            );
+        end
+    endgenerate
+
+    // Stage 3: Shift by 1 position if ctrl[0] is high
+    generate
+        for (i = 0; i < 8; i = i + 1) begin : gen_stage3
+            mux2X1 #(1) u_mux3 (
+                .d0 (stage2[i]),
+                .d1 (stage2[(i + 1) % 8]),
+                .sel (ctrl[0]),
+                .y  (out[i])
+            );
+        end
+    endgenerate
+
+endmodule
+
+module mux2X1 #(
+    parameter WIDTH = 1
+) (
+    input  [WIDTH-1:0] d0,
+    input  [WIDTH-1:0] d1,
+    input              sel,
+    output [WIDTH-1:0] y
+);
+
+    assign y = sel ? d1 : d0;
+
+endmodule

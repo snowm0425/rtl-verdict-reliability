@@ -1,0 +1,60 @@
+Certainly! Below is the complete Verilog implementation of the `width_8to16` module, which performs the described data width conversion from 8-bit to 16-bit:
+
+```verilog
+module width_8to16 (
+    input wire clk,        // Clock signal
+    input wire rst_n,      // Active-low reset signal
+    input wire valid_in,   // Validity of input data
+    input wire [7:0] data_in, // 8-bit input data
+    output reg valid_out,  // Validity of output data
+    output reg [15:0] data_out // 16-bit output data
+);
+
+    reg [7:0] data_lock;   // Register to store the first 8-bit data
+    reg flag;             // Flag to indicate if the first data is stored
+
+    // Synchronous process on positive edge of clk or negative edge of rst_n
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            // On reset, clear all registers
+            valid_out <= 0;
+            data_out <= 16'b0;
+            data_lock <= 8'b0;
+            flag <= 0;
+        end else if (valid_in) begin
+            if (!flag) begin
+                // First valid data, store it in data_lock and set the flag
+                data_lock <= data_in;
+                flag <= 1;
+            end else begin
+                // Second valid data, concatenate with data_lock and output
+                data_out <= {data_lock, data_in};
+                valid_out <= 1;
+                flag <= 0; // Reset the flag for the next pair
+            end
+        end else begin
+            // If no valid input, clear the output validity
+            valid_out <= 0;
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+- **Registers:**
+  - `data_lock`: Stores the first 8-bit data input.
+  - `flag`: Indicates whether the first data input has been stored.
+  - `data_out`: Stores the final 16-bit output data.
+  - `valid_out`: Indicates the validity of the 16-bit output data.
+
+- **Reset:**
+  - On the negative edge of `rst_n`, all registers are cleared.
+
+- **Data Processing:**
+  - On the positive edge of `clk`, the module checks if `valid_in` is high.
+  - If `valid_in` is high and `flag` is low, the data is stored in `data_lock`, and `flag` is set to high.
+  - If `valid_in` is high and `flag` is high, the stored data in `data_lock` is concatenated with the current `data_in` to form `data_out`, `valid_out` is set to high, and `flag` is reset to low.
+  - If `valid_in` is low, `valid_out` is set to low to indicate no valid output.
+
+This module ensures that the 8-bit input data is correctly converted to 16-bit output data, with `valid_out` indicating the validity of the output data.

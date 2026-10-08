@@ -1,0 +1,7 @@
+# stage=sim rc=0
+# STDOUT
+===========Your Design Passed===========
+/home/cvl/Documents/syn/RTLLM/Arithmetic/Multiplier/multi_booth_8bit/testbench.v:71: $finish called at 1900000 (1ps)
+
+# STDERR
+

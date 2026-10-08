@@ -1,0 +1,108 @@
+Here is the complete Verilog code for the `synchronizer` module based on your detailed specifications.
+
+### Design Analysis & Logic Flow
+
+1.  **Domain A (Input Side):**
+    *   `data_reg`: Captures `data_in` on every rising edge of `clk_a`. Since `data_in` is constant while `data_en` is high, and changes are slow, this register holds the valid data value.
+    *   `en_data_reg`: Captures `data_en` on every rising edge of `clk_a`. This synchronizes the enable signal into Domain A's timing (though it originates from A, this step ensures it's a clean registered signal ready to cross domains or be used consistently). *Note: Since `data_en` is already in Domain A, this register effectively adds one cycle of latency to the enable signal relative to the data, ensuring the data is stable before the enable propagates.*
+
+2.  **Domain B (Output Side):**
+    *   `en_clap_one`: First stage of the 2-cycle delay for the enable signal in Domain B. It samples `en_data_reg` on `clk_b`.
+    *   `en_clap_two`: Second stage of the 2-cycle delay. It samples `en_clap_one` on `clk_b`. This acts as the "valid" signal for the output in Domain B.
+    *   `dataout`: The output register. It updates to `data_reg` only when `en_clap_two` is high. Otherwise, it holds its previous value. This implements the MUX behavior described.
+
+### Verilog Code
+
+```verilog
+module synchronizer (
+    input  wire       clk_a,      // Clock A: input data and enable are referenced to this
+    input  wire       clk_b,      // Clock B: output data and delayed enable are referenced to this
+    input  wire       arstn,      // Active-low reset for Domain A
+    input  wire       brstn,      // Active-low reset for Domain B
+    input  wire [3:0] data_in,    // 4-bit input data
+    input  wire       data_en,    // Enable signal
+    output reg  [3:0] dataout     // 4-bit output data
+);
+
+    // -----------------------------------------------------------------------
+    // Domain A Registers
+    // -----------------------------------------------------------------------
+    
+    // Register to store the input data.
+    // Updates on positive edge of clk_a or falling edge of arstn.
+    reg [3:0] data_reg;
+    
+    always @(posedge clk_a or negedge arstn) begin
+        if (!arstn) begin
+            data_reg <= 4'b0000;
+        end else begin
+            data_reg <= data_in;
+        end
+    end
+
+    // Register to store the input enable signal.
+    // Updates on positive edge of clk_a or falling edge of arstn.
+    reg en_data_reg;
+    
+    always @(posedge clk_a or negedge arstn) begin
+        if (!arstn) begin
+            en_data_reg <= 1'b0;
+        end else begin
+            en_data_reg <= data_en;
+        end
+    end
+
+    // -----------------------------------------------------------------------
+    // Domain B Registers
+    // -----------------------------------------------------------------------
+    
+    // First stage of the 2-cycle enable delay in Domain B.
+    // Samples en_data_reg from Domain A.
+    reg en_clap_one;
+    
+    always @(posedge clk_b or negedge brstn) begin
+        if (!brstn) begin
+            en_clap_one <= 1'b0;
+        end else begin
+            en_clap_one <= en_data_reg;
+        end
+    end
+
+    // Second stage of the 2-cycle enable delay in Domain B.
+    // Samples en_clap_one.
+    reg en_clap_two;
+    
+    always @(posedge clk_b or negedge brstn) begin
+        if (!brstn) begin
+            en_clap_two <= 1'b0;
+        end else begin
+            en_clap_two <= en_clap_one;
+        end
+    end
+
+    // Output Register
+    // Updates on positive edge of clk_b or falling edge of brstn.
+    // If brstn is low, output is 0.
+    // If brstn is high and en_clap_two is active (1), output takes data_reg.
+    // Otherwise, output retains its previous value.
+    always @(posedge clk_b or negedge brstn) begin
+        if (!brstn) begin
+            dataout <= 4'b0000;
+        end else begin
+            if (en_clap_two) begin
+                dataout <= data_reg;
+            end else begin
+                // Retain previous value
+                dataout <= dataout;
+            end
+        end
+    end
+
+endmodule
+```
+
+### Key Points:
+*   **Reset Handling**: Both domains use asynchronous active-low resets (`negedge arstn` and `negedge brstn`).
+*   **Data Stability**: The specification states `data_in` remains constant while `data_en` is high. The `data_reg` in Domain A captures this stable value. Even if `data_in` changes slightly after `data_en` goes low, `data_reg` will hold the last sampled value until the next `clk_a` edge, but since `en_clap_two` will eventually go low, `dataout` will stop updating, preserving the last valid data.
+*   **Synchronization**: The enable signal is delayed by two cycles in Domain B (`en_clap_one` -> `en_clap_two`). This ensures that when `en_clap_two` goes high, the corresponding `data_reg` value has been stable for several cycles, providing a robust synchronization window.
+*   **Output Behavior**: The `dataout` register only updates when `en_clap_two` is high. This effectively implements a "hold" function for the output data when the enable is inactive, as required.

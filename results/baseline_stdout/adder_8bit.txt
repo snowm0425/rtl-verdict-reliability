@@ -1,0 +1,6 @@
+# stage=sim rc=0
+# STDOUT
+===========Your Design Passed===========
+
+# STDERR
+

@@ -1,0 +1,80 @@
+Certainly! Below is the Verilog implementation of the `pulse_detect` module based on your requirements:
+
+```verilog
+module pulse_detect (
+    input clk,      // Clock signal
+    input rst_n,    // Reset signal (active low)
+    input data_in,  // One-bit input signal
+    output reg data_out // Output signal indicating the presence of pulses
+);
+
+    // Define states for pulse detection
+    typedef enum reg [1:0] {
+        IDLE = 2'b00,
+        RISING_EDGE = 2'b01,
+        HIGH = 2'b10
+    } state_t;
+
+    // State register
+    reg [1:0] state;
+
+    // State machine
+    always @(posedge clk or negedge rst_n) begin
+        if (~rst_n) begin
+            // Reset condition
+            state <= IDLE;
+            data_out <= 0;
+        end else begin
+            // State transition logic
+            case (state)
+                IDLE: begin
+                    if (data_in == 1'b1) begin
+                        state <= RISING_EDGE;
+                    end else begin
+                        state <= IDLE;
+                    end
+                    data_out <= 0;
+                end
+
+                RISING_EDGE: begin
+                    if (data_in == 1'b0) begin
+                        state <= IDLE;
+                    end else if (data_in == 1'b1) begin
+                        state <= HIGH;
+                    end
+                    data_out <= 0;
+                end
+
+                HIGH: begin
+                    if (data_in == 1'b0) begin
+                        state <= IDLE;
+                        data_out <= 1;  // Pulse detected
+                    end else if (data_in == 1'b1) begin
+                        state <= HIGH;
+                    end
+                end
+
+                default: begin
+                    state <= IDLE;
+                    data_out <= 0;
+                end
+            endcase
+        end
+    end
+endmodule
+```
+
+### Explanation:
+
+1. **State Definition**: We define an enumerated type `state_t` with three states: `IDLE`, `RISING_EDGE`, and `HIGH`.
+
+2. **State Register**: A 2-bit register `state` is used to keep track of the current state of the pulse detection process.
+
+3. **Reset Condition**: When `rst_n` is low, the state is reset to `IDLE`, and `data_out` is set to `0`.
+
+4. **State Machine**:
+   - **IDLE**: If `data_in` transitions from `0` to `1`, the state changes to `RISING_EDGE`. Otherwise, it remains in `IDLE`. `data_out` is set to `0`.
+   - **RISING_EDGE**: If `data_in` transitions from `1` to `0`, it means the pulse is not detected, and the state changes back to `IDLE`. If `data_in` remains `1`, the state changes to `HIGH`. `data_out` is set to `0`.
+   - **HIGH**: If `data_in` transitions from `1` to `0`, it means the pulse is detected, and the state changes back to `IDLE`. `data_out` is set to `1`. If `data_in` remains `1`, the state stays in `HIGH`.
+
+This module effectively detects a pulse as specified and generates the `data_out` signal accordingly.

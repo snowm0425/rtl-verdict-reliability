@@ -1,0 +1,52 @@
+Sure, below is the complete Verilog code for the described Read-Only Memory (ROM) module:
+
+```verilog
+module ROM (
+    input  [7:0] addr,    // 8-bit address input
+    output [15:0] dout    // 16-bit data output
+);
+
+    // Define the ROM memory array with 256 locations, each 16 bits wide
+    reg [15:0] mem [0:255];
+
+    // Initial block to pre-load the ROM with fixed data
+    initial begin
+        // Initialize specific memory locations with values
+        mem[0] = 16'hA0A0;
+        mem[1] = 16'hB1B1;
+        mem[2] = 16'hC2C2;
+        mem[3] = 16'hD3D3;
+        
+        // You can initialize other locations as needed
+        // For example:
+        // mem[4] = 16'hE4E4;
+        // mem[5] = 16'hF5F5;
+        // and so on...
+    end
+
+    // Continuously output the data stored in the ROM at the specified address
+    always @(*) begin
+        dout = mem[addr];
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Module Declaration:**
+   - The module is named `ROM`.
+   - It has one input port `addr` which is an 8-bit bus used to specify the address in the ROM.
+   - It has one output port `dout` which is a 16-bit bus that provides the data from the specified address.
+
+2. **Memory Array:**
+   - `reg [15:0] mem [0:255];` defines a 256-location ROM, where each location holds a 16-bit value.
+
+3. **Initial Block:**
+   - The `initial` block is used to pre-load the ROM with fixed data.
+   - The first four memory locations (0 to 3) are initialized with the values `16'hA0A0`, `16'hB1B1`, `16'hC2C2`, and `16'hD3D3`.
+   - You can initialize other locations as needed by adding more assignments within the `initial` block.
+
+4. **Behavioral Description:**
+   - The `always @(*)` block ensures that the output `dout` is continuously updated to reflect the data stored at the address specified by `addr`.
+
+This module is read-only, meaning it only performs read operations from the memory and does not allow any write operations.

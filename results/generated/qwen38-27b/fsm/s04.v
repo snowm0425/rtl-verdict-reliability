@@ -1,0 +1,110 @@
+module fsm (
+    input  wire IN,
+    input  wire CLK,
+    input  wire RST,
+    output reg   MATCH
+);
+
+    // State encoding
+    // S0: initial state
+    // S1: seen '1'
+    // S2: seen '10'
+    // S3: seen '100'
+    // S4: seen '1001'
+    // S5: seen '10011' -> match output
+    
+    localparam S0 = 3'd0;
+    localparam S1 = 3'd1;
+    localparam S2 = 3'd2;
+    localparam S3 = 3'd3;
+    localparam S4 = 3'd4;
+    localparam S5 = 3'd5;
+
+    reg [2:0] state, next_state;
+
+    // Mealy FSM: output depends on current state and input
+
+    // Next state logic
+    always @(*) begin
+        next_state = state;
+        case (state)
+            S0: begin
+                if (IN == 1'b1)
+                    next_state = S1;
+                else
+                    next_state = S0;
+            end
+            S1: begin
+                if (IN == 1'b0)
+                    next_state = S2;
+                else
+                    next_state = S1;
+            end
+            S2: begin
+                if (IN == 1'b0)
+                    next_state = S3;
+                else
+                    next_state = S1; // '101' -> back to S1 (last '1' starts new potential sequence)
+            end
+            S3: begin
+                if (IN == 1'b1)
+                    next_state = S4;
+                else
+                    next_state = S0; // '1000' -> reset to S0
+            end
+            S4: begin
+                if (IN == 1'b1)
+                    next_state = S5; // '10011' -> go to S5 (match state)
+                else
+                    next_state = S0; // '10010' -> reset to S0
+            end
+            S5: begin
+                // After matching, we need to support continuous/loop detection
+                // The sequence 10011 ends. For overlapping, consider:
+                // After '10011', if next bit is 1, we might start a new sequence?
+                // Let's think: the pattern is 10011. After completing it, we are in S5.
+                // We need to determine the next state based on IN.
+                // If IN=1: The last two bits of the matched sequence are '11'. 
+                //   For a new sequence '10011', if we see '1', it could be the start.
+                //   But we also need to check if there's overlap. The pattern 10011 has no proper prefix that is also a suffix except... 
+                //   Let's check: prefix '1', suffix '1' -> yes. So after '10011' + '1', we have effectively seen '1' as the start of a new sequence.
+                //   Actually, let's reconsider. The state S5 represents that we just matched. 
+                //   For continuous detection, after outputting MATCH, we should transition based on IN.
+                //   If IN=1: The new input '1' could be the start of a new '10011'. So go to S1.
+                //   If IN=0: The new input '0' doesn't help start '10011' (needs to start with 1). So go to S0.
+                if (IN == 1'b1)
+                    next_state = S1;
+                else
+                    next_state = S0;
+            end
+            default: next_state = S0;
+        endcase
+    end
+
+    // Output logic (Mealy): depends on current state and input
+    always @(*) begin
+        if (RST)
+            MATCH = 1'b0;
+        else begin
+            case (state)
+                S4: begin
+                    if (IN == 1'b1)
+                        MATCH = 1'b1;
+                    else
+                        MATCH = 1'b0;
+                end
+                default:
+                    MATCH = 1'b0;
+            endcase
+        end
+    end
+
+    // State register
+    always @(posedge CLK or posedge RST) begin
+        if (RST)
+            state <= S0;
+        else
+            state <= next_state;
+    end
+
+endmodule

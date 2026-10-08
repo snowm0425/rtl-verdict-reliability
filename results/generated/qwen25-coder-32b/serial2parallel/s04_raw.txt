@@ -1,0 +1,45 @@
+Certainly! Below is the complete Verilog code for the `serial2parallel` module as per your requirements:
+
+```verilog
+module serial2parallel (
+    input wire clk,          // Clock signal
+    input wire rst_n,        // Reset signal (active low)
+    input wire din_serial,   // Serial input data
+    input wire din_valid,    // Validity signal for input data
+
+    output reg [7:0] dout_parallel, // Parallel output data (8 bits wide)
+    output reg dout_valid      // Validity signal for the output data
+);
+
+    reg [2:0] cnt;           // 3-bit counter to count up to 8
+
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            cnt <= 3'b000;      // Reset counter to 0
+            dout_parallel <= 8'b0; // Reset output data to 0
+            dout_valid <= 0;    // Reset output validity signal to 0
+        end else if (din_valid) begin
+            // Shift the current data in dout_parallel and add the new serial data
+            dout_parallel <= {din_serial, dout_parallel[7:1]};
+            cnt <= cnt + 1;     // Increment the counter
+
+            // Check if 8 bits have been received
+            if (cnt == 3'b111) begin
+                dout_valid <= 1; // Set output validity signal to 1
+                cnt <= 3'b000;   // Reset counter to 0
+            end else begin
+                dout_valid <= 0; // Keep output validity signal to 0
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+- **Reset (rst_n):** The module is reset when `rst_n` is low. This resets the counter `cnt` to 0, clears the `dout_parallel` register, and sets `dout_valid` to 0.
+- **Counter (`cnt`):** A 3-bit counter (`cnt`) is used to keep track of the number of serial bits received. It counts from 0 to 7.
+- **Serial to Parallel Conversion:** When `din_valid` is high, the module shifts the current value in `dout_parallel` to the right by one bit and inserts the new `din_serial` bit into the most significant bit position.
+- **Output Validity (`dout_valid`):** Once 8 bits have been received (`cnt` equals 7), `dout_valid` is set to 1, indicating that the parallel output data is valid. After this, the counter is reset to 0.
+
+This module ensures that the parallel output data (`dout_parallel`) is valid only when 8 bits have been received, and the output validity signal (`dout_valid`) reflects this state accurately.

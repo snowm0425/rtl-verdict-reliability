@@ -1,0 +1,55 @@
+Certainly! Below is the complete Verilog code for the `accu` module as per your requirements. This module accumulates four 8-bit input values and outputs their sum as a 10-bit value. The `valid_out` signal indicates when the accumulation is complete and the result is ready.
+
+```verilog
+module accu (
+    input wire clk,
+    input wire rst_n,
+    input wire [7:0] data_in,
+    input wire valid_in,
+    output reg valid_out,
+    output reg [9:0] data_out
+);
+
+    // Internal signals
+    reg [1:0] count;          // Counter to track the number of valid inputs received
+    reg [9:0] accumulator;    // Accumulator to sum the input data
+
+    // Initialize the outputs
+    always @(*) begin
+        valid_out = 0;
+        data_out = 10'b0;
+    end
+
+    // State machine to handle data accumulation
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            count <= 2'b00;
+            accumulator <= 10'b0;
+        end else begin
+            if (valid_in) begin
+                accumulator <= accumulator + data_in;
+                count <= count + 1;
+
+                if (count == 2'b11) begin  // Check if we have accumulated 4 inputs
+                    data_out <= accumulator;
+                    valid_out <= 1;
+                    count <= 2'b00;         // Reset the count for the next batch
+                    accumulator <= 10'b0;   // Reset the accumulator for the next batch
+                end
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+- **Clock and Reset:** The module uses a positive edge-triggered clock (`clk`) and an active-low reset signal (`rst_n`).
+- **Count and Accumulator:** The `count` signal keeps track of the number of valid inputs received. The `accumulator` signal holds the sum of the input data.
+- **State Machine:** The `always @(posedge clk or negedge rst_n)` block handles the accumulation logic:
+  - When `valid_in` is high, the current `data_in` is added to the `accumulator`, and the `count` is incremented.
+  - When `count` reaches 3 (binary `11`), it indicates that four valid inputs have been received.
+  - At this point, the `data_out` is set to the accumulated value, `valid_out` is set to 1 for one cycle, and then both `count` and `accumulator` are reset to start the process again.
+- **Outputs:** The `valid_out` signal is set high for one clock cycle when the accumulated result is output.
+
+This design ensures that the module correctly accumulates four 8-bit inputs and outputs their sum as a 10-bit value, with `valid_out` indicating the completion of the accumulation.

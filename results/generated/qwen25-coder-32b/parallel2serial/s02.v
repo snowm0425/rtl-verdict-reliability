@@ -1,0 +1,43 @@
+module parallel2serial (
+    input clk,       // Clock signal used for synchronous operations.
+    input rst_n,     // Reset signal. Defined as 0 for reset and 1 for reset signal inactive.
+    input [3:0] d,   // 4-bit parallel data input.
+    
+    output reg valid_out, // Valid signal indicating the availability of serial output.
+    output reg dout       // Serial output representing the converted data.
+);
+
+    reg [3:0] data;  // Data register to hold the current parallel data being converted.
+    reg [1:0] cnt;   // Counter to track the bit position being output.
+
+    // Synchronous logic on rising edge of clock
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            // Reset the counter, data register, and valid signal
+            cnt <= 2'b00;
+            data <= 4'b0000;
+            valid_out <= 0;
+            dout <= 0;
+        end else begin
+            // If the counter is at 3, indicating the last bit is output
+            if (cnt == 2'b11) begin
+                // Update the data register with new parallel input
+                data <= d;
+                // Reset the counter to 0
+                cnt <= 2'b00;
+                // Set the valid signal to 1
+                valid_out <= 1;
+            end else begin
+                // Set the valid signal to 0
+                valid_out <= 0;
+                // Increment the counter
+                cnt <= cnt + 1;
+                // Shift the data register left by 1 bit
+                data <= {data[2:0], data[3]};
+            end
+            // Assign the most significant bit of the data register to the serial output
+            dout <= data[3];
+        end
+    end
+
+endmodule

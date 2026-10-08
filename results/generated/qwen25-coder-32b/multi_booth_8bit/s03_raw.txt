@@ -1,0 +1,59 @@
+Certainly! Below is a complete implementation of an 8-bit Radix-4 Booth multiplier in Verilog. This implementation uses a clock (`clk`) and a reset (`reset`) signal to perform the multiplication of two 8-bit inputs (`a` and `b`). The product is output as a 16-bit value (`p`), and a ready signal (`rdy`) is provided to indicate the completion of the multiplication process.
+
+```verilog
+module multi_booth_8bit (
+    input clk,
+    input reset,
+    input [7:0] a,
+    input [7:0] b,
+    output reg [15:0] p,
+    output reg rdy
+);
+
+    reg [15:0] multiplier;
+    reg [15:0] multiplicand;
+    reg [4:0] ctr;
+
+    always @(posedge clk or posedge reset) begin
+        if (reset) begin
+            // Initialize registers
+            multiplier <= {{8{a[7]}}, a};
+            multiplicand <= {{8{b[7]}}, b};
+            p <= 16'b0;
+            ctr <= 5'b0;
+            rdy <= 1'b0;
+        end else begin
+            if (ctr < 5'd16) begin
+                // Booth encoding and multiplication
+                if (multiplier[ctr] == 1'b1) begin
+                    p <= p + multiplicand;
+                end
+                // Left shift multiplicand
+                multiplicand <= {multiplicand[14:0], 1'b0};
+                // Increment counter
+                ctr <= ctr + 1'b1;
+            end else begin
+                // Multiplication complete
+                rdy <= 1'b1;
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+
+1. **Initialization:**
+   - On the positive edge of the `reset` signal, the `multiplier` and `multiplicand` registers are initialized. The `multiplier` is set to `{ {8{a[7]}}, a }` to sign-extend the 8-bit multiplicand to 16 bits. Similarly, the `multiplicand` is set to `{ {8{b[7]}}, b }` to sign-extend the 8-bit multiplier to 16 bits.
+   - The `p` register is initialized to `16'b0` (zero), the `ctr` (counter) is set to `5'b0` (zero), and the `rdy` (ready) signal is set to `1'b0` (not ready).
+
+2. **Multiplication Process:**
+   - On the positive edge of the `clk` signal, if `ctr` is less than 16, the Booth encoding is applied. If the current bit of the `multiplier` register (`multiplier[ctr]`) is `1'b1`, the `p` register is updated by adding the `multiplicand` register to it.
+   - The `multiplicand` register is then left-shifted by one bit to simulate the Booth algorithm's shifting operation.
+   - The `ctr` register is incremented by one.
+
+3. **Completion:**
+   - Once the `ctr` reaches 16, indicating that all bits have been processed, the `rdy` signal is set to `1'b1` (ready), indicating that the multiplication is complete.
+
+This implementation assumes that the Radix-4 Booth encoding is simplified to a binary Booth encoding for demonstration purposes. In a more advanced implementation, you would handle the Radix-4 encoding to reduce the number of additions required.

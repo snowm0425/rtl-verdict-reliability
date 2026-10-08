@@ -1,0 +1,67 @@
+Sure, below is the complete Verilog code for the `signal_generator` module that generates a triangle wave signal as described:
+
+```verilog
+module signal_generator (
+    input wire clk,      // Clock signal used for synchronous operation
+    input wire rst_n,    // Active-low reset signal
+    output reg [4:0] wave // 5-bit output waveform signal
+);
+
+    // State register to control the state of the waveform generation
+    reg state;
+
+    // Initialization of state and wave on reset
+    always @(posedge clk or negedge rst_n) begin
+        if (~rst_n) begin
+            state <= 0;   // Clear state on reset
+            wave  <= 0;   // Clear wave on reset
+        end else begin
+            case (state)
+                0: begin
+                    if (wave == 31) begin
+                        state <= 1;   // Transition to state 1 when wave reaches 31
+                    end else begin
+                        wave <= wave + 1; // Increment wave
+                    end
+                end
+                1: begin
+                    if (wave == 0) begin
+                        state <= 0;   // Transition back to state 0 when wave reaches 0
+                    end else begin
+                        wave <= wave - 1; // Decrement wave
+                    end
+                end
+                default: begin
+                    state <= 0;   // Default case to ensure state remains 0
+                    wave  <= 0;   // Default case to ensure wave remains 0
+                end
+            endcase
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Module Declaration:**
+   - The module `signal_generator` is declared with three ports: `clk`, `rst_n`, and `wave`.
+
+2. **State Register:**
+   - A 1-bit register `state` is used to control the waveform generation. It can have two states: 0 and 1.
+
+3. **Wave Register:**
+   - A 5-bit register `wave` represents the generated waveform.
+
+4. **Synchronous Logic:**
+   - The `always @(posedge clk or negedge rst_n)` block ensures that the registers are updated on the positive edge of the clock signal or the negative edge of the reset signal.
+   
+5. **Reset Condition:**
+   - When `rst_n` is low (active reset), both `state` and `wave` are reset to 0.
+   
+6. **State Machine:**
+   - The `case` statement inside the `always` block controls the waveform generation:
+     - When `state` is 0, `wave` is incremented by 1. If `wave` reaches 31, `state` transitions to 1.
+     - When `state` is 1, `wave` is decremented by 1. If `wave` reaches 0, `state` transitions back to 0.
+     - The `default` case ensures that the module remains in a safe state if an unexpected value is assigned to `state`.
+
+This module will continuously generate a triangle wave signal with a range from 0 to 31 based on the clock and reset signals provided.

@@ -1,0 +1,80 @@
+Certainly! Below is the complete Verilog code for a 4-bit unsigned number pipeline multiplier with two levels of registers to store intermediate values and control the multiplication process.
+
+```verilog
+module multi_pipe_4bit (
+    input clk,          // Clock signal
+    input rst_n,        // Active-low reset signal
+    input [3:0] mul_a,  // 4-bit multiplicand
+    input [3:0] mul_b,  // 4-bit multiplier
+    output [7:0] mul_out // 8-bit product output
+);
+
+    parameter size = 4;
+
+    // Extended input signals
+    wire [7:0] extended_mul_a = {4'b0000, mul_a};
+    wire [7:0] extended_mul_b = {4'b0000, mul_b};
+
+    // Partial products
+    wire [7:0] partial_products [0:size-1];
+
+    // Intermediate sums
+    reg [7:0] reg1 [0:size-1];
+    reg [7:0] reg2 [0:size-1];
+
+    // Generate block for calculating partial products
+    genvar i;
+    generate
+        for (i = 0; i < size; i = i + 1) begin : gen_partial_products
+            assign partial_products[i] = extended_mul_b[i] ? (extended_mul_a << i) : 8'b0;
+        end
+    endgenerate
+
+    // Register 1: Store partial products
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            for (int j = 0; j < size; j = j + 1) begin
+                reg1[j] <= 8'b0;
+            end
+        end else begin
+            for (int j = 0; j < size; j = j + 1) begin
+                reg1[j] <= partial_products[j];
+            end
+        end
+    end
+
+    // Register 2: Store intermediate sums
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            for (int j = 0; j < size; j = j + 1) begin
+                reg2[j] <= 8'b0;
+            end
+        end else begin
+            for (int j = 0; j < size; j = j + 1) begin
+                reg2[j] <= (j == 0) ? reg1[j] : reg2[j-1] + reg1[j];
+            end
+        end
+    end
+
+    // Final product calculation
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            mul_out <= 8'b0;
+        end else begin
+            mul_out <= reg2[size-1];
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Inputs and Outputs**: The module takes a 4-bit multiplicand (`mul_a`), a 4-bit multiplier (`mul_b`), and produces an 8-bit product (`mul_out`).
+2. **Extended Inputs**: The inputs are extended to 8 bits with leading zeros.
+3. **Partial Products**: For each bit of the multiplier, a partial product is calculated by left-shifting the multiplicand if the bit is 1, otherwise setting it to 0.
+4. **Registers**: Two sets of registers (`reg1` and `reg2`) are used to store intermediate values.
+   - `reg1` stores the partial products.
+   - `reg2` accumulates the partial products to form the final product.
+5. **Reset and Clock**: The registers are reset to 0 when `rst_n` is low, and updated on the positive edge of `clk`.
+
+This design ensures that the multiplication process is pipelined, with intermediate results stored in registers to allow for synchronous operation.

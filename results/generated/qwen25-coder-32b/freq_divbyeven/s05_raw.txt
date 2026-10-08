@@ -1,0 +1,67 @@
+Certainly! Below is the complete Verilog code for the `freq_diveven` module, which divides the input clock frequency by an even number specified by the `NUM_DIV` parameter.
+
+```verilog
+module freq_diveven #(
+    parameter NUM_DIV = 8  // Ensure NUM_DIV is an even number
+)(
+    input wire clk,       // Input clock signal
+    input wire rst_n,     // Active-low reset signal
+    output reg clk_div    // Divided clock output signal
+);
+
+    // Ensure NUM_DIV is even
+    generate
+        if (NUM_DIV % 2 != 0) begin
+            initial begin
+                $fatal("NUM_DIV must be an even number");
+            end
+        end
+    endgenerate
+
+    reg [3:0] cnt;  // 4-bit counter
+
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            cnt <= 4'b0;      // Reset counter to 0
+            clk_div <= 1'b0;  // Initialize divided clock to 0
+        end else begin
+            if (cnt < (NUM_DIV / 2 - 1)) begin
+                cnt <= cnt + 1;  // Increment counter
+            end else begin
+                cnt <= 4'b0;      // Reset counter
+                clk_div <= ~clk_div;  // Toggle the divided clock
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Parameter Definition:**
+   - `NUM_DIV` is a parameter that specifies the division factor. It must be an even number.
+
+2. **Input Ports:**
+   - `clk`: Input clock signal.
+   - `rst_n`: Active-low reset signal.
+
+3. **Output Port:**
+   - `clk_div`: Divided clock output signal.
+
+4. **Counter:**
+   - A 4-bit register `cnt` is used to count the number of clock cycles.
+
+5. **Reset Condition:**
+   - When `rst_n` is low, both the counter and `clk_div` are reset to 0.
+
+6. **Counter Logic:**
+   - On the positive edge of `clk`, if `cnt` is less than `(NUM_DIV / 2 - 1)`, the counter increments.
+   - When `cnt` reaches `(NUM_DIV / 2 - 1)`, it resets to 0 and toggles `clk_div`, effectively dividing the input clock frequency by `NUM_DIV`.
+
+7. **Assertion:**
+   - The code includes a compile-time assertion to ensure that `NUM_DIV` is an even number. If not, it triggers a fatal error.
+
+### Usage:
+- Instantiate the `freq_diveven` module in your design, specifying the desired even division factor using the `NUM_DIV` parameter.
+- Connect the `clk` and `rst_n` signals to your input clock and reset signals, respectively.
+- The `clk_div` output will provide the divided clock signal.

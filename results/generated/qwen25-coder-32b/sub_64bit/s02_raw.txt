@@ -1,0 +1,39 @@
+Certainly! Below is a complete Verilog implementation of the `sub_64bit` module, which performs a 64-bit subtraction and checks for overflow conditions:
+
+```verilog
+module sub_64bit (
+    input wire [63:0] A,      // First 64-bit input operand
+    input wire [63:0] B,      // Second 64-bit input operand
+    output wire [63:0] result, // 64-bit output result
+    output wire overflow      // Overflow flag
+);
+
+    // Perform the subtraction
+    assign result = A - B;
+
+    // Extract the sign bits of A, B, and result
+    wire sign_A = A[63];
+    wire sign_B = B[63];
+    wire sign_result = result[63];
+
+    // Detect overflow conditions
+    // Positive overflow: A is positive, B is negative, result is negative
+    // Negative overflow: A is negative, B is positive, result is positive
+    assign overflow = (sign_A & ~sign_B & ~sign_result) | (~sign_A & sign_B & sign_result);
+
+endmodule
+```
+
+### Explanation:
+1. **Subtraction Operation**:
+   - The subtraction `result = A - B` is performed using the `-` operator in Verilog, which handles signed arithmetic correctly when dealing with 64-bit vectors.
+
+2. **Sign Bit Extraction**:
+   - The sign bits of `A`, `B`, and `result` are extracted by accessing the most significant bit (`[63]`) of each operand. In two's complement representation, the most significant bit indicates the sign of the number (0 for positive, 1 for negative).
+
+3. **Overflow Detection**:
+   - **Positive Overflow**: Occurs when `A` is positive (`sign_A == 0`), `B` is negative (`sign_B == 1`), and the result is negative (`sign_result == 1`). This condition is represented by the logic `(~sign_A & sign_B & sign_result)`.
+   - **Negative Overflow**: Occurs when `A` is negative (`sign_A == 1`), `B` is positive (`sign_B == 0`), and the result is positive (`sign_result == 0`). This condition is represented by the logic `(sign_A & ~sign_B & ~sign_result)`.
+   - The `overflow` output is set to 1 if either of these conditions is true, indicating an overflow has occurred.
+
+This module should meet the requirements for a 64-bit subtractor with overflow checking for high-precision arithmetic operations.

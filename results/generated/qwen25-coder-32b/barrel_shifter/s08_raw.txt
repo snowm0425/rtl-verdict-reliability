@@ -1,0 +1,75 @@
+Certainly! Below is the complete Verilog code for the `barrel_shifter` module, including the `mux2X1` submodule used for selecting between the shifted and original input values at each stage.
+
+```verilog
+// mux2X1 module
+module mux2X1 (
+    input  sel,
+    input  [7:0] in0,
+    input  [7:0] in1,
+    output [7:0] out
+);
+    assign out = sel ? in1 : in0;
+endmodule
+
+// barrel_shifter module
+module barrel_shifter (
+    input  [7:0] in,
+    input  [2:0] ctrl,
+    output [7:0] out
+);
+    // Intermediate signals for each stage of shifting
+    wire [7:0] stage1_out;
+    wire [7:0] stage2_out;
+    wire [7:0] stage3_out;
+
+    // Stage 1: Shift by 4 positions if ctrl[2] is high
+    wire [7:0] shifted_by_4 = {in[3:0], in[7:4]};
+    mux2X1 mux_stage1 (
+        .sel(ctrl[2]),
+        .in0(in),
+        .in1(shifted_by_4),
+        .out(stage1_out)
+    );
+
+    // Stage 2: Shift by 2 positions if ctrl[1] is high
+    wire [7:0] shifted_by_2 = {stage1_out[1:0], stage1_out[7:2]};
+    mux2X1 mux_stage2 (
+        .sel(ctrl[1]),
+        .in0(stage1_out),
+        .in1(shifted_by_2),
+        .out(stage2_out)
+    );
+
+    // Stage 3: Shift by 1 position if ctrl[0] is high
+    wire [7:0] shifted_by_1 = {stage2_out[0], stage2_out[7:1]};
+    mux2X1 mux_stage3 (
+        .sel(ctrl[0]),
+        .in0(stage2_out),
+        .in1(shifted_by_1),
+        .out(stage3_out)
+    );
+
+    // Final output
+    assign out = stage3_out;
+endmodule
+```
+
+### Explanation:
+
+1. **mux2X1 Module**: This is a simple 2-to-1 multiplexer that selects between two 8-bit inputs (`in0` and `in1`) based on the `sel` signal. If `sel` is high, it selects `in1`; otherwise, it selects `in0`.
+
+2. **barrel_shifter Module**:
+   - **Inputs**: 
+     - `in`: The 8-bit input to be shifted.
+     - `ctrl`: The 3-bit control signal that determines the number of positions to shift.
+   - **Outputs**:
+     - `out`: The 8-bit shifted output.
+
+3. **Stages of Shifting**:
+   - **Stage 1**: If `ctrl[2]` is high, the input is shifted by 4 positions. This is done by rearranging the bits such that the upper 4 bits become the lower 4 bits and vice versa.
+   - **Stage 2**: If `ctrl[1]` is high, the intermediate result from Stage 1 is shifted by 2 positions.
+   - **Stage 3**: If `ctrl[0]` is high, the intermediate result from Stage 2 is shifted by 1 position.
+
+4. **Final Output**: The result from the final stage (Stage 3) is assigned to the `out` port.
+
+This barrel shifter efficiently shifts or rotates the bits based on the control signal by using a series of multiplexers and bitwise operations.

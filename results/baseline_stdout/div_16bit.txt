@@ -1,0 +1,7 @@
+# stage=sim rc=0
+# STDOUT
+===========Your Design Passed===========
+/home/cvl/Documents/syn/RTLLM/Arithmetic/Divider/div_16bit/testbench.v:31: $finish called at 1000000 (1ps)
+
+# STDERR
+

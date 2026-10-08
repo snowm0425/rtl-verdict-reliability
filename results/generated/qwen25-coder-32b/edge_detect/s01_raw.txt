@@ -1,0 +1,43 @@
+Certainly! Below is the complete Verilog code for the `edge_detect` module that detects rising and falling edges on a slowly changing 1-bit signal `a`. The module uses a clock signal `clk` and an active-low reset signal `rst_n` to synchronize the edge detection.
+
+```verilog
+module edge_detect (
+    input wire clk,       // Clock signal
+    input wire rst_n,     // Reset signal (active low)
+    input wire a,         // Input signal
+    output reg rise,      // Output signal indicating a rising edge
+    output reg down       // Output signal indicating a falling edge
+);
+
+    reg a_reg;  // Registered version of the input signal
+
+    // Synchronize the input signal 'a' with the clock
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            a_reg <= 0;
+            rise <= 0;
+            down <= 0;
+        end else begin
+            a_reg <= a;
+            // Detect rising edge
+            rise <= (a && !a_reg);
+            // Detect falling edge
+            down <= (!a && a_reg);
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Module Declaration**: The module `edge_detect` is declared with the specified input and output ports.
+2. **Internal Register**: `a_reg` is used to store the previous value of the input signal `a` on each clock cycle.
+3. **Synchronization Process**: 
+   - The `always` block is sensitive to the positive edge of `clk` and the negative edge of `rst_n`.
+   - On reset (`rst_n` is low), `a_reg`, `rise`, and `down` are all set to 0.
+   - On the positive edge of `clk`, the current value of `a` is stored in `a_reg`.
+   - The rising edge detection is done by checking if `a` is high (`1`) and `a_reg` is low (`0`).
+   - The falling edge detection is done by checking if `a` is low (`0`) and `a_reg` is high (`1`).
+4. **Output Signals**: The `rise` and `down` signals are set to 1 for one clock cycle when a rising or falling edge is detected, respectively, and then reset to 0 on the next clock cycle unless another edge is detected.
+
+This implementation ensures that the edge detection is synchronized with the clock and that the output signals `rise` and `down` are correctly set and cleared.

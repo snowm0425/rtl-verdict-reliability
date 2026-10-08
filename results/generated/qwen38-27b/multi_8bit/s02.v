@@ -1,0 +1,32 @@
+module multi_8bit (
+    input  [7:0] A,
+    input  [7:0] B,
+    output [15:0] product
+);
+
+    // Shift-and-add multiplication
+    // For each bit i of B, if B[i] is 1, add A shifted left by i to the product
+    // This is equivalent to: product = A * B
+
+    // We can implement this using a combinational approach with conditional additions
+    // or using a loop. Since Verilog doesn't support traditional for loops in combinational
+    // logic in all contexts, we'll use a recursive or iterative approach with a register.
+
+    // Alternative: Use a simple combinational implementation by summing all shifted A's
+    // where B's bits are set.
+
+    // Let's use a combinational approach:
+    // product = sum_{i=0}^{7} (B[i] ? (A << i) : 0)
+
+    // In Verilog, we can write this as:
+    assign product = 
+        (B[0] ? {8'b0, A} : 16'b0) +
+        (B[1] ? {8'b0, A} << 1 : 16'b0) +
+        (B[2] ? {8'b0, A} << 2 : 16'b0) +
+        (B[3] ? {8'b0, A} << 3 : 16'b0) +
+        (B[4] ? {8'b0, A} << 4 : 16'b0) +
+        (B[5] ? {8'b0, A} << 5 : 16'b0) +
+        (B[6] ? {8'b0, A} << 6 : 16'b0) +
+        (B[7] ? {8'b0, A} << 7 : 16'b0);
+
+endmodule

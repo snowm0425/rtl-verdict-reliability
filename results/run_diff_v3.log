@@ -1,0 +1,101 @@
+=== self-consistency (expect all PASS) ===
+  pass        JC_counter
+  pass        LFSR
+  pass        LIFObuffer
+  pass        RAM
+  pass        ROM
+  pass        accu
+  pass        adder_16bit
+  pass        adder_32bit
+  pass        adder_8bit
+  pass        adder_bcd
+  pass        adder_pipe_64bit
+  pass        alu
+  pass        barrel_shifter
+  pass        calendar
+  pass        comparator_3bit
+  pass        comparator_4bit
+  pass        counter_12
+  pass        div_16bit
+  pass        edge_detect
+  pass        fixed_point_adder
+  pass        fixed_point_substractor
+  pass        float_multi
+  pass        freq_div
+  pass        freq_divbyeven
+  pass        freq_divbyfrac
+  pass        freq_divbyodd
+  pass        fsm
+  pass        instr_reg
+  pass        multi_16bit
+  pass        multi_8bit
+  pass        multi_booth_8bit
+  pass        multi_pipe_4bit
+  pass        multi_pipe_8bit
+  pass        parallel2serial
+  pass        pe
+  pass        pulse_detect
+  pass        right_shifter
+  pass        sequence_detector
+  pass        serial2parallel
+  pass        signal_generator
+  pass        square_wave
+  pass        sub_64bit
+  pass        synchronizer
+  pass        traffic_light
+  pass        up_down_counter
+  pass        width_8to16
+self-consistency: 46/46 pass
+
+=== oracle strength (differential vs GateTruth) ===
+  JC_counter                 diff_killed 3/3
+  LFSR                       diff_killed 5/5
+  LIFObuffer                 diff_killed 20/26
+  RAM                        diff_killed 4/5
+  ROM                        diff_killed 5/5
+  accu                       diff_killed 15/22
+  adder_16bit                diff_killed 2/8
+  adder_32bit                diff_killed 14/46
+  adder_8bit                 diff_killed 1/1
+  adder_bcd                  diff_killed 5/5
+  adder_pipe_64bit           diff_killed 42/62
+  alu                        diff_killed 48/53
+  barrel_shifter             diff_killed 1/1
+  calendar                   diff_killed 8/12
+  comparator_3bit            diff_killed 4/4
+  comparator_4bit            diff_killed 6/6
+  counter_12                 diff_killed 4/4
+  div_16bit                  diff_killed 10/10
+  edge_detect                diff_killed 8/10
+  fixed_point_adder          diff_killed 16/20
+  fixed_point_substractor    diff_killed 17/20
+  float_multi                diff_killed 80/115
+  freq_div                   diff_killed 12/12
+  freq_divbyeven             diff_killed 7/7
+  freq_divbyfrac             diff_killed 16/20
+  freq_divbyodd              diff_killed 11/17
+  fsm                        diff_killed 23/26
+  instr_reg                  diff_killed 8/8
+  multi_16bit                diff_killed 14/21
+  multi_8bit                 diff_killed 7/7
+  multi_booth_8bit           diff_killed 11/11
+  multi_pipe_4bit            diff_killed 8/12
+  multi_pipe_8bit            diff_killed 20/30
+  parallel2serial            diff_killed 10/13
+  pe                         diff_killed 3/3
+  pulse_detect               diff_killed 11/24
+  right_shifter              diff_killed 4/4
+  sequence_detector          diff_killed 7/15
+  serial2parallel            diff_killed 8/13
+  signal_generator           diff_killed 8/8
+  square_wave                diff_killed 6/6
+  sub_64bit                  diff_killed 6/6
+  synchronizer               diff_killed 4/10
+  traffic_light              diff_killed 28/40
+  up_down_counter            diff_killed 7/7
+  width_8to16                diff_killed 9/12
+
+=== SUMMARY ===
+total mutants: 775
+diff killed:   566/775 (73.0%)
+GT-survived that diff KILLED: 155/320  ← 核心數字

@@ -1,0 +1,93 @@
+Here is the complete Verilog code for the `synchronizer` module based on your specifications.
+
+### Design Analysis & Verification
+
+1.  **Clock Domain Crossing (CDC) Strategy**:
+    *   **Domain A**: `data_in` and `data_en` are sampled into `data_reg` and `en_data_reg` respectively. This ensures that the signals crossing to Domain B are stable registers, not combinational logic directly from the input pins.
+    *   **Domain B**: `en_data_reg` (the synchronized enable) is passed through two D flip-flops (`en_clap_one` and `en_clap_two`). This creates a 2-cycle delay in Domain B.
+    *   **Data Output**: The `dataout` is updated in Domain B only when the delayed enable signal (`en_clap_two`) is high. Since `data_en` is high for at least 3 cycles in Domain A, and the delay is 2 cycles in Domain B, `en_clap_two` will be high for at least 1 cycle in Domain B (assuming typical phase relationships, but the logic holds regardless).
+    *   **Data Stability**: The problem states `data_in` remains constant while `data_en` is high, and changes are infrequent. Therefore, `data_reg` (latched in Domain A) will hold the correct value by the time `en_clap_two` goes high in Domain B. There is no risk of sampling a transitioning `data_reg` because `data_reg` only changes when `data_in` changes, which happens outside the `data_en` window, and `data_en` is guaranteed to be stable long enough for the synchronization chain to settle before the next data change.
+
+2.  **Reset Handling**:
+    *   `arstn` resets Domain A registers asynchronously (falling edge).
+    *   `brstn` resets Domain B registers asynchronously (falling edge).
+
+3.  **Logic Flow**:
+    *   `data_reg` <= `data_in` (on `clk_a` posedge)
+    *   `en_data_reg` <= `data_en` (on `clk_a` posedge)
+    *   `en_clap_one` <= `en_data_reg` (on `clk_b` posedge)
+    *   `en_clap_two` <= `en_clap_one` (on `clk_b` posedge)
+    *   `dataout` <= `data_reg` if `en_clap_two` is 1, else hold (on `clk_b` posedge)
+
+### Verilog Code
+
+```verilog
+module synchronizer (
+    input  wire       clk_a,      // Clock signal A
+    input  wire       clk_b,      // Clock signal B
+    input  wire       arstn,      // Active-low reset for Domain A
+    input  wire       brstn,      // Active-low reset for Domain B
+    input  wire [3:0] data_in,    // 4-bit input data (Domain A)
+    input  wire       data_en,    // Enable signal (Domain A)
+    output reg  [3:0] dataout     // 4-bit output data (Domain B)
+);
+
+    // --- Domain A Registers ---
+    // Latch input data and enable into Domain A registers
+    // This ensures clean, stable signals for crossing to Domain B
+    
+    reg [3:0] data_reg;
+    reg       en_data_reg;
+
+    always @(posedge clk_a or negedge arstn) begin
+        if (!arstn) begin
+            data_reg    <= 4'b0000;
+            en_data_reg <= 1'b0;
+        end
+        else begin
+            data_reg    <= data_in;
+            en_data_reg <= data_en;
+        end
+    end
+
+    // --- Domain B Synchronization Chain ---
+    // Synchronize the enable signal from Domain A to Domain B
+    // Two-stage synchronizer for data_en
+    
+    reg en_clap_one;
+    reg en_clap_two;
+
+    always @(posedge clk_b or negedge brstn) begin
+        if (!brstn) begin
+            en_clap_one <= 1'b0;
+            en_clap_two <= 1'b0;
+        end
+        else begin
+            en_clap_one <= en_data_reg;
+            en_clap_two <= en_clap_one;
+        end
+    end
+
+    // --- Domain B Output Register ---
+    // Update dataout when the delayed enable is active
+    
+    always @(posedge clk_b or negedge brstn) begin
+        if (!brstn) begin
+            dataout <= 4'b0000;
+        end
+        else begin
+            if (en_clap_two) begin
+                dataout <= data_reg;
+            end
+            // else: hold previous value
+        end
+    end
+
+endmodule
+```
+
+### Key Notes:
+1. **Asynchronous Reset**: The code uses asynchronous resets (`negedge arstn`, `negedge brstn`) as specified ("falling edge of reset signal"). This is standard for robust reset behavior.
+2. **Data Coherency**: Since `data_in` is guaranteed to be stable during `data_en` high, and `data_en` is high for ≥3 cycles in Domain A, the synchronized `en_clap_two` in Domain B will correctly gate the stable `data_reg` value. The 2-cycle delay in Domain B is sufficient to ensure that by the time `en_clap_two` is high, `data_reg` has already captured the correct data in Domain A.
+3. **No Metastability on Data**: The data path (`data_in` → `data_reg` → `dataout`) does not directly cross domains with a multi-bit signal without synchronization. Instead, the *enable* signal is synchronized, and the data is assumed to be stable when the enable is active. This is a valid CDC technique when data changes are slow and gated by a synchronized enable.
+4. **Hold Behavior**: When `en_clap_two` is low, `dataout` holds its previous value, as required.

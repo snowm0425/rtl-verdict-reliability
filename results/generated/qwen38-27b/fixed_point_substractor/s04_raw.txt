@@ -1,0 +1,71 @@
+```verilog
+module fixed_point_subtractor #(
+    parameter Q = 8,
+    parameter N = 16
+)(
+    input  wire [N-1:0] a,
+    input  wire [N-1:0] b,
+    output reg  [N-1:0] c
+);
+
+    reg [N-1:0] res;
+
+    always @* begin
+        // Determine signs
+        wire sign_a = a[N-1];
+        wire sign_b = b[N-1];
+
+        // Get absolute values (magnitude)
+        // For two's complement, absolute value is ~x + 1, but we need to handle sign
+        // If sign is 0, abs = a; if sign is 1, abs = ~a + 1
+        wire [N-1:0] abs_a = sign_a ? (~a + 1'b1) : a;
+        wire [N-1:0] abs_b = sign_b ? (~b + 1'b1) : b;
+
+        if (sign_a == sign_b) begin
+            // Same sign subtraction: subtract magnitudes, result sign is same as inputs
+            // We need to compute abs_a - abs_b
+            // If abs_a >= abs_b, result = abs_a - abs_b with sign = sign_a
+            // If abs_a < abs_b, result = abs_b - abs_a with sign = ~sign_a
+            if (abs_a >= abs_b) begin
+                res = abs_a - abs_b;
+                if (sign_a) begin
+                    // Result is negative
+                    c = ~res + 1'b1;
+                end else begin
+                    c = res;
+                end
+            end else begin
+                res = abs_b - abs_a;
+                if (sign_a) begin
+                    // Result is positive (since a is negative, b is negative, |a| < |b|, so a - b > 0)
+                    c = res;
+                end else begin
+                    // Result is negative (since a is positive, b is positive, |a| < |b|, so a - b < 0)
+                    c = ~res + 1'b1;
+                end
+            end
+        end else begin
+            // Different sign subtraction: add magnitudes
+            // If a is positive and b is negative: a - b = a + |b|, result is always positive
+            // If a is negative and b is positive: a - b = -|a| - b = -( |a| + b ), result is always negative
+            if (!sign_a) begin
+                // a is positive, b is negative
+                // a - b = a + |b|
+                res = a + abs_b;
+                c = res;
+            end else begin
+                // a is negative, b is positive
+                // a - b = -|a| - b = -( |a| + b )
+                res = abs_a + b;
+                c = ~res + 1'b1;
+            end
+        end
+
+        // Handle zero: set sign bit to 0
+        if (c == {N{1'b0}}) begin
+            c = {N{1'b0}};
+        end
+    end
+
+endmodule
+```

@@ -1,0 +1,54 @@
+Certainly! Below is the Verilog code for an 8-bit multiplier using the shift-and-add method:
+
+```verilog
+module multi_8bit (
+    input  [7:0] A,          // First 8-bit input operand (multiplicand)
+    input  [7:0] B,          // Second 8-bit input operand (multiplier)
+    output [15:0] product    // 16-bit output representing the product (A * B)
+);
+
+    reg [15:0] temp_product; // Temporary register to store the product during computation
+
+    // Initialize the product to zero
+    initial begin
+        temp_product = 16'b0;
+    end
+
+    // Shift and Add process
+    always @(*) begin
+        temp_product = 16'b0; // Reset the product to zero at the start of each multiplication
+
+        for (int i = 0; i < 8; i = i + 1) begin
+            if (B[i] == 1'b1) begin
+                temp_product = temp_product + (A << i); // Add shifted multiplicand if the bit is set
+            end
+        end
+    end
+
+    // Assign the final product to the output port
+    assign product = temp_product;
+
+endmodule
+```
+
+### Explanation:
+1. **Inputs and Outputs**:
+   - `A [7:0]`: First 8-bit input operand (multiplicand).
+   - `B [7:0]`: Second 8-bit input operand (multiplier).
+   - `product [15:0]`: 16-bit output representing the product of `A` and `B`.
+
+2. **Temporary Register**:
+   - `temp_product [15:0]`: A temporary register used to compute the product during the shift-and-add process.
+
+3. **Initialization**:
+   - The `initial` block sets `temp_product` to zero when the simulation starts.
+
+4. **Shift and Add Process**:
+   - The `always @(*)` block computes the product by iterating through each bit of the multiplier `B`.
+   - If a bit of `B` is set to 1, the multiplicand `A` is logically shifted left by the current bit position `i` and added to `temp_product`.
+   - This process is repeated for all 8 bits of `B`.
+
+5. **Output Assignment**:
+   - The final computed product stored in `temp_product` is assigned to the `product` output port.
+
+This module effectively simulates the shift-and-add method for multiplying two 8-bit numbers to produce a 16-bit product.

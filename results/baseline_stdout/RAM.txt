@@ -1,0 +1,7 @@
+# stage=sim rc=0
+# STDOUT
+===========Your Design Passed===========
+/home/cvl/Documents/syn/RTLLM/Miscellaneous/RISC-V/RAM/testbench.v:79: $finish called at 11000 (1ns)
+
+# STDERR
+

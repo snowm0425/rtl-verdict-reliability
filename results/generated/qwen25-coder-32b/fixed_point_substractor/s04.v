@@ -1,0 +1,68 @@
+module fixed_point_subtractor #(
+    parameter Q = 8,  // Number of fractional bits
+    parameter N = 16  // Total number of bits
+)(
+    input  [N-1:0] a,  // First N-bit fixed-point input operand
+    input  [N-1:0] b,  // Second N-bit fixed-point input operand
+    output [N-1:0] c   // N-bit output representing the result of the fixed-point subtraction
+);
+
+    // Internal register to store the result
+    reg [N-1:0] res;
+
+    // Wire for intermediate results
+    wire [N-1:0] abs_a;
+    wire [N-1:0] abs_b;
+    wire [N:0]   sum_abs;  // Extra bit for carry in addition
+    wire [N:0]   diff;     // Extra bit for borrow in subtraction
+    wire         sign_a;
+    wire         sign_b;
+
+    // Extract sign bits
+    assign sign_a = a[N-1];
+    assign sign_b = b[N-1];
+
+    // Absolute values of a and b
+    assign abs_a = sign_a ? (~a + 1) : a;
+    assign abs_b = sign_b ? (~b + 1) : b;
+
+    // Perform subtraction with two's complement arithmetic
+    assign diff = a - b;
+
+    // Perform addition of absolute values for different sign subtraction
+    assign sum_abs = abs_a + abs_b;
+
+    // Determine the result based on the signs of a and b
+    always @(*) begin
+        if (sign_a == sign_b) begin
+            // Same sign subtraction
+            res = diff[N-1:0];
+        end else begin
+            // Different sign subtraction
+            if (sign_a == 0 && sign_b == 1) begin
+                // a is positive, b is negative
+                if (abs_a >= abs_b) begin
+                    res = sum_abs[N-1:0];
+                end else begin
+                    res = {1'b1, sum_abs[N-2:0]};  // Result is negative
+                end
+            end else begin
+                // a is negative, b is positive
+                if (abs_a > abs_b) begin
+                    res = {1'b1, sum_abs[N-2:0]};  // Result is negative
+                end else begin
+                    res = sum_abs[N-1:0];
+                end
+            end
+        end
+
+        // Handle zero result explicitly
+        if (res == {N{1'b0}}) begin
+            res = {N{1'b0}};
+        end
+    end
+
+    // Output the result
+    assign c = res;
+
+endmodule

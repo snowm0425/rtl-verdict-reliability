@@ -1,0 +1,65 @@
+Certainly! Below is the complete Verilog code for the `parallel2serial` module based on your specifications:
+
+```verilog
+module parallel2serial (
+    input clk,         // Clock signal
+    input rst_n,       // Active-low reset signal
+    input [3:0] d,     // 4-bit parallel data input
+    output reg valid_out, // Valid signal indicating availability of serial output
+    output reg dout     // Serial output
+);
+
+    reg [3:0] data;    // Data register to hold the 4-bit data
+    reg [1:0] cnt;     // Counter to track the bit position
+
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            // Reset state
+            data <= 4'b0000;
+            cnt <= 2'b00;
+            valid_out <= 0;
+            dout <= 0;
+        end else begin
+            if (cnt == 2'b11) begin
+                // Last bit of the 4-bit parallel input
+                data <= d;          // Update the data register with new parallel input
+                cnt <= 2'b00;       // Reset counter
+                valid_out <= 1;     // Set valid signal high
+                dout <= data[3];    // Output the most significant bit
+            end else begin
+                // Intermediate bits of the 4-bit parallel input
+                cnt <= cnt + 1;     // Increment the counter
+                valid_out <= 0;     // Set valid signal low
+                data <= {data[2:0], d[3]}; // Shift the data register left and insert the new MSB
+                dout <= data[3];    // Output the most significant bit
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Module Declaration:**
+   - The module `parallel2serial` takes in a clock signal `clk`, an active-low reset signal `rst_n`, and a 4-bit parallel data input `d`.
+   - It provides a valid output signal `valid_out` and a serial output `dout`.
+
+2. **Registers:**
+   - `data`: A 4-bit register to store the current 4-bit data.
+   - `cnt`: A 2-bit counter to track which bit is currently being output.
+
+3. **Behavioral Logic:**
+   - On the rising edge of `clk` or the falling edge of `rst_n`:
+     - If `rst_n` is low (active reset), all registers are reset to their initial states.
+     - If `cnt` is 3 (binary `11`), indicating the last bit of the parallel input:
+       - The `data` register is updated with the new parallel input `d`.
+       - The `cnt` is reset to 0.
+       - The `valid_out` signal is set to 1 to indicate valid output.
+       - The `dout` is set to the most significant bit of the `data` register.
+     - Otherwise, for intermediate bits:
+       - The `cnt` is incremented by 1.
+       - The `valid_out` signal is set to 0.
+       - The `data` register is shifted left, and the new most significant bit from `d` is inserted into the least significant bit of `data`.
+       - The `dout` is set to the most significant bit of the `data` register.
+
+This module ensures that the parallel data is converted to serial data, and the `valid_out` signal indicates when the serial output is valid.

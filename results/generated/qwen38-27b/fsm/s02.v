@@ -1,0 +1,122 @@
+module fsm (
+    input  wire IN,
+    input  wire CLK,
+    input  wire RST,
+    output reg MATCH
+);
+
+    // State encoding for detecting sequence 10011
+    // We need to detect the pattern 1-0-0-1-1 in a sliding window
+    // States represent how much of the pattern we've matched so far
+    
+    // State 0: No match started (initial state)
+    // State 1: Matched "1"
+    // State 2: Matched "10"
+    // State 3: Matched "100"
+    // State 4: Matched "1001"
+    // State 5: Matched "10011" -> output MATCH=1, then return to state 3 (since last two bits "11" can overlap with start of new pattern? Let's think carefully)
+
+    // For pattern 10011:
+    // After detecting 10011, we need to consider overlapping.
+    // The suffix of 10011 that is also a prefix of 10011:
+    // Prefixes: 1, 10, 100, 1001, 10011
+    // Suffixes: 1, 11, 011, 0011, 00011
+    // Common: "1" is both a prefix and a suffix.
+    // So after matching 10011, the next state should be state 1 (matched "1").
+    
+    // Let's define states:
+    parameter S0 = 3'b000; // No prefix matched
+    parameter S1 = 3'b001; // Matched "1"
+    parameter S2 = 3'b010; // Matched "10"
+    parameter S3 = 3'b011; // Matched "100"
+    parameter S4 = 3'b100; // Matched "1001"
+    parameter S5 = 3'b101; // Matched "10011" - this is the match state
+
+    reg [2:0] state;
+
+    always @(posedge CLK or posedge RST) begin
+        if (RST) begin
+            state <= S0;
+            MATCH <= 1'b0;
+        end else begin
+            case (state)
+                S0: begin
+                    if (IN == 1'b1) begin
+                        state <= S1;
+                        MATCH <= 1'b0;
+                    end else begin
+                        state <= S0;
+                        MATCH <= 1'b0;
+                    end
+                end
+                S1: begin
+                    if (IN == 1'b0) begin
+                        state <= S2;
+                        MATCH <= 1'b0;
+                    end else begin
+                        // IN == 1: still have "1" matched
+                        state <= S1;
+                        MATCH <= 1'b0;
+                    end
+                end
+                S2: begin
+                    if (IN == 1'b0) begin
+                        state <= S3;
+                        MATCH <= 1'b0;
+                    end else begin
+                        // IN == 1: reset, but "1" is a prefix
+                        state <= S1;
+                        MATCH <= 1'b0;
+                    end
+                end
+                S3: begin
+                    if (IN == 1'b1) begin
+                        state <= S4;
+                        MATCH <= 1'b0;
+                    end else begin
+                        // IN == 0: reset to S0
+                        state <= S0;
+                        MATCH <= 1'b0;
+                    end
+                end
+                S4: begin
+                    if (IN == 1'b1) begin
+                        state <= S5;
+                        MATCH <= 1'b1;
+                    end else begin
+                        // IN == 0: reset to S0
+                        state <= S0;
+                        MATCH <= 1'b0;
+                    end
+                end
+                S5: begin
+                    // We just detected 10011. MATCH was set to 1.
+                    // Now we need to determine next state based on IN for next cycle.
+                    // But wait - MATCH is a Mealy output, so it depends on current state and input.
+                    // Actually, let me reconsider the design. In a Mealy FSM, the output depends on both state and input.
+                    // Let me restructure: MATCH should be 1 when state is S4 and IN is 1.
+                    
+                    // Actually, let's use a cleaner approach:
+                    // MATCH = (state == S4) && IN
+                    // And the state transition from S4 with IN=1 goes to a state that represents having matched the suffix.
+                    
+                    // Let me redo this properly.
+                    if (IN == 1'b1) begin
+                        // After 10011 + 1, the suffix "1" is a prefix, so go to S1
+                        state <= S1;
+                        MATCH <= 1'b0;
+                    end else begin
+                        // IN == 0: no overlap, go to S0
+                        state <= S0;
+                        MATCH <= 1'b0;
+                    end
+                end
+                default: begin
+                    state <= S0;
+                    MATCH <= 1'b0;
+                end
+            endcase
+        end
+    end
+
+endmodule

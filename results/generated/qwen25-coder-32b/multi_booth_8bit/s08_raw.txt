@@ -1,0 +1,67 @@
+Sure, I'll provide you with the complete Verilog code for an 8-bit Radix-4 Booth multiplier. The module will follow the specifications you've provided. Here's the implementation:
+
+```verilog
+module multi_booth_8bit (
+    input clk,
+    input reset,
+    input [7:0] a,
+    input [7:0] b,
+    output reg [15:0] p,
+    output reg rdy
+);
+
+    // Internal registers
+    reg [15:0] multiplier;
+    reg [15:0] multiplicand;
+    reg [3:0] ctr;  // 4-bit counter for Radix-4 Booth encoding
+
+    // Initialize the multiplier and multiplicand on reset
+    always @(posedge clk or posedge reset) begin
+        if (reset) begin
+            // Sign extend the inputs and load into registers
+            multiplier <= {{8{a[7]}}, a};
+            multiplicand <= {{8{b[7]}}, b};
+            ctr <= 4'b0000;  // Reset counter
+            p <= 16'b0000000000000000;  // Clear product
+            rdy <= 1'b0;  // Not ready yet
+        end else begin
+            if (ctr < 4'b1000) begin  // Check if counter is less than 8 (since Radix-4 Booth needs 8 iterations)
+                // Perform Radix-4 Booth multiplication
+                case (multiplier[1:0])  // Check the current two bits of the multiplier
+                    2'b00: begin
+                        // Do nothing, no addition
+                    end
+                    2'b01: begin
+                        p <= p + multiplicand;  // Add multiplicand
+                    end
+                    2'b10: begin
+                        p <= p - multiplicand;  // Subtract multiplicand
+                    end
+                    2'b11: begin
+                        // Do nothing, no addition
+                    end
+                endcase
+
+                // Left shift the multiplicand by 2 (Radix-4 Booth encoding)
+                multiplicand <= multiplicand << 2;
+
+                // Increment the counter
+                ctr <= ctr + 1;
+            end else begin
+                // Multiplication is complete
+                rdy <= 1'b1;
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+- **Registers**: `multiplier` and `multiplicand` are 16-bit registers used to store the sign-extended versions of the inputs `a` and `b`.
+- **Counter (`ctr`)**: A 4-bit counter (`ctr`) is used to keep track of the number of iterations. Since Radix-4 Booth requires 8 iterations for 8-bit multiplication, the counter runs from 0 to 7.
+- **Booth Encoding**: The Booth encoding is performed by checking the current two bits of the `multiplier`. Based on these bits, the `multiplicand` is added to or subtracted from the product `p`.
+- **Left Shift**: After each Booth encoding operation, the `multiplicand` is left-shifted by 2 bits.
+- **Ready Signal (`rdy`)**: The `rdy` signal is set to 1 once the counter reaches 8, indicating the completion of the multiplication.
+
+This implementation ensures that the multiplication is performed synchronously on the positive edge of the clock signal and is reset on the positive edge of the reset signal.

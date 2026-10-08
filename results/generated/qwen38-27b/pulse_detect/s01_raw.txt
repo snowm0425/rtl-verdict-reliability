@@ -1,0 +1,130 @@
+```verilog
+module pulse_detect (
+    input  wire clk,
+    input  wire rst_n,
+    input  wire data_in,
+    output reg  data_out
+);
+
+    // State definition
+    // S0: Waiting for a 1 (previous input was 0 or initial)
+    // S1: Saw a 1 (previous input was 1, current could be 0 or 1)
+    // S2: Saw 1 then 0 (pulse completed: 0->1->0)
+    
+    // Actually, let's think about this more carefully.
+    // A pulse is defined as: data_in changes from 0 to 1 to 0 (3 cycles).
+    // So we need to track:
+    // - Previous value of data_in
+    // - Whether we are in the middle of a potential pulse
+    
+    // Let's use a state machine:
+    // S_IDLE: Not in a pulse. Waiting for data_in to become 1 after being 0.
+    // S_RISING: data_in just became 1 (transition from 0 to 1). Waiting for it to go back to 0.
+    // S_FALLING: data_in just went from 1 to 0 (pulse complete). Output data_out = 1 for this cycle.
+    
+    // But we need to be careful: the pulse is 0->1->0 over 3 cycles.
+    // Let's say at cycle N: data_in = 0
+    // At cycle N+1: data_in = 1  (rising edge)
+    // At cycle N+2: data_in = 0  (falling edge) -> pulse detected, data_out = 1 at this cycle
+    
+    // So we need to detect the falling edge after a rising edge.
+    
+    // Let's use two bits to track the previous state of data_in:
+    // prev_data: data_in from the previous cycle
+    // prev_prev_data: data_in from two cycles ago
+    
+    // Actually, simpler approach:
+    // State 0: idle, last input was 0
+    // State 1: last input was 1, and the one before that was 0 (rising edge detected)
+    // State 2: last input was 1, and the one before that was 1 (still high)
+    
+    // Wait, let me re-read: "changes from 0 to 1 to 0 (3 cycles)"
+    // This means:
+    // Cycle i:   data_in = 0
+    // Cycle i+1: data_in = 1
+    // Cycle i+2: data_in = 0  -> data_out = 1
+    
+    // So we need to detect the pattern 0-1-0 where the 0 at the end triggers the output.
+    
+    // Let's use a state register:
+    // S0: Previous data_in was 0 (or initial state)
+    // S1: Previous data_in was 1, and the one before was 0 (i.e., we just saw a rising edge)
+    // S2: Previous data_in was 1, and the one before was 1 (i.e., data_in has been high for at least 2 cycles)
+    
+    // Transitions:
+    // In S0:
+    //   If data_in = 0, stay in S0
+    //   If data_in = 1, go to S1 (rising edge detected)
+    // In S1:
+    //   If data_in = 0, go to S0, and set data_out = 1 (pulse complete: 0->1->0)
+    //   If data_in = 1, go to S2 (still high)
+    // In S2:
+    //   If data_in = 0, go to S0, but data_out = 0 (this is a fall from a longer high period, not a single-cycle pulse)
+    //   If data_in = 1, stay in S2
+    
+    // Wait, but what if data_in is 01010? Let's trace:
+    // Cycle 0: data_in=0, state=S0 initially
+    //   After clk: data_in=0, state stays S0, data_out=0
+    // Cycle 1: data_in=1, state=S0
+    //   After clk: data_in=1, state goes to S1, data_out=0
+    // Cycle 2: data_in=0, state=S1
+    //   After clk: data_in=0, state goes to S0, data_out=1  <-- pulse detected
+    // Cycle 3: data_in=1, state=S0
+    //   After clk: data_in=1, state goes to S1, data_out=0
+    // Cycle 4: data_in=0, state=S1
+    //   After clk: data_in=0, state goes to S0, data_out=1  <-- pulse detected
+    
+    // So data_out sequence would be: 0,0,1,0,1 for data_in=01010
+    // But the expected output is 00101, which matches!
+    
+    // Great, so the state machine works.
+    
+    localparam S0 = 2'b00;
+    localparam S1 = 2'b01;
+    localparam S2 = 2'b10;
+    
+    reg [1:0] state;
+    
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            state <= S0;
+            data_out <= 1'b0;
+        end else begin
+            case (state)
+                S0: begin
+                    if (data_in) begin
+                        state <= S1;
+                        data_out <= 1'b0;
+                    end else begin
+                        state <= S0;
+                        data_out <= 1'b0;
+                    end
+                end
+                S1: begin
+                    if (data_in) begin
+                        state <= S2;
+                        data_out <= 1'b0;
+                    end else begin
+                        state <= S0;
+                        data_out <= 1'b1;
+                    end
+                end
+                S2: begin
+                    if (data_in) begin
+                        state <= S2;
+                        data_out <= 1'b0;
+                    end else begin
+                        state <= S0;
+                        data_out <= 1'b0;
+                    end
+                end
+                default: begin
+                    state <= S0;
+                    data_out <= 1'b0;
+                end
+            endcase
+        end
+    end
+
+endmodule
+```

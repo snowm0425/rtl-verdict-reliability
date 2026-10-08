@@ -1,0 +1,37 @@
+Certainly! Below is the complete Verilog code for the `comparator_4bit` module, which performs the comparison using the subtraction method as described:
+
+```verilog
+module comparator_4bit (
+    input  [3:0] A,       // First 4-bit input operand
+    input  [3:0] B,       // Second 4-bit input operand
+    output A_greater,     // A is greater than B
+    output A_equal,       // A is equal to B
+    output A_less         // A is less than B
+);
+
+    wire [3:0] diff;      // Result of A - B
+    wire borrow;          // Borrow out from the subtraction
+
+    // Perform the subtraction A - B
+    // We use a 4-bit full subtractor chain
+    assign {borrow, diff} = A - B;
+
+    // Determine the comparison results
+    assign A_greater = ~borrow & (|diff); // No borrow and non-zero difference means A > B
+    assign A_equal   = ~borrow & ~(|diff); // No borrow and zero difference means A == B
+    assign A_less    = borrow;             // Borrow means A < B
+
+endmodule
+```
+
+### Explanation:
+1. **Subtraction Operation**: The subtraction `A - B` is performed using the arithmetic operation `{borrow, diff} = A - B`. Here, `borrow` is the borrow-out signal from the subtraction, and `diff` is the difference between `A` and `B`.
+
+2. **Comparison Logic**:
+   - **A_greater**: This output is set to `1` if there is no borrow (`~borrow`) and the difference (`diff`) is non-zero (`|diff`).
+   - **A_equal**: This output is set to `1` if there is no borrow (`~borrow`) and the difference (`diff`) is zero (`~(|diff)`).
+   - **A_less**: This output is set to `1` if there is a borrow (`borrow`).
+
+3. **Mutually Exclusive Outputs**: The logic ensures that only one of `A_greater`, `A_equal`, or `A_less` is `1` at any given time.
+
+This module can be instantiated in a larger design to compare two 4-bit binary numbers and determine their relationship.

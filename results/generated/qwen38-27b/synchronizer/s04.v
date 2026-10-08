@@ -1,0 +1,64 @@
+module synchronizer (
+    input wire clk_a,
+    input wire clk_b,
+    input wire arstn,
+    input wire brstn,
+    input wire [3:0] data_in,
+    input wire data_en,
+    output wire [3:0] dataout
+);
+
+    // Data register in clock domain A
+    reg [3:0] data_reg;
+
+    // Enable data register in clock domain A
+    reg en_data_reg;
+
+    // Enable control registers in clock domain B
+    reg en_clap_one;
+    reg en_clap_two;
+
+    // Output register in clock domain B
+    reg [3:0] dataout;
+
+    // Data register: updated on posedge clk_a or negedge arstn
+    always @(posedge clk_a or negedge arstn) begin
+        if (!arstn) begin
+            data_reg <= 4'd0;
+        end else begin
+            data_reg <= data_in;
+        end
+    end
+
+    // Enable data register: updated on posedge clk_a or negedge arstn
+    always @(posedge clk_a or negedge arstn) begin
+        if (!arstn) begin
+            en_data_reg <= 1'b0;
+        end else begin
+            en_data_reg <= data_en;
+        end
+    end
+
+    // Enable control registers: updated on posedge clk_b or negedge brstn
+    always @(posedge clk_b or negedge brstn) begin
+        if (!brstn) begin
+            en_clap_one <= 1'b0;
+            en_clap_two <= 1'b0;
+        end else begin
+            en_clap_one <= en_data_reg;
+            en_clap_two <= en_clap_one;
+        end
+    end
+
+    // Output assignment: updated on posedge clk_b or negedge brstn
+    always @(posedge clk_b or negedge brstn) begin
+        if (!brstn) begin
+            dataout <= 4'd0;
+        end else if (en_clap_two) begin
+            dataout <= data_reg;
+        end else begin
+            dataout <= dataout;
+        end
+    end
+
+endmodule

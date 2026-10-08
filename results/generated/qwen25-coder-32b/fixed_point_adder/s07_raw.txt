@@ -1,0 +1,74 @@
+Certainly! Below is the Verilog implementation of the `fixed_point_adder` module with the specified parameters and functionality:
+
+```verilog
+module fixed_point_adder #(
+    parameter Q = 4,  // Number of fractional bits
+    parameter N = 8   // Total number of bits
+)(
+    input  [N-1:0] a,  // First fixed-point input operand
+    input  [N-1:0] b,  // Second fixed-point input operand
+    output [N-1:0] c   // Output result of the fixed-point addition
+);
+
+    // Internal register to store the result
+    reg [N-1:0] res;
+
+    // Signals for determining the signs and absolute values
+    wire sign_a = a[N-1];
+    wire sign_b = b[N-1];
+    wire [N-1:0] abs_a = sign_a ? (~a + 1) : a;
+    wire [N-1:0] abs_b = sign_b ? (~b + 1) : b;
+
+    // Signals for determining the larger absolute value
+    wire a_greater_b = (abs_a > abs_b);
+
+    // Adder/Subtractor logic
+    always @(*) begin
+        if (sign_a == sign_b) begin
+            // Both numbers have the same sign, add their absolute values
+            res = abs_a + abs_b;
+            res[N-1] = sign_a;  // Set the sign bit
+        end else begin
+            // Numbers have different signs, perform subtraction
+            if (a_greater_b) begin
+                res = abs_a - abs_b;
+                res[N-1] = 0;  // Result is positive
+            end else begin
+                res = abs_b - abs_a;
+                res[N-1] = res == 0 ? 0 : 1;  // Result is zero or negative
+            end
+        end
+    end
+
+    // Assign the result to the output port
+    assign c = res;
+
+endmodule
+```
+
+### Explanation:
+
+1. **Parameters**:
+   - `Q`: Number of fractional bits.
+   - `N`: Total number of bits (including both integer and fractional parts).
+
+2. **Inputs**:
+   - `a [N-1:0]`: First fixed-point input operand.
+   - `b [N-1:0]`: Second fixed-point input operand.
+
+3. **Output**:
+   - `c [N-1:0]`: Result of the fixed-point addition.
+
+4. **Internal Signals**:
+   - `sign_a` and `sign_b`: Most significant bits (MSBs) of `a` and `b` to determine their signs.
+   - `abs_a` and `abs_b`: Absolute values of `a` and `b`.
+   - `a_greater_b`: Boolean signal indicating if `abs_a` is greater than `abs_b`.
+
+5. **Logic**:
+   - If `sign_a` and `sign_b` are the same, the absolute values of `a` and `b` are added, and the sign bit is set to the common sign.
+   - If `sign_a` and `sign_b` are different, the larger absolute value is determined, and the appropriate subtraction is performed. The sign bit is set based on the result.
+
+6. **Overflow Handling**:
+   - The MSB of the result (`res[N-1]`) is used to manage overflow by ensuring the result fits within the N-bit range.
+
+This implementation ensures that the fixed-point addition is performed with the correct sign handling and precision, as specified.

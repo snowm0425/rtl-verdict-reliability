@@ -1,0 +1,42 @@
+Certainly! Below is the complete Verilog code for the `square_wave` module as per your specifications:
+
+```verilog
+module square_wave (
+    input clk,            // Clock signal that drives the module
+    input [7:0] freq,     // Frequency control, specifying how often the square wave toggles
+    output reg wave_out   // Square wave output signal
+);
+
+    reg [7:0] count;      // Counter register used to track cycles between wave toggles
+
+    always @(posedge clk) begin
+        if (count == (freq - 1)) begin
+            count <= 0;        // Reset count when it reaches (freq - 1)
+            wave_out <= ~wave_out; // Toggle wave_out
+        end else begin
+            count <= count + 1; // Increment count if it has not reached (freq - 1)
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+
+- **Inputs:**
+  - `clk`: The clock signal that drives the module. The module's logic is triggered on the rising edge of this clock.
+  - `freq`: An 8-bit input that determines the frequency of the square wave. The actual frequency of the output square wave is inversely proportional to this value. For example, if `freq` is 1, the square wave will toggle every clock cycle, and if `freq` is 255, it will toggle every 255 clock cycles.
+
+- **Output:**
+  - `wave_out`: The output square wave signal that toggles based on the value of `freq`.
+
+- **Internal Register:**
+  - `count`: An 8-bit register used to count the number of clock cycles. When `count` reaches `freq - 1`, it resets to 0 and toggles the `wave_out` signal.
+
+- **Logic:**
+  - On every rising edge of the clock (`posedge clk`), the module checks if `count` is equal to `freq - 1`.
+  - If it is, `count` is reset to 0, and `wave_out` is toggled.
+  - If it is not, `count` is incremented by 1.
+
+### Note:
+The relationship between the `freq` input and the actual output frequency depends on the clock frequency (`clk`). The higher the `freq` value, the less frequently the `wave_out` toggles, resulting in a lower output frequency. Conversely, a lower `freq` value results in a higher output frequency. This is because `freq` determines how many clock cycles are counted before toggling `wave_out`.

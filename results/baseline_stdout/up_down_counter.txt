@@ -1,0 +1,7 @@
+# stage=sim rc=0
+# STDOUT
+=========== Your Design Passed ===========
+/home/cvl/Documents/syn/RTLLM/Control/Counter/up_down_counter/testbench.v:53: $finish called at 620 (1s)
+
+# STDERR
+

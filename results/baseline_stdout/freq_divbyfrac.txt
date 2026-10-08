@@ -1,0 +1,7 @@
+# stage=sim rc=0
+# STDOUT
+=========== Your Design Passed ===========
+/home/cvl/Documents/syn/RTLLM/Miscellaneous/Frequency divider/freq_divbyfrac/testbench.v:27: $finish called at 130000 (1ps)
+
+# STDERR
+

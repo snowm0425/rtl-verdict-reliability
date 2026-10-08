@@ -1,0 +1,81 @@
+Sure, below is the implementation of a Mealy Finite State Machine (FSM) in Verilog that detects the sequence `10011` on a continuous input signal `IN`. The FSM will output `MATCH` as `1` when the sequence `10011` is detected, and `0` otherwise.
+
+```verilog
+module fsm (
+    input IN,
+    input CLK,
+    input RST,
+    output reg MATCH
+);
+
+    // Define the states
+    typedef enum reg [2:0] {
+        S0, S1, S2, S3, S4
+    } state_t;
+
+    // Declare the current and next states
+    state_t current_state, next_state;
+
+    // State transition logic
+    always @(posedge CLK or posedge RST) begin
+        if (RST) begin
+            current_state <= S0;
+            MATCH <= 0;
+        end else begin
+            current_state <= next_state;
+            // Set MATCH based on the current state and input
+            MATCH <= (current_state == S4) && (IN == 1);
+        end
+    end
+
+    // Next state logic
+    always @(*) begin
+        case (current_state)
+            S0: begin
+                if (IN == 1)
+                    next_state = S1;
+                else
+                    next_state = S0;
+            end
+            S1: begin
+                if (IN == 0)
+                    next_state = S2;
+                else
+                    next_state = S0;
+            end
+            S2: begin
+                if (IN == 0)
+                    next_state = S3;
+                else
+                    next_state = S0;
+            end
+            S3: begin
+                if (IN == 1)
+                    next_state = S4;
+                else
+                    next_state = S0;
+            end
+            S4: begin
+                if (IN == 1)
+                    next_state = S4; // Stay in S4 if the sequence is repeated
+                else if (IN == 0)
+                    next_state = S1; // Go back to S1 if the sequence is broken
+                else
+                    next_state = S0;
+            end
+            default: begin
+                next_state = S0;
+            end
+        endcase
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **State Definition**: The FSM has five states (`S0` to `S4`). Each state represents a stage in the sequence detection process.
+2. **State Transition Logic**: The `always @(posedge CLK or posedge RST)` block handles state transitions and the `MATCH` output. When `RST` is active, the FSM resets to `S0` and sets `MATCH` to `0`. On the clock edge, the FSM transitions to the next state based on the current state and the input `IN`.
+3. **Next State Logic**: The `always @(*)` block defines the next state based on the current state and the input `IN`. If the input matches the expected sequence, the FSM transitions to the next state. If the sequence is broken, the FSM resets to the appropriate state to continue detecting the sequence.
+4. **MATCH Output**: The `MATCH` output is set to `1` when the FSM is in state `S4` and the input `IN` is `1`, indicating that the sequence `10011` has been detected.
+
+This implementation supports continuous input and can detect the sequence `10011` repeatedly.

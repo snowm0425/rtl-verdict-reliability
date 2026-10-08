@@ -1,0 +1,72 @@
+Certainly! Below is the complete Verilog code for an 8-bit Radix-4 Booth multiplier. This module takes two 8-bit inputs `a` and `b` and produces a 16-bit product `p`. The `rdy` signal indicates when the multiplication is complete.
+
+```verilog
+module multi_booth_8bit (
+    input wire clk,
+    input wire reset,
+    input wire [7:0] a,
+    input wire [7:0] b,
+    output reg [15:0] p,
+    output reg rdy
+);
+
+    // Internal registers
+    reg [15:0] multiplier;
+    reg [15:0] multiplicand;
+    reg [4:0] ctr;
+
+    // Booth multiplier process
+    always @(posedge clk or posedge reset) begin
+        if (reset) begin
+            // Initialize registers on reset
+            multiplier <= {{8{a[7]}}, a};
+            multiplicand <= {{8{b[7]}}, b};
+            p <= 16'b0;
+            ctr <= 5'b0;
+            rdy <= 1'b0;
+        end else begin
+            // Normal operation
+            if (ctr < 5'd16) begin
+                // Shift multiplicand left by 1
+                multiplicand <= multiplicand << 1;
+
+                // Booth encoding and accumulation
+                case ({multiplier[ctr + 1], multiplier[ctr]})
+                    2'b01: p <= p + multiplicand; // Positive Booth encoding
+                    2'b10: p <= p - multiplicand; // Negative Booth encoding
+                    default: ; // No action for 00 and 11
+                endcase
+
+                // Increment counter
+                ctr <= ctr + 1;
+            end else begin
+                // Multiplication complete
+                rdy <= 1'b1;
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Registers:**
+   - `multiplier`: 16-bit register initialized with the sign-extended multiplicand `a`.
+   - `multiplicand`: 16-bit register initialized with the sign-extended multiplier `b`.
+   - `ctr`: 5-bit counter used to track the Booth encoding process.
+
+2. **Reset:**
+   - On the positive edge of `reset`, all registers are initialized, and `rdy` is set to `0`.
+
+3. **Normal Operation:**
+   - The `multiplicand` is left-shifted by 1 bit in each clock cycle.
+   - Booth encoding is applied based on the current and next bit of the `multiplier`.
+   - If the Booth encoding is `01`, the `multiplicand` is added to `p`.
+   - If the Booth encoding is `10`, the `multiplicand` is subtracted from `p`.
+   - The counter `ctr` is incremented by 1.
+   - Once `ctr` reaches 16, the multiplication is complete, and `rdy` is set to `1`.
+
+### Notes:
+- The Booth algorithm is applied using a 2-bit lookahead (current and next bit) to decide whether to add, subtract, or do nothing.
+- The module uses synchronous logic with a clock signal `clk` and a reset signal `reset`.
+- The `rdy` signal indicates the completion of the multiplication process.

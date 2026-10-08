@@ -1,0 +1,56 @@
+Certainly! Below is the complete Verilog implementation of an 8-bit Radix-4 Booth multiplier. This implementation follows the specifications you provided:
+
+```verilog
+module multi_booth_8bit (
+    input clk,
+    input reset,
+    input [7:0] a,  // Multiplicand
+    input [7:0] b,  // Multiplier
+    output reg [15:0] p, // Product
+    output reg rdy    // Ready signal
+);
+
+    reg [15:0] multiplier;
+    reg [15:0] multiplicand;
+    reg [4:0] ctr;  // 5-bit counter for Radix-4 Booth multiplier
+
+    always @(posedge clk or posedge reset) begin
+        if (reset) begin
+            // Initialize registers
+            multiplier <= {{8{a[7]}}, a};  // Sign extension of a
+            multiplicand <= {{8{b[7]}}, b}; // Sign extension of b
+            p <= 16'b0;
+            ctr <= 5'b0;
+            rdy <= 1'b0;
+        end else begin
+            if (ctr < 16) begin
+                // Left shift the multiplicand
+                multiplicand <= {multiplicand[14:0], 1'b0};
+
+                // Booth encoding for Radix-4
+                case ({multiplier[ctr+1], multiplier[ctr]})
+                    2'b01: p <= p + multiplicand;
+                    2'b10: p <= p - multiplicand;
+                    default: p <= p; // No change for 00 and 11
+                endcase
+
+                // Increment the counter
+                ctr <= ctr + 1;
+            end else begin
+                // Multiplication is complete
+                rdy <= 1'b1;
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+- **Initialization**: When the reset signal is high, the `multiplier` and `multiplicand` registers are initialized with sign-extended values of `a` and `b`, respectively.
+- **Counter (ctr)**: A 5-bit counter (`ctr`) is used to keep track of the current iteration in the Booth algorithm.
+- **Multiplicand Shifting**: The `multiplicand` register is left-shifted by 1 bit in each iteration.
+- **Booth Encoding**: The Booth encoding is applied to determine whether to add, subtract, or do nothing to the product register `p` based on the current and next bit of the `multiplier`.
+- **Completion**: Once the counter reaches 16, indicating that all iterations are complete, the `rdy` signal is set to 1.
+
+This implementation assumes a Radix-4 Booth encoding, which processes two bits of the multiplier at a time. The `case` statement handles the different combinations of the two bits to decide whether to add, subtract, or do nothing to the product.

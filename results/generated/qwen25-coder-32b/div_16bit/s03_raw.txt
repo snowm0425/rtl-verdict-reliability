@@ -1,0 +1,67 @@
+Certainly! Below is the implementation of a 16-bit divider module in Verilog using the described approach. This module uses two always blocks to handle the division process. The first always block updates the registers `a_reg` and `b_reg` with the input values `A` and `B`, and the second always block performs the division logic.
+
+```verilog
+module div_16bit (
+    input wire [15:0] A,    // 16-bit dividend
+    input wire [7:0] B,     // 8-bit divisor
+    output wire [15:0] result, // 16-bit quotient
+    output wire [15:0] odd     // 16-bit remainder
+);
+
+    // Registers to hold the current state of the dividend and divisor
+    reg [15:0] a_reg;
+    reg [7:0] b_reg;
+
+    // Intermediate signals
+    reg [15:0] quotient;
+    reg [15:0] remainder;
+
+    // First always block: update registers a_reg and b_reg on any change in A or B
+    always @(*) begin
+        a_reg = A;
+        b_reg = B;
+    end
+
+    // Second always block: perform the division logic
+    always @(*) begin
+        // Initialize quotient and remainder
+        quotient = 16'b0;
+        remainder = 16'b0;
+
+        // Perform the division process
+        for (integer i = 0; i < 16; i = i + 1) begin
+            // Shift the remainder left by 1 bit and add the next bit of the dividend
+            remainder = {remainder[14:0], a_reg[15]};
+
+            // Compare the higher bits of the remainder with the divisor
+            if (remainder[15:8] >= b_reg) begin
+                // If the remainder is greater or equal to the divisor, subtract the divisor
+                remainder[15:8] = remainder[15:8] - b_reg;
+                // Set the corresponding bit in the quotient to 1
+                quotient = quotient | (16'b1 << (15 - i));
+            end
+
+            // Shift the dividend left by 1 bit
+            a_reg = a_reg << 1;
+        end
+    end
+
+    // Assign the final quotient and remainder to the output ports
+    assign result = quotient;
+    assign odd = remainder;
+
+endmodule
+```
+
+### Explanation:
+1. **Registers `a_reg` and `b_reg`:** These registers store the current state of the dividend and divisor, respectively. They are updated in the first always block whenever there is a change in `A` or `B`.
+
+2. **Quotient and Remainder Calculation:**
+   - The division process is performed in a loop that iterates 16 times, corresponding to the bit width of the dividend.
+   - In each iteration, the remainder is shifted left by 1 bit, and the next bit of the dividend is added to it.
+   - The higher 8 bits of the remainder are compared with the divisor. If the remainder is greater than or equal to the divisor, the divisor is subtracted from the remainder, and the corresponding bit in the quotient is set to 1.
+   - The dividend is shifted left by 1 bit in each iteration to process the next bit.
+
+3. **Output Assignment:** The final quotient and remainder are assigned to the output ports `result` and `odd`, respectively.
+
+This module performs the division using purely combinational logic, which means it will produce the result as soon as the inputs `A` and `B` change.

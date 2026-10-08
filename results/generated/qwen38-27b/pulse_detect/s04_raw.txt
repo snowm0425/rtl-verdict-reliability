@@ -1,0 +1,96 @@
+```verilog
+module pulse_detect (
+    input wire clk,
+    input wire rst_n,
+    input wire data_in,
+    output reg data_out
+);
+
+    // State encoding
+    // S_IDLE: Waiting for first 1 (data_in == 1)
+    // S_ONE:  Saw a 1, waiting for next cycle
+    // S_ZERO: Saw 1 then 0 (pulse complete on this cycle)
+    
+    localparam S_IDLE = 2'b00;
+    localparam S_ONE  = 2'b01;
+    localparam S_ZERO = 2'b10;
+
+    reg [1:0] state;
+    reg [1:0] state_next;
+
+    // Next state logic
+    always @(*) begin
+        case (state)
+            S_IDLE: begin
+                if (data_in)
+                    state_next = S_ONE;
+                else
+                    state_next = S_IDLE;
+            end
+            S_ONE: begin
+                if (data_in)
+                    state_next = S_ONE;  // Stay in S_ONE if still 1 (but per spec, pulse is 0->1->0 exactly)
+                else
+                    state_next = S_ZERO; // 1 followed by 0, pulse detected
+            end
+            S_ZERO: begin
+                // After pulse detection, go back to idle
+                // But we need to handle the case where data_in continues
+                // Per the example: data_in = 01010, data_out = 00101
+                // Let's trace:
+                // Cycle 1: data_in=0, state=S_IDLE, next=S_IDLE, out=0
+                // Cycle 2: data_in=1, state=S_IDLE, next=S_ONE,  out=0
+                // Cycle 3: data_in=0, state=S_ONE,  next=S_ZERO, out=1 (pulse end)
+                // Cycle 4: data_in=1, state=S_ZERO, next=?       out=0
+                // Cycle 5: data_in=0, state=?,    next=?       out=1
+                // 
+                // So after S_ZERO, if data_in=1, we should go to S_ONE
+                // If data_in=0, we should stay in S_ZERO? No, let's re-examine.
+                // 
+                // Actually, looking at the example more carefully:
+                // data_in:  0 1 0 1 0
+                // data_out: 0 0 1 0 1
+                //
+                // The pulse is defined as 0->1->0 (3 cycles). 
+                // So at cycle 3 (data_in=0, previous was 1), data_out=1.
+                // At cycle 5 (data_in=0, previous was 1 at cycle 4), data_out=1.
+                //
+                // So the state machine should be:
+                // S_IDLE: data_in=1 -> S_ONE, else stay
+                // S_ONE:  data_in=0 -> S_ZERO (output 1), data_in=1 -> stay in S_ONE
+                // S_ZERO: data_in=1 -> S_ONE, data_in=0 -> S_IDLE
+                //
+                // Let me re-verify:
+                // Cycle 1: state=S_IDLE, data_in=0, next=S_IDLE, out=0
+                // Cycle 2: state=S_IDLE, data_in=1, next=S_ONE,  out=0
+                // Cycle 3: state=S_ONE,  data_in=0, next=S_ZERO, out=1
+                // Cycle 4: state=S_ZERO, data_in=1, next=S_ONE,  out=0
+                // Cycle 5: state=S_ONE,  data_in=0, next=S_ZERO, out=1
+                // This matches!
+                if (data_in)
+                    state_next = S_ONE;
+                else
+                    state_next = S_IDLE;
+            end
+            default: state_next = S_IDLE;
+        endcase
+    end
+
+    // State register and output
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            state <= S_IDLE;
+            data_out <= 0;
+        end else begin
+            state <= state_next;
+            // Output is 1 when transitioning into S_ZERO (i.e., when state is S_ONE and data_in is 0)
+            // Which means the next state is S_ZERO
+            if (state_next == S_ZERO)
+                data_out <= 1;
+            else
+                data_out <= 0;
+        end
+    end
+
+endmodule
+```

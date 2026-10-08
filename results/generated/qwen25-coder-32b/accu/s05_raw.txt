@@ -1,0 +1,73 @@
+Sure, below is the complete Verilog code for the `accu` module that meets your specifications:
+
+```verilog
+module accu (
+    input wire clk,
+    input wire rst_n,
+    input wire [7:0] data_in,
+    input wire valid_in,
+    output reg valid_out,
+    output reg [9:0] data_out
+);
+
+    // Internal registers to store the accumulated sum and the count of valid inputs
+    reg [9:0] accumulator;
+    reg [1:0] count;
+
+    // Initialize outputs and internal registers
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            accumulator <= 10'b0;
+            count <= 2'b0;
+            valid_out <= 1'b0;
+            data_out <= 10'b0;
+        end else begin
+            if (valid_in) begin
+                // Add the new data to the accumulator
+                accumulator <= accumulator + data_in;
+                count <= count + 1'b1;
+
+                // Check if we have accumulated 4 valid inputs
+                if (count == 2'b11) begin
+                    // Output the accumulated result
+                    data_out <= accumulator;
+                    valid_out <= 1'b1;
+
+                    // Reset the accumulator and count for the next set of inputs
+                    accumulator <= 10'b0;
+                    count <= 2'b0;
+                end else begin
+                    valid_out <= 1'b0;
+                end
+            end else begin
+                valid_out <= 1'b0;
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+
+1. **Inputs and Outputs:**
+   - `clk`: Clock signal for synchronization.
+   - `rst_n`: Active-low reset signal.
+   - `data_in[7:0]`: 8-bit input data for addition.
+   - `valid_in`: Input signal indicating readiness for new data.
+   - `valid_out`: Output signal indicating when 4 input data accumulation is reached.
+   - `data_out[9:0]`: 10-bit output data representing the accumulated sum.
+
+2. **Internal Registers:**
+   - `accumulator`: 10-bit register to store the accumulated sum of the input data.
+   - `count`: 2-bit register to count the number of valid inputs received.
+
+3. **Behavioral Description:**
+   - The module is designed to work in an `always` block triggered by the positive edge of the clock and the negative edge of the reset signal.
+   - When `rst_n` is low, the module resets all internal registers and outputs to their initial values.
+   - When `valid_in` is high, the module adds the `data_in` to the `accumulator` and increments the `count`.
+   - If the `count` reaches 3 (binary `11`), it indicates that 4 valid inputs have been accumulated. At this point, the `data_out` is set to the value of the `accumulator`, and `valid_out` is set to high for one cycle.
+   - After outputting the result, the `accumulator` and `count` are reset to zero for the next set of inputs.
+   - If `valid_in` is low, `valid_out` remains low.
+
+This module ensures that the accumulation of four valid inputs results in a single cycle of `valid_out` high, with the accumulated sum output on `data_out`.

@@ -1,0 +1,262 @@
+module adder_pipe_64bit (
+    input wire clk,
+    input wire rst_n,
+    input wire i_en,
+    input wire [63:0] adda,
+    input wire [63:0] addb,
+    output reg [64:0] result,
+    output reg o_en
+);
+
+    // Intermediate signals for pipeline stages
+    reg [7:0] carry_stage1 [7:0];
+    reg [7:0] carry_stage2 [7:0];
+    reg [7:0] carry_stage3 [7:0];
+    reg [7:0] carry_stage4 [7:0];
+    reg [7:0] carry_stage5 [7:0];
+    reg [7:0] carry_stage6 [7:0];
+    reg [7:0] carry_stage7 [7:0];
+    reg [7:0] carry_stage8 [7:0];
+
+    reg [7:0] sum_stage1 [7:0];
+    reg [7:0] sum_stage2 [7:0];
+    reg [7:0] sum_stage3 [7:0];
+    reg [7:0] sum_stage4 [7:0];
+    reg [7:0] sum_stage5 [7:0];
+    reg [7:0] sum_stage6 [7:0];
+    reg [7:0] sum_stage7 [7:0];
+    reg [7:0] sum_stage8 [7:0];
+
+    // Temporary signals for carry and sum calculations
+    wire [7:0] carry_out_1 [7:0];
+    wire [7:0] carry_out_2 [7:0];
+    wire [7:0] carry_out_3 [7:0];
+    wire [7:0] carry_out_4 [7:0];
+    wire [7:0] carry_out_5 [7:0];
+    wire [7:0] carry_out_6 [7:0];
+    wire [7:0] carry_out_7 [7:0];
+    wire [7:0] carry_out_8 [7:0];
+
+    wire [7:0] sum_out_1 [7:0];
+    wire [7:0] sum_out_2 [7:0];
+    wire [7:0] sum_out_3 [7:0];
+    wire [7:0] sum_out_4 [7:0];
+    wire [7:0] sum_out_5 [7:0];
+    wire [7:0] sum_out_6 [7:0];
+    wire [7:0] sum_out_7 [7:0];
+    wire [7:0] sum_out_8 [7:0];
+
+    // Enable signals for each stage
+    reg en_stage1;
+    reg en_stage2;
+    reg en_stage3;
+    reg en_stage4;
+    reg en_stage5;
+    reg en_stage6;
+    reg en_stage7;
+    reg en_stage8;
+
+    // Pipeline stages
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            en_stage1 <= 0;
+            en_stage2 <= 0;
+            en_stage3 <= 0;
+            en_stage4 <= 0;
+            en_stage5 <= 0;
+            en_stage6 <= 0;
+            en_stage7 <= 0;
+            en_stage8 <= 0;
+            o_en <= 0;
+        end else begin
+            en_stage1 <= i_en;
+            en_stage2 <= en_stage1;
+            en_stage3 <= en_stage2;
+            en_stage4 <= en_stage3;
+            en_stage5 <= en_stage4;
+            en_stage6 <= en_stage5;
+            en_stage7 <= en_stage6;
+            en_stage8 <= en_stage7;
+            o_en <= en_stage8;
+        end
+    end
+
+    // First stage
+    genvar i;
+    generate
+        for (i = 0; i < 8; i = i + 1) begin : stage1
+            full_adder_8bit fa_1 (
+                .a(adda[(i+1)*8-1 : i*8]),
+                .b(addb[(i+1)*8-1 : i*8]),
+                .cin(8'b0),
+                .sum(sum_out_1[i]),
+                .cout(carry_out_1[i])
+            );
+        end
+    endgenerate
+
+    // Second stage
+    generate
+        for (i = 0; i < 8; i = i + 1) begin : stage2
+            full_adder_8bit fa_2 (
+                .a(sum_stage1[i]),
+                .b(carry_out_1[i]),
+                .cin(carry_stage1[i]),
+                .sum(sum_out_2[i]),
+                .cout(carry_out_2[i])
+            );
+        end
+    endgenerate
+
+    // Third stage
+    generate
+        for (i = 0; i < 8; i = i + 1) begin : stage3
+            full_adder_8bit fa_3 (
+                .a(sum_stage2[i]),
+                .b(carry_out_2[i]),
+                .cin(carry_stage2[i]),
+                .sum(sum_out_3[i]),
+                .cout(carry_out_3[i])
+            );
+        end
+    endgenerate
+
+    // Fourth stage
+    generate
+        for (i = 0; i < 8; i = i + 1) begin : stage4
+            full_adder_8bit fa_4 (
+                .a(sum_stage3[i]),
+                .b(carry_out_3[i]),
+                .cin(carry_stage3[i]),
+                .sum(sum_out_4[i]),
+                .cout(carry_out_4[i])
+            );
+        end
+    endgenerate
+
+    // Fifth stage
+    generate
+        for (i = 0; i < 8; i = i + 1) begin : stage5
+            full_adder_8bit fa_5 (
+                .a(sum_stage4[i]),
+                .b(carry_out_4[i]),
+                .cin(carry_stage4[i]),
+                .sum(sum_out_5[i]),
+                .cout(carry_out_5[i])
+            );
+        end
+    endgenerate
+
+    // Sixth stage
+    generate
+        for (i = 0; i < 8; i = i + 1) begin : stage6
+            full_adder_8bit fa_6 (
+                .a(sum_stage5[i]),
+                .b(carry_out_5[i]),
+                .cin(carry_stage5[i]),
+                .sum(sum_out_6[i]),
+                .cout(carry_out_6[i])
+            );
+        end
+    endgenerate
+
+    // Seventh stage
+    generate
+        for (i = 0; i < 8; i = i + 1) begin : stage7
+            full_adder_8bit fa_7 (
+                .a(sum_stage6[i]),
+                .b(carry_out_6[i]),
+                .cin(carry_stage6[i]),
+                .sum(sum_out_7[i]),
+                .cout(carry_out_7[i])
+            );
+        end
+    endgenerate
+
+    // Eighth stage
+    generate
+        for (i = 0; i < 8; i = i + 1) begin : stage8
+            full_adder_8bit fa_8 (
+                .a(sum_stage7[i]),
+                .b(carry_out_7[i]),
+                .cin(carry_stage7[i]),
+                .sum(sum_out_8[i]),
+                .cout(carry_out_8[i])
+            );
+        end
+    endgenerate
+
+    // Register the intermediate sums and carries
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            for (i = 0; i < 8; i = i + 1) begin
+                sum_stage1[i] <= 8'b0;
+                sum_stage2[i] <= 8'b0;
+                sum_stage3[i] <= 8'b0;
+                sum_stage4[i] <= 8'b0;
+                sum_stage5[i] <= 8'b0;
+                sum_stage6[i] <= 8'b0;
+                sum_stage7[i] <= 8'b0;
+                sum_stage8[i] <= 8'b0;
+
+                carry_stage1[i] <= 1'b0;
+                carry_stage2[i] <= 1'b0;
+                carry_stage3[i] <= 1'b0;
+                carry_stage4[i] <= 1'b0;
+                carry_stage5[i] <= 1'b0;
+                carry_stage6[i] <= 1'b0;
+                carry_stage7[i] <= 1'b0;
+                carry_stage8[i] <= 1'b0;
+            end
+        end else begin
+            for (i = 0; i < 8; i = i + 1) begin
+                sum_stage1[i] <= en_stage1 ? sum_out_1[i] : sum_stage1[i];
+                sum_stage2[i] <= en_stage2 ? sum_out_2[i] : sum_stage2[i];
+                sum_stage3[i] <= en_stage3 ? sum_out_3[i] : sum_stage3[i];
+                sum_stage4[i] <= en_stage4 ? sum_out_4[i] : sum_stage4[i];
+                sum_stage5[i] <= en_stage5 ? sum_out_5[i] : sum_stage5[i];
+                sum_stage6[i] <= en_stage6 ? sum_out_6[i] : sum_stage6[i];
+                sum_stage7[i] <= en_stage7 ? sum_out_7[i] : sum_stage7[i];
+                sum_stage8[i] <= en_stage8 ? sum_out_8[i] : sum_stage8[i];
+
+                carry_stage1[i] <= en_stage1 ? carry_out_1[i] : carry_stage1[i];
+                carry_stage2[i] <= en_stage2 ? carry_out_2[i] : carry_stage2[i];
+                carry_stage3[i] <= en_stage3 ? carry_out_3[i] : carry_stage3[i];
+                carry_stage4[i] <= en_stage4 ? carry_out_4[i] : carry_stage4[i];
+                carry_stage5[i] <= en_stage5 ? carry_out_5[i] : carry_stage5[i];
+                carry_stage6[i] <= en_stage6 ? carry_out_6[i] : carry_stage6[i];
+                carry_stage7[i] <= en_stage7 ? carry_out_7[i] : carry_stage7[i];
+                carry_stage8[i] <= en_stage8 ? carry_out_8[i] : carry_stage8[i];
+            end
+        end
+    end
+
+    // Final result
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            result <= 65'b0;
+        end else begin
+            if (en_stage8) begin
+                result <= {carry_out_8[7], sum_out_8};
+            end
+        end
+    end
+
+endmodule
+
+// 8-bit full adder module
+module full_adder_8bit (
+    input wire [7:0] a,
+    input wire [7:0] b,
+    input wire cin,
+    output wire [7:0] sum,
+    output wire cout
+);
+
+    wire [8:0] temp;
+
+    assign temp = a + b + cin;
+    assign sum = temp[7:0];
+    assign cout = temp[8];
+
+endmodule

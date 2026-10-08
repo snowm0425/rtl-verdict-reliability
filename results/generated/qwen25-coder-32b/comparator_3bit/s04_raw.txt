@@ -1,0 +1,41 @@
+Sure, below is the complete Verilog code for a 3-bit comparator module named `comparator_3bit`. This module takes two 3-bit inputs `A` and `B` and provides three outputs `A_greater`, `A_equal`, and `A_less` to indicate whether `A` is greater than, equal to, or less than `B`, respectively.
+
+```verilog
+module comparator_3bit (
+    input  [2:0] A,       // First 3-bit input operand
+    input  [2:0] B,       // Second 3-bit input operand
+    output reg   A_greater, // A is greater than B
+    output reg   A_equal,   // A is equal to B
+    output reg   A_less     // A is less than B
+);
+
+always @(*) begin
+    // Initialize outputs to 0
+    A_greater = 0;
+    A_equal   = 0;
+    A_less    = 0;
+
+    // Compare A and B
+    if (A > B) begin
+        A_greater = 1;
+    end else if (A == B) begin
+        A_equal = 1;
+    end else begin
+        A_less = 1;
+    end
+end
+
+endmodule
+```
+
+### Explanation:
+- **Inputs and Outputs**: The module has two 3-bit input vectors `A` and `B`, and three 1-bit output signals `A_greater`, `A_equal`, and `A_less`.
+- **Comparison Logic**: The `always @(*)` block ensures that the comparison logic is executed whenever any of the inputs `A` or `B` change.
+- **Initialization**: The outputs are initialized to 0 at the beginning of the block.
+- **Conditional Statements**: 
+  - If `A` is greater than `B`, `A_greater` is set to 1.
+  - If `A` is equal to `B`, `A_equal` is set to 1.
+  - If `A` is less than `B`, `A_less` is set to 1.
+- **Mutual Exclusivity**: Only one of the three outputs will be 1 at any given time, ensuring mutual exclusivity.
+
+This module can be instantiated in a larger design to compare two 3-bit binary numbers and get the desired comparison results.

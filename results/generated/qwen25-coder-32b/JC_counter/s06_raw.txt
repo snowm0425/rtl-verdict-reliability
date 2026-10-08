@@ -1,0 +1,36 @@
+Certainly! Below is the complete Verilog implementation of a 64-bit Johnson counter (torsional ring counter) as per your specifications:
+
+```verilog
+module JC_counter (
+    input clk,       // Clock signal
+    input rst_n,     // Active-low reset signal
+    output reg [63:0] Q  // 64-bit register representing the current count value
+);
+
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        // Reset condition: Set Q to 0
+        Q <= 64'b0;
+    end else begin
+        // Johnson counter logic
+        if (Q[0] == 1'b0) begin
+            // If the least significant bit (Q[0]) is 0, increment the counter
+            Q <= {Q[62:0], 1'b1};
+        end else begin
+            // If the least significant bit (Q[0]) is 1, decrement the counter
+            Q <= {Q[62:0], 1'b0};
+        end
+    end
+end
+
+endmodule
+```
+
+### Explanation:
+- **Module Declaration**: The module `JC_counter` is declared with the specified input and output ports.
+- **Reset Condition**: On the falling edge of `rst_n`, the counter `Q` is reset to `64'b0`.
+- **Johnson Counter Logic**: On the rising edge of `clk`, the counter `Q` is updated based on the value of the least significant bit (`Q[0]`):
+  - If `Q[0]` is `0`, the counter is incremented by shifting `Q[63:1]` to the right and appending `1` at the most significant bit position.
+  - If `Q[0]` is `1`, the counter is decremented by shifting `Q[63:1]` to the right and appending `0` at the most significant bit position.
+
+This implementation ensures that the counter behaves as a 64-bit Johnson counter, transitioning through all possible states in the specified pattern.

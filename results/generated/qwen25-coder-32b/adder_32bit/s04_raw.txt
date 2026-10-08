@@ -1,0 +1,89 @@
+Certainly! Below is a complete implementation of a 32-bit carry-lookahead adder using the CLA (Carry-Lookahead Adder) architecture in Verilog. This implementation consists of a top-level module `adder_32bit` and a helper module `cla_16bit` for 16-bit CLA blocks.
+
+### Helper Module: `cla_16bit`
+This module implements a 16-bit carry-lookahead adder.
+
+```verilog
+module cla_16bit (
+    input  [15:0] A,   // 16-bit input A
+    input  [15:0] B,   // 16-bit input B
+    input         Cin, // Carry-in
+    output [15:0] S,   // 16-bit output sum
+    output        Cout // Carry-out
+);
+
+    // Generate propagate and generate signals
+    wire [15:0] p;
+    wire [15:0] g;
+    assign p = A ^ B;
+    assign g = A & B;
+
+    // Generate carry lookahead signals
+    wire [15:0] c;
+    assign c[0] = Cin;
+    assign c[1] = g[0] | (p[0] & c[0]);
+    assign c[2] = g[1] | (p[1] & c[1]);
+    assign c[3] = g[2] | (p[2] & c[2]);
+    assign c[4] = g[3] | (p[3] & c[3]);
+    assign c[5] = g[4] | (p[4] & c[4]);
+    assign c[6] = g[5] | (p[5] & c[5]);
+    assign c[7] = g[6] | (p[6] & c[6]);
+    assign c[8] = g[7] | (p[7] & c[7]);
+    assign c[9] = g[8] | (p[8] & c[8]);
+    assign c[10] = g[9] | (p[9] & c[9]);
+    assign c[11] = g[10] | (p[10] & c[10]);
+    assign c[12] = g[11] | (p[11] & c[11]);
+    assign c[13] = g[12] | (p[12] & c[12]);
+    assign c[14] = g[13] | (p[13] & c[13]);
+    assign c[15] = g[14] | (p[14] & c[14]);
+
+    // Generate sum
+    assign S = p ^ c;
+
+    // Assign carry-out
+    assign Cout = c[15];
+endmodule
+```
+
+### Top-Level Module: `adder_32bit`
+This module uses two instances of the `cla_16bit` module to create a 32-bit adder.
+
+```verilog
+module adder_32bit (
+    input  [32:1] A,   // 32-bit input A
+    input  [32:1] B,   // 32-bit input B
+    output [32:1] S,   // 32-bit output sum
+    output        C32  // Carry-out
+);
+
+    // Rearrange inputs to match the cla_16bit module's port width
+    wire [15:0] A1 = A[16:1];
+    wire [15:0] A2 = A[32:17];
+    wire [15:0] B1 = B[16:1];
+    wire [15:0] B2 = B[32:17];
+    wire        C1;
+
+    // Instantiate two 16-bit CLA blocks
+    cla_16bit cla_low (
+        .A(A1),
+        .B(B1),
+        .Cin(1'b0), // No carry-in for the low 16 bits
+        .S(S[16:1]),
+        .Cout(C1)
+    );
+
+    cla_16bit cla_high (
+        .A(A2),
+        .B(B2),
+        .Cin(C1),
+        .S(S[32:17]),
+        .Cout(C32)
+    );
+endmodule
+```
+
+### Explanation
+- **cla_16bit Module**: This module takes two 16-bit inputs `A` and `B`, and a carry-in `Cin`. It computes the sum `S` and the carry-out `Cout` using the carry-lookahead algorithm.
+- **adder_32bit Module**: This module splits the 32-bit inputs into two 16-bit segments and uses two instances of the `cla_16bit` module to compute the sum. The carry-out from the first 16-bit adder is used as the carry-in for the second 16-bit adder.
+
+This design ensures that the carry propagation is handled efficiently, leading to faster addition operations compared to a ripple-carry adder.

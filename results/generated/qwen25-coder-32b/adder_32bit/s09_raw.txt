@@ -1,0 +1,90 @@
+Certainly! Below is the Verilog code for a 32-bit carry-lookahead adder using a hierarchical approach. The design consists of two 16-bit carry-lookahead adders (CLA blocks) and a final carry-lookahead adder to combine their results.
+
+First, let's define the 1-bit CLA cell. This cell will compute the generate (G) and propagate (P) signals, which are essential for the carry lookahead logic.
+
+### 1-bit CLA Cell
+```verilog
+module cla_cell (
+    input G_in,
+    input P_in,
+    input A,
+    input B,
+    output G_out,
+    output P_out,
+    output S
+);
+    assign S = A ^ B ^ G_in;
+    assign G_out = G_in | (A & B);
+    assign P_out = A | B;
+endmodule
+```
+
+### 4-bit CLA Block
+Next, let's define a 4-bit CLA block using the 1-bit CLA cell. This block will take four bits of A and B, and compute the sum (S[3:0]) and the carry-out (C4).
+
+```verilog
+module cla_4bit (
+    input [3:0] A,
+    input [3:0] B,
+    input G_in,
+    output [3:0] S,
+    output C4
+);
+    wire [2:0] G;
+    wire [2:0] P;
+    
+    cla_cell c0 (.G_in(G_in), .P_in(1'b1), .A(A[0]), .B(B[0]), .G_out(G[0]), .P_out(P[0]), .S(S[0]));
+    cla_cell c1 (.G_in(G[0]), .P_in(P[0]), .A(A[1]), .B(B[1]), .G_out(G[1]), .P_out(P[1]), .S(S[1]));
+    cla_cell c2 (.G_in(G[1]), .P_in(P[1]), .A(A[2]), .B(B[2]), .G_out(G[2]), .P_out(P[2]), .S(S[2]));
+    cla_cell c3 (.G_in(G[2]), .P_in(P[2]), .A(A[3]), .B(B[3]), .G_out(), .P_out(), .S(S[3]));
+    
+    assign C4 = G[2] | (P[2] & G[1]) | (P[2] & P[1] & G[0]) | (P[2] & P[1] & P[0] & G_in);
+endmodule
+```
+
+### 16-bit CLA Block
+Now, let's define a 16-bit CLA block using four 4-bit CLA blocks.
+
+```verilog
+module cla_16bit (
+    input [15:0] A,
+    input [15:0] B,
+    input G_in,
+    output [15:0] S,
+    output C16
+);
+    wire [3:0] G;
+    wire [3:0] P;
+    
+    cla_4bit c0 (.A(A[3:0]), .B(B[3:0]), .G_in(G_in), .S(S[3:0]), .C4(G[0]));
+    cla_4bit c1 (.A(A[7:4]), .B(B[7:4]), .G_in(G[0]), .S(S[7:4]), .C4(G[1]));
+    cla_4bit c2 (.A(A[11:8]), .B(B[11:8]), .G_in(G[1]), .S(S[11:8]), .C4(G[2]));
+    cla_4bit c3 (.A(A[15:12]), .B(B[15:12]), .G_in(G[2]), .S(S[15:12]), .C4(G[3]));
+    
+    assign C16 = G[2] | (P[2] & G[1]) | (P[2] & P[1] & G[0]) | (P[2] & P[1] & P[0] & G_in);
+endmodule
+```
+
+### 32-bit CLA Adder
+Finally, let's define the 32-bit CLA adder using two 16-bit CLA blocks.
+
+```verilog
+module adder_32bit (
+    input [32:1] A,
+    input [32:1] B,
+    output [32:1] S,
+    output C32
+);
+    wire [15:1] S_low;
+    wire [15:1] S_high;
+    wire C16;
+    
+    cla_16bit cla_low (.A(A[16:1]), .B(B[16:1]), .G_in(1'b0), .S(S_low), .C16(C16));
+    cla_16bit cla_high (.A(A[32:17]), .B(B[32:17]), .G_in(C16), .S(S_high), .C16(C32));
+    
+    assign S[16:1] = S_low;
+    assign S[32:17] = S_high;
+endmodule
+```
+
+This code defines a 32-bit carry-lookahead adder using a hierarchical design approach. The `adder_32bit` module consists of two 16-bit CLA blocks, and each 16-bit CLA block consists of four 4-bit CLA blocks, which are further composed of individual 1-bit CLA cells.

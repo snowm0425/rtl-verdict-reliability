@@ -1,0 +1,199 @@
+Here is the complete Verilog code for the 32-bit MIPS ALU.
+
+### Design Considerations & Notes:
+
+1.  **Signed vs Unsigned Operations**:
+    *   `ADD` and `SUB` perform signed arithmetic. Overflow is detected if the sign of the operands is the same but the sign of the result is different.
+    *   `ADDU` and `SUBU` perform unsigned arithmetic. Carry is detected based on the carry-out of the subtraction (for SUBU) or addition (for ADDU). Note: In MIPS, `carry` is typically only relevant for `ADDU` (carry-out) and `SUBU` (borrow-out, which is often treated as carry=1 if borrow occurred). The prompt asks for a generic `carry`. I will implement `carry` as the carry-out for addition and borrow for subtraction (where borrow=1 implies carry=1 in two's complement subtraction logic `a - b = a + ~b + 1`).
+    *   `SLT` (Set Less Than) uses signed comparison. `SLTU` (Set Less Than Unsigned) uses unsigned comparison.
+2.  **Shift Operations**:
+    *   `SLL`, `SRL`, `SRA` typically use a fixed 5-bit shift amount from the instruction. However, the prompt says "shift amount is determined by the value of 'a' or 'a[4:0]'". In standard MIPS, for `SLL`/`SRL`/`SRA`, the shift amount is in the `shamt` field of the instruction (usually 5 bits), and `b` is the data. But the prompt defines `a` and `b` as operands.
+    *   Looking at the prompt: *"For shift operations (SLL, SRL, SRA, SLLV, SRLV, SRAV), the shift amount is determined by the value of 'a' or 'a[4:0]'"*. This is slightly ambiguous because in MIPS `SLL` uses `shamt` (5 bits) and `rt` (32 bits). `SLLV` uses `rs` (32 bits) and `rt` (32 bits).
+    *   *Interpretation*: Since `a` and `b` are 32-bit inputs, and `aluc` selects the op:
+        *   For `SLL`, `SRL`, `SRA`: The data to shift is likely `b`, and the shift amount is `a[4:0]`. (This matches standard MIPS where `shamt` is 5 bits).
+        *   For `SLLV`, `SRLV`, `SRAV`: The data to shift is `b`, and the shift amount is `a[4:0]`.
+        *   *Correction*: The prompt says "determined by the value of 'a' or 'a[4:0]'". I will use `a[4:0]` as the shift amount for all shift instructions, and `b` as the data operand. This is the most common convention in simplified ALU designs where `a` carries the control/shift info and `b` carries the data for shifts.
+3.  **LUI**:
+    *   `LUI` (Load Upper Immediate) puts the 16-bit immediate into the upper 16 bits of the result. The prompt says: *"the upper 16 bits of 'a' are concatenated with 16 zeros"*. So `r = {a[15:0], 16'b0}`.
+4.  **Flags**:
+    *   `zero`: `1` if `r == 32'b0`.
+    *   `negative`: `1` if `r[31] == 1`.
+    *   `overflow`: For `ADD`/`SUB` (signed). `0` for others.
+    *   `carry`: For `ADDU`/`SUBU`. `0` for others.
+    *   `flag`: `1` for `SLT`/`SLTU`, `0` otherwise. (The prompt mentions `'z'` but in Verilog, outputs are typically active-high flags. I will use `1'b1` and `1'b0` as standard practice, unless specifically required to be tristate. Given "flag" is a 1-bit output, tristate is unusual for a flag. I will assume it's a standard boolean flag: 1 if SLT/SLTU result is true, 0 otherwise. However, the prompt says: *"flag is set to '1' when the operation is SLT or SLTU, and 'z' (high-impedance) otherwise."* This is unusual. Let's re-read carefully: *"flag: a 1-bit output representing a general flag, which is set based on specific operations (SLT and SLTU)."* and *"flag output is determined based on the control signal (aluc) and is set to '1' when the operation is SLT or SLTU, and 'z' (high-impedance) otherwise."*
+    *   *Decision*: I will follow the prompt's explicit instruction: `flag` is `1'b1` if the operation is SLT/SLTU (and the condition is met? Or just that it's an SLT/SLTU op?), and `'z'` otherwise. Wait, "flag is the result of slt and sltu". So if `aluc==SLT` and `a<b`, `flag=1`. If `aluc==SLT` and `a>=b`, `flag=0`. If `aluc!=SLT/SLTU`, `flag='z'`. This is a specific requirement. I will implement it as such.
+
+5.  **Overflow Calculation**:
+    *   For `ADD`: `overflow = (a[31] == b[31]) && (a[31] != r[31])`
+    *   For `SUB`: `overflow = (a[31] != b[31]) && (a[31] != r[31])`
+    *   For `ADDU`/`SUBU`: `overflow = 0`
+
+6.  **Carry Calculation**:
+    *   For `ADDU`: `carry = res[32]` (using 33-bit intermediate)
+    *   For `SUBU`: `carry = ~res[32]`? No, `a - b`. If `a < b`, borrow occurs. In two's complement, `a - b = a + ~b + 1`. Carry out of this addition is `1` if no borrow, `0` if borrow. So `carry = ~carry_out` for subtraction? Actually, MIPS doesn't have a carry flag for SUBU in the standard pipeline, but if we define `carry` as "borrow", then `carry = 1` if `a < b` (unsigned). Let's use a 33-bit wire for addition/subtraction to capture carry/borrow.
+    *   Let `add_sub_33` be the 33-bit result of `a + b` or `a + ~b + 1`.
+    *   For `ADDU`: `carry = add_sub_33[32]`
+    *   For `SUBU`: `carry = ~add_sub_33[32]` (since borrow = 1 if no carry out in `a + ~b + 1`)
+
+Let's refine the `flag` output. The prompt says: *"flag is the result of 'slt' and 'sltu' instructions"*. And later: *"flag output is determined based on the control signal (aluc) and is set to '1' when the operation is SLT or SLTU, and 'z' (high-impedance) otherwise."* This phrasing is slightly contradictory. Does "set to '1'" mean it's always 1 for SLT/SLTU regardless of comparison? No, that doesn't make sense for an ALU flag. It likely means: If the op is SLT/SLTU, the `flag` output reflects the comparison result (1 if true, 0 if false). If the op is anything else, `flag` is `'z'`. I will implement this logic.
+
+### Verilog Code
+
+```verilog
+`default_nettype none
+
+module alu (
+    input  wire [31:0] a,
+    input  wire [31:0] b,
+    input  wire [5:0]  aluc,
+    output wire [31:0] r,
+    output wire        zero,
+    output wire        carry,
+    output wire        negative,
+    output wire        overflow,
+    output wire        flag
+);
+
+    // Define opcodes
+    localparam ADD  = 6'b100000;
+    localparam ADDU = 6'b100001;
+    localparam SUB  = 6'b100010;
+    localparam SUBU = 6'b100011;
+    localparam AND  = 6'b100100;
+    localparam OR   = 6'b100101;
+    localparam XOR  = 6'b100110;
+    localparam NOR  = 6'b100111;
+    localparam SLT  = 6'b101010;
+    localparam SLTU = 6'b101011;
+    localparam SLL  = 6'b000000;
+    localparam SRL  = 6'b000010;
+    localparam SRA  = 6'b000011;
+    localparam SLLV = 6'b000100;
+    localparam SRLV = 6'b000110;
+    localparam SRAV = 6'b000111;
+    localparam LUI  = 6'b001111;
+
+    // Internal signals
+    wire [31:0] result;
+    wire [32:0] add_sub_result; // 33 bits to capture carry/borrow
+    wire [4:0]  shamt;
+    
+    // Calculate shift amount: use lower 5 bits of 'a' as per prompt
+    assign shamt = a[4:0];
+
+    // Calculate addition/subtraction with carry
+    // For SUB, we do a + (~b) + 1
+    wire [31:0] b_inverted = ~b;
+    assign add_sub_result = a + b_inverted + 1'b1; // This is effectively a - b with carry/borrow
+    
+    // Wait, for ADD we need a + b. For SUB we need a - b.
+    // Let's use separate calculations or a mux.
+    // Actually, we can compute both and select.
+    
+    wire [32:0] add_result = a + b + 1'b0;
+    wire [32:0] sub_result = a + (~b) + 1'b1;
+
+    // Mux for result based on aluc
+    reg [31:0] r_reg;
+    reg        carry_reg;
+    reg        overflow_reg;
+    reg        flag_reg;
+
+    always @(*) begin
+        // Defaults
+        r_reg = 32'b0;
+        carry_reg = 1'b0;
+        overflow_reg = 1'b0;
+        flag_reg = 1'bz; // High impedance by default
+
+        case (aluc)
+            ADD: begin
+                r_reg = add_result[31:0];
+                carry_reg = 1'b0; // ADD (signed) doesn't typically use carry flag, but if needed, it's add_result[32]
+                overflow_reg = (a[31] == b[31]) && (a[31] != r_reg[31]);
+            end
+            ADDU: begin
+                r_reg = add_result[31:0];
+                carry_reg = add_result[32];
+                overflow_reg = 1'b0;
+            end
+            SUB: begin
+                r_reg = sub_result[31:0];
+                carry_reg = 1'b0; // SUB (signed) doesn't typically use carry flag
+                overflow_reg = (a[31] != b[31]) && (a[31] != r_reg[31]);
+            end
+            SUBU: begin
+                r_reg = sub_result[31:0];
+                // Borrow is 1 if no carry out in a + ~b + 1
+                carry_reg = ~sub_result[32];
+                overflow_reg = 1'b0;
+            end
+            AND: begin
+                r_reg = a & b;
+            end
+            OR: begin
+                r_reg = a | b;
+            end
+            XOR: begin
+                r_reg = a ^ b;
+            end
+            NOR: begin
+                r_reg = ~(a | b);
+            end
+            SLT: begin
+                // Signed comparison: a < b
+                if ($signed(a) < $signed(b)) begin
+                    r_reg = 32'd1;
+                    flag_reg = 1'b1;
+                end else begin
+                    r_reg = 32'd0;
+                    flag_reg = 1'b0;
+                end
+            end
+            SLTU: begin
+                // Unsigned comparison: a < b
+                if (a < b) begin
+                    r_reg = 32'd1;
+                    flag_reg = 1'b1;
+                end else begin
+                    r_reg = 32'd0;
+                    flag_reg = 1'b0;
+                end
+            end
+            SLL: begin
+                r_reg = b << shamt;
+            end
+            SRL: begin
+                r_reg = b >> shamt;
+            end
+            SRA: begin
+                r_reg = $signed(b) >>> shamt;
+            end
+            SLLV: begin
+                r_reg = b << a[4:0];
+            end
+            SRLV: begin
+                r_reg = b >> a[4:0];
+            end
+            SRAV: begin
+                r_reg = $signed(b) >>> a[4:0];
+            end
+            LUI: begin
+                r_reg = {a[15:0], 16'b0};
+            end
+            default: begin
+                r_reg = 32'b0;
+            end
+        endcase
+    end
+
+    // Assign outputs
+    assign r = r_reg;
+    assign zero = (r == 32'b0);
+    assign negative = r[31];
+    assign carry = carry_reg;
+    assign overflow = overflow_reg;
+    assign flag = flag_reg;
+
+endmodule
+```

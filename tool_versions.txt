@@ -1,0 +1,64 @@
+=== 2026-08-23T23:51:05+08:00
+Icarus Verilog version 12.0 (stable) (v12_0)
+RTLLM commit: 41b26896e33b536940116a975626455eed3de65e
+iverilog flags: -g2012
+vLLM: vllm/vllm-openai:latest, Qwen/Qwen2.5-Coder-32B-Instruct-AWQ
+sampling: temp=0.8 top_p=0.95 top_k=-1 rep_penalty=1.0 (explicit per-request)
+baseline: 46 pass / 4 fail (matches GateTruth 46 audited / 4 unsupported)
+mutants: 775/775 regenerated, ids match GateTruth per-design JSON exactly
+
+=== Day1 differential oracle (2026-08-24T15:21:18+08:00) ===
+self-consistency: 45/46 (LIFObuffer excluded: EN-gated reset, memory array)
+diff killed: 562/775 (72.5%) vs original TB 440/775 (56.8%)
+GT-survived that diff KILLED: 156/320 (48.8%)
+
+=== Day2 generation (2026-08-24T19:13:03+08:00) ===
+Qwen2.5-Coder-32B-AWQ, K=10, 46 designs, 460 samples
+prompt: raw RTLLM design_description.txt, no added instructions
+standalone compile fail: 76/460 (incl. missing-submodule, not all true fails)
+
+=== Day3 dual verdict (2026-08-24T21:00:24+08:00) ===
+pass@1 original TB:  193/450 (42.9%)
+pass@1 differential: 158/450 (35.1%)
+inflation: +7.8 pp; Spearman(kill_rate, inflation) rho=-0.415 p=0.0046
+VACUOUS PASS: multi_booth_8bit passes with finish_at=0 when data file absent
+  (calendar/alu/signal_generator correctly fail under same condition)
+
+=== FINAL RESULTS (2026-08-26T11:41:35+08:00) ===
+excluded 4: LIFObuffer(EN-gated reset) RAM(golden decl != spec)
+            fixed_point_adder/substractor(spec underspecifies number format)
+
+[Table 2] verdict confusion, 690 samples, 2 models
+  general designs (38):  n=570  TBpass=269 false-pass=14.5%  TBfail=301 false-fail=1.3%
+  positional-binding (4): n=60  TBpass= 11 false-pass=18.2%  TBfail= 49 false-fail=28.6%
+  qwen25-coder-32b:      n=380  false-pass=15.2%  false-fail=0.5%
+  qwen38-27b:            n=190  false-pass=13.5%  false-fail=3.5%
+
+[RQ1] kill_rate vs false-pass rate (n=27, TBpass>=3)
+  Spearman rho=-0.355 p=0.069; partial(control mutant-count)=-0.272
+  THRESHOLD EFFECT: kill=100% -> 0/9 designs have false-pass
+                    kill<100% -> 9/18 designs have false-pass
+                    Fisher p=0.0116; Mann-Whitney p=0.0071
+
+[RQ3] assignment_hold-dominant designs show highest false-pass
+[qualitative] vacuous pass: multi_booth_8bit finish_at=0 with data file absent
+[qualitative] positional binding: LFSR/alu/float_multi/pe
+[qualitative] reference underspecification: fixed_point_*, RAM
+[adjudication] 14 cases: 7 diff-correct, 3 diff-FP(fixed), 2 diff-FN, 2 unclear
+
+[Table 1] oracle strength (v3 wrapper)
+  self-consistency: 45/46
+  original TB mutant kill:   440/775 (56.8%)
+  differential mutant kill:  566/775 (73.0%)
+  GT-survived killed by diff: 155/320 (48.4%)
+  note: fixed_point_* kill 16/20,17/20 -> oracle fine; excluded for spec reasons
+  seed stability (v3): 14/675 unstable (2.1%), all in synchronizer
+  note: seed1==seed2 exactly; variation comes from per-port salt, not independent sampling
+
+[final stats] 2026-08-26T16:15:19+08:00
+  threshold: max kill_rate among false-pass designs = 83.3%
+             any cut in 84-100% gives same split, Fisher p<=0.012
+  cluster bootstrap CI (over designs, B=10000):
+    general false-pass 14.5% [5.5,26.2]; false-fail 1.3% [0.0,3.6]
+    positional: n=4 designs, CI unusable -> report raw counts only
+  case study: square_wave qwen25/s00, dut=x throughout, 674/2000 mismatch

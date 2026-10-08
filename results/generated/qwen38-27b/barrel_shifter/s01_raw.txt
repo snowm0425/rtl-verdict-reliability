@@ -1,0 +1,70 @@
+```verilog
+module mux2X1(
+    input sel,
+    input a,
+    input b,
+    output reg y
+);
+    always @(*) begin
+        if (sel)
+            y = b;
+        else
+            y = a;
+    end
+endmodule
+
+module barrel_shifter(
+    input [7:0] in,
+    input [2:0] ctrl,
+    output [7:0] out
+);
+    wire [7:0] stage1;
+    wire [7:0] stage2;
+    wire [7:0] stage3;
+
+    // Stage 1: Shift by 4 positions if ctrl[2] is high
+    // If ctrl[2] is high, shift left by 4 (rotate: wrap around)
+    // For a barrel shifter that rotates, we need to handle wrap-around
+    // Shift left by 4: {in[3:0], in[7:4]}
+    // Shift left by 2: {in[5:0], in[7:6]}
+    // Shift left by 1: {in[6:0], in[7]}
+
+    // Stage 1: Select between in and in shifted left by 4
+    genvar i;
+    generate
+        for (i = 0; i < 8; i = i + 1) begin : gen_stage1
+            mux2X1 u_mux_stage1 (
+                .sel (ctrl[2]),
+                .a   (in[i]),
+                .b   (in[(i - 4 + 8) % 8]),
+                .y   (stage1[i])
+            );
+        end
+    endgenerate
+
+    // Stage 2: Select between stage1 and stage1 shifted left by 2
+    generate
+        for (i = 0; i < 8; i = i + 1) begin : gen_stage2
+            mux2X1 u_mux_stage2 (
+                .sel (ctrl[1]),
+                .a   (stage1[i]),
+                .b   (stage1[(i - 2 + 8) % 8]),
+                .y   (stage2[i])
+            );
+        end
+    endgenerate
+
+    // Stage 3: Select between stage2 and stage2 shifted left by 1
+    generate
+        for (i = 0; i < 8; i = i + 1) begin : gen_stage3
+            mux2X1 u_mux_stage3 (
+                .sel (ctrl[0]),
+                .a   (stage2[i]),
+                .b   (stage2[(i - 1 + 8) % 8]),
+                .y   (out[i])
+            );
+        end
+    endgenerate
+
+endmodule
+```

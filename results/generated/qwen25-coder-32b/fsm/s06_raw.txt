@@ -1,0 +1,81 @@
+Sure! Below is the complete Verilog code for a Mealy FSM that detects the sequence "10011" on the input signal `IN`. The FSM will set the `MATCH` signal to 1 when the sequence is detected and will handle continuous input and loop detection.
+
+```verilog
+module fsm (
+    input IN,
+    input CLK,
+    input RST,
+    output reg MATCH
+);
+
+    // Define the states
+    typedef enum reg [2:0] {S0, S1, S2, S3, S4} state_t;
+    state_t current_state, next_state;
+
+    // State transition logic
+    always @(posedge CLK or posedge RST) begin
+        if (RST)
+            current_state <= S0;
+        else
+            current_state <= next_state;
+    end
+
+    // Next state logic
+    always @(*) begin
+        case (current_state)
+            S0: begin
+                if (IN == 1'b1)
+                    next_state = S1;
+                else
+                    next_state = S0;
+            end
+            S1: begin
+                if (IN == 1'b0)
+                    next_state = S2;
+                else
+                    next_state = S0;
+            end
+            S2: begin
+                if (IN == 1'b0)
+                    next_state = S3;
+                else
+                    next_state = S0;
+            end
+            S3: begin
+                if (IN == 1'b1)
+                    next_state = S4;
+                else
+                    next_state = S0;
+            end
+            S4: begin
+                if (IN == 1'b1)
+                    next_state = S4;  // Stay in S4 to support continuous detection
+                else
+                    next_state = S0;
+            end
+            default: next_state = S0;
+        endcase
+    end
+
+    // Output logic
+    always @(posedge CLK or posedge RST) begin
+        if (RST)
+            MATCH <= 0;
+        else begin
+            if (current_state == S4 && IN == 1'b1)
+                MATCH <= 1;
+            else
+                MATCH <= 0;
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **State Definition**: The FSM has 5 states (`S0` to `S4`). `S0` is the initial state.
+2. **State Transition**: The FSM transitions between states based on the input `IN`. It checks the input at each state and transitions accordingly.
+3. **Output Logic**: The `MATCH` signal is set to 1 only when the FSM is in `S4` and the input `IN` is 1, indicating the sequence "10011" has been detected.
+4. **Reset**: On the rising edge of `RST`, the FSM resets to `S0` and sets `MATCH` to 0.
+
+This design ensures that the FSM can detect the sequence "10011" continuously and will set the `MATCH` signal appropriately.

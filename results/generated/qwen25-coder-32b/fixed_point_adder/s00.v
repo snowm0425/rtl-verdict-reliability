@@ -1,0 +1,64 @@
+module fixed_point_adder #(
+    parameter Q = 8,  // Number of fractional bits (precision)
+    parameter N = 16  // Total number of bits (including integer and fractional parts)
+)(
+    input  [N-1:0] a,  // First N-bit fixed-point input operand
+    input  [N-1:0] b,  // Second N-bit fixed-point input operand
+    output [N-1:0] c   // N-bit output representing the result of the fixed-point addition
+);
+
+    // Internal registers
+    reg [N-1:0] res; // Register to store the result
+
+    // Temporary signals
+    wire [N:0] add_res;  // Result of the addition (N+1 bits to detect overflow)
+    wire [N-1:0] a_abs;  // Absolute value of a
+    wire [N-1:0] b_abs;  // Absolute value of b
+    wire a_neg;          // Sign bit of a
+    wire b_neg;          // Sign bit of b
+    wire a_gt_b;         // a > b (absolute value comparison)
+    wire a_eq_b;         // a == b (absolute value comparison)
+
+    // Calculate absolute values and sign bits
+    assign a_abs = a_neg ? (~a + 1) : a;
+    assign b_abs = b_neg ? (~b + 1) : b;
+    assign a_neg = a[N-1];
+    assign b_neg = b[N-1];
+
+    // Compare absolute values
+    assign a_gt_b = (a_abs > b_abs);
+    assign a_eq_b = (a_abs == b_abs);
+
+    // Perform addition or subtraction based on sign bits
+    always @(*) begin
+        if (a_neg == b_neg) begin
+            // Both numbers have the same sign, add their absolute values
+            add_res = a_abs + b_abs;
+            res = {add_res[N], add_res[N-1:0]};
+        end else begin
+            // Different signs, perform subtraction
+            if (a_gt_b) begin
+                // a is greater, result is a - b
+                add_res = a_abs - b_abs;
+                res = {1'b0, add_res[N-1:0]}; // Result is positive
+            end else if (a_eq_b) begin
+                // a equals b, result is 0
+                res = 0;
+            end else begin
+                // b is greater, result is b - a
+                add_res = b_abs - a_abs;
+                res = {add_res[N], add_res[N-1:0]}; // Result is negative or zero
+            end
+        end
+
+        // Handle overflow
+        if (add_res[N]) begin
+            // Overflow occurred, set result to max or min based on sign
+            res = a_neg == b_neg ? {N{1'b1}} : 0; // All 1s for overflow, 0 for underflow
+        end
+    end
+
+    // Assign the final result to the output
+    assign c = res;
+
+endmodule

@@ -1,0 +1,71 @@
+Certainly! Below is a Verilog implementation of a 16-bit divider module (`div_16bit`) with the specified requirements. The module uses two combinational always blocks to perform the division operation. The first always block updates the values of `a_reg` and `b_reg` with the values of `A` and `B`, respectively. The second always block performs the division logic.
+
+```verilog
+module div_16bit (
+    input  [15:0] A,    // 16-bit dividend
+    input  [7:0]  B,    // 8-bit divisor
+    output [15:0] result, // 16-bit quotient
+    output [15:0] odd     // 16-bit remainder
+);
+
+reg [15:0] a_reg;       // Register to hold the current dividend
+reg [7:0]  b_reg;       // Register to hold the divisor
+reg [15:0] quotient;    // Register to hold the quotient
+reg [15:0] remainder;   // Register to hold the remainder
+
+// First always block: Update registers a_reg and b_reg with inputs A and B
+always @(*) begin
+    a_reg = A;
+    b_reg = B;
+end
+
+// Second always block: Perform the division logic
+always @(*) begin
+    integer i;
+    quotient = 16'b0;    // Initialize quotient to 0
+    remainder = 16'b0;   // Initialize remainder to 0
+
+    for (i = 0; i < 16; i = i + 1) begin
+        // Shift the remainder left by 1 bit and bring in the next bit from the dividend
+        remainder = {remainder[14:0], a_reg[15]};
+        
+        // Compare the higher 8 bits of the remainder with the divisor
+        if (remainder[15:8] >= b_reg) begin
+            quotient = {quotient[14:0], 1'b1}; // Set the current quotient bit to 1
+            remainder = remainder - b_reg;       // Subtract the divisor from the remainder
+        end else begin
+            quotient = {quotient[14:0], 1'b0}; // Set the current quotient bit to 0
+        end
+        
+        // Shift the dividend left by 1 bit
+        a_reg = a_reg << 1;
+    end
+    
+    // Assign the final quotient and remainder
+    result = quotient;
+    odd = remainder;
+end
+
+endmodule
+```
+
+### Explanation:
+1. **Registers**:
+   - `a_reg` and `b_reg` are used to hold the current dividend and divisor, respectively.
+   - `quotient` and `remainder` are used to accumulate the quotient and remainder during the division process.
+
+2. **First Always Block**:
+   - This block updates `a_reg` and `b_reg` with the values of `A` and `B` whenever there is a change in the inputs.
+
+3. **Second Always Block**:
+   - This block performs the division logic.
+   - It initializes `quotient` and `remainder` to 0.
+   - It iterates 16 times (once for each bit of the dividend).
+   - In each iteration, it shifts the `remainder` left by 1 bit and brings in the next bit from the `dividend`.
+   - It compares the higher 8 bits of the `remainder` with the `divisor`.
+   - If the higher 8 bits of the `remainder` are greater than or equal to the `divisor`, it sets the current bit of the `quotient` to 1 and subtracts the `divisor` from the `remainder`.
+   - Otherwise, it sets the current bit of the `quotient` to 0.
+   - It shifts the `dividend` left by 1 bit for the next iteration.
+   - After the loop, it assigns the final `quotient` and `remainder` to the output ports `result` and `odd`, respectively.
+
+This implementation ensures that the division is performed in a combinational manner, processing each bit of the dividend to compute the quotient and remainder.

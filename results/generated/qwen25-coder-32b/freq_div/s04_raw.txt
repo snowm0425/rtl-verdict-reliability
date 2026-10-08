@@ -1,0 +1,63 @@
+Certainly! Below is the complete Verilog code for the `freq_div` module that divides a 100MHz input clock signal into three different frequencies: 50MHz, 10MHz, and 1MHz.
+
+```verilog
+module freq_div (
+    input wire CLK_in,  // Input clock signal of 100MHz
+    input wire RST,     // Active high reset signal
+    output reg CLK_50,  // Output clock signal of 50MHz
+    output reg CLK_10,  // Output clock signal of 10MHz
+    output reg CLK_1    // Output clock signal of 1MHz
+);
+
+    // Counters for CLK_10 and CLK_1 generation
+    reg [3:0] cnt_10;  // 4-bit counter for 10MHz division
+    reg [5:0] cnt_100; // 6-bit counter for 1MHz division
+
+    // Sequential logic to generate CLK_50
+    always @(posedge CLK_in or posedge RST) begin
+        if (RST) begin
+            CLK_50 <= 0;
+        end else begin
+            CLK_50 <= ~CLK_50; // Toggle CLK_50 on each rising edge of CLK_in
+        end
+    end
+
+    // Sequential logic to generate CLK_10
+    always @(posedge CLK_in or posedge RST) begin
+        if (RST) begin
+            CLK_10 <= 0;
+            cnt_10 <= 4'b0; // Reset counter to 0
+        end else begin
+            if (cnt_10 == 4'd4) begin // When counter reaches 4
+                CLK_10 <= ~CLK_10; // Toggle CLK_10
+                cnt_10 <= 4'b0;     // Reset counter to 0
+            end else begin
+                cnt_10 <= cnt_10 + 1; // Increment counter
+            end
+        end
+    end
+
+    // Sequential logic to generate CLK_1
+    always @(posedge CLK_in or posedge RST) begin
+        if (RST) begin
+            CLK_1 <= 0;
+            cnt_100 <= 6'b0; // Reset counter to 0
+        end else begin
+            if (cnt_100 == 6'd49) begin // When counter reaches 49
+                CLK_1 <= ~CLK_1; // Toggle CLK_1
+                cnt_100 <= 6'b0;   // Reset counter to 0
+            end else begin
+                cnt_100 <= cnt_100 + 1; // Increment counter
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+- **CLK_50 Generation**: This is achieved by simply toggling the `CLK_50` signal on every rising edge of the input clock `CLK_in`. Since the input clock is 100MHz, toggling it every cycle results in a 50MHz output.
+- **CLK_10 Generation**: A 4-bit counter (`cnt_10`) is used. The counter counts up to 4 (binary `100`), then toggles the `CLK_10` signal and resets the counter. This effectively divides the 100MHz clock by 10.
+- **CLK_1 Generation**: A 6-bit counter (`cnt_100`) is used. The counter counts up to 49 (binary `110001`), then toggles the `CLK_1` signal and resets the counter. This effectively divides the 100MHz clock by 100.
+
+This module uses edge-triggered flip-flops to ensure that the output clocks are properly synchronized with the input clock. The reset signal (`RST`) is active high and will reset the counters and the output clocks to 0.

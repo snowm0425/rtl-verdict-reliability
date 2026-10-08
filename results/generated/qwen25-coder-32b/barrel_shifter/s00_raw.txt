@@ -1,0 +1,108 @@
+Sure, I'll provide you with the complete Verilog code for the `barrel_shifter` module, including the `mux2X1` submodule.
+
+First, let's define the `mux2X1` submodule, which is a simple 2-to-1 multiplexer:
+
+```verilog
+module mux2X1 (
+    input  sel,          // 1-bit selector
+    input  [7:0] in0,    // 8-bit input 0
+    input  [7:0] in1,    // 8-bit input 1
+    output [7:0] out     // 8-bit output
+);
+    assign out = sel ? in1 : in0;
+endmodule
+```
+
+Now, let's define the `barrel_shifter` module using the `mux2X1` submodule:
+
+```verilog
+module barrel_shifter (
+    input  [7:0] in,     // 8-bit input to be shifted
+    input  [2:0] ctrl,   // 3-bit control signal
+    output [7:0] out     // 8-bit shifted output
+);
+    wire [7:0] shift4, shift2, shift1;
+
+    // Shift by 4 positions
+    assign shift4 = {in[3:0], in[7:4]};  // Logical right shift by 4
+
+    // Mux to select between original input and shifted by 4
+    mux2X1 mux4 (
+        .sel(ctrl[2]),
+        .in0(in),
+        .in1(shift4),
+        .out(shift2)
+    );
+
+    // Shift by 2 positions (from the previous result)
+    assign shift2 = {shift2[1:0], shift2[7:2]};  // Logical right shift by 2
+
+    // Mux to select between previous result and shifted by 2
+    mux2X1 mux2 (
+        .sel(ctrl[1]),
+        .in0(shift2),
+        .in1(shift2),
+        .out(shift1)
+    );
+
+    // Shift by 1 position (from the previous result)
+    assign shift1 = {shift1[0], shift1[7:1]};  // Logical right shift by 1
+
+    // Mux to select between previous result and shifted by 1
+    mux2X1 mux1 (
+        .sel(ctrl[0]),
+        .in0(shift1),
+        .in1(shift1),
+        .out(out)
+    );
+
+endmodule
+```
+
+However, there's a small mistake in the `barrel_shifter` module. The outputs of the multiplexers should be correctly connected to ensure that the shifts are applied in sequence. Here is the corrected version:
+
+```verilog
+module barrel_shifter (
+    input  [7:0] in,     // 8-bit input to be shifted
+    input  [2:0] ctrl,   // 3-bit control signal
+    output [7:0] out     // 8-bit shifted output
+);
+    wire [7:0] shift4, shift4_res, shift2, shift2_res, shift1;
+
+    // Shift by 4 positions
+    assign shift4 = {in[3:0], in[7:4]};  // Logical right shift by 4
+
+    // Mux to select between original input and shifted by 4
+    mux2X1 mux4 (
+        .sel(ctrl[2]),
+        .in0(in),
+        .in1(shift4),
+        .out(shift4_res)
+    );
+
+    // Shift by 2 positions (from the previous result)
+    assign shift2 = {shift4_res[1:0], shift4_res[7:2]};  // Logical right shift by 2
+
+    // Mux to select between previous result and shifted by 2
+    mux2X1 mux2 (
+        .sel(ctrl[1]),
+        .in0(shift4_res),
+        .in1(shift2),
+        .out(shift2_res)
+    );
+
+    // Shift by 1 position (from the previous result)
+    assign shift1 = {shift2_res[0], shift2_res[7:1]};  // Logical right shift by 1
+
+    // Mux to select between previous result and shifted by 1
+    mux2X1 mux1 (
+        .sel(ctrl[0]),
+        .in0(shift2_res),
+        .in1(shift1),
+        .out(out)
+    );
+
+endmodule
+```
+
+This corrected version ensures that the shifts are applied in sequence, and the multiplexers correctly select between the original input and the shifted results at each stage.

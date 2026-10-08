@@ -1,0 +1,76 @@
+Certainly! Below is the complete Verilog code for the `accu` module as per your requirements:
+
+```verilog
+module accu (
+    input wire clk,          // Clock input for synchronization
+    input wire rst_n,        // Active-low reset signal
+    input wire [7:0] data_in, // 8-bit input data for addition
+    input wire valid_in,     // Input signal indicating readiness for new data
+    output reg valid_out,    // Output signal indicating when 4 input data accumulation is reached
+    output reg [9:0] data_out // 10-bit output data representing the accumulated sum
+);
+
+    // Internal registers to hold the accumulated sum and the count of valid inputs
+    reg [9:0] accumulator;
+    reg [1:0] count;
+
+    // Initialize the outputs and internal registers on reset
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            valid_out <= 0;
+            data_out <= 0;
+            accumulator <= 0;
+            count <= 0;
+        end else begin
+            if (valid_in) begin
+                // Accumulate the input data
+                accumulator <= accumulator + data_in;
+                // Increment the count of valid inputs
+                count <= count + 1;
+
+                // Check if we have accumulated 4 valid inputs
+                if (count == 3) begin
+                    // Set the output data to the accumulated sum
+                    data_out <= accumulator + data_in;
+                    // Set the valid output signal
+                    valid_out <= 1;
+                    // Reset the accumulator and count for the next batch
+                    accumulator <= 0;
+                    count <= 0;
+                end else begin
+                    // If not yet 4, clear the valid output signal
+                    valid_out <= 0;
+                end
+            end else begin
+                // If no valid input, clear the valid output signal
+                valid_out <= 0;
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Inputs and Outputs**:
+   - `clk`: Clock signal for synchronous operations.
+   - `rst_n`: Active-low reset signal to reset the module.
+   - `data_in`: 8-bit input data to be accumulated.
+   - `valid_in`: Indicates when `data_in` is valid.
+   - `valid_out`: Indicates when the accumulated sum is ready.
+   - `data_out`: 10-bit output representing the sum of the last 4 valid inputs.
+
+2. **Internal Registers**:
+   - `accumulator`: Holds the running sum of the inputs.
+   - `count`: Counts the number of valid inputs received.
+
+3. **Reset Logic**:
+   - On reset (`rst_n` is low), all registers are initialized to 0.
+
+4. **Data Accumulation**:
+   - When `valid_in` is high, the input `data_in` is added to `accumulator`.
+   - The `count` is incremented for each valid input.
+   - Once `count` reaches 3 (indicating 4 valid inputs since counting starts from 0), the accumulated sum is output through `data_out`, and `valid_out` is set to 1 for one clock cycle.
+   - After outputting the result, both `accumulator` and `count` are reset for the next batch of inputs.
+
+This module ensures that the output is only generated once every 4 valid inputs and that the `valid_out` signal is asserted for a single clock cycle.

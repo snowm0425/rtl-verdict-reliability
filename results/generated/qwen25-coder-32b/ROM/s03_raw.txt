@@ -1,0 +1,40 @@
+Certainly! Below is the complete Verilog code for the `ROM` module as per your specifications:
+
+```verilog
+module ROM (
+    input [7:0] addr,    // 8-bit address input
+    output [15:0] dout   // 16-bit data output
+);
+
+    // Define a memory array of 256 locations, each 16 bits wide
+    reg [15:0] mem [0:255];
+
+    // Initial block to pre-load the ROM with fixed data
+    initial begin
+        // Initialize specific memory locations with predefined values
+        mem[0] = 16'hA0A0;
+        mem[1] = 16'hB1B1;
+        mem[2] = 16'hC2C2;
+        mem[3] = 16'hD3D3;
+
+        // Initialize other locations as needed (example: all zeros)
+        for (integer i = 4; i < 256; i = i + 1) begin
+            mem[i] = 16'h0000;
+        end
+    end
+
+    // Continuous assignment to read data from ROM based on the address
+    always @(*) begin
+        dout = mem[addr];
+    end
+
+endmodule
+```
+
+### Explanation:
+- **Module Declaration**: The module is named `ROM` with two ports: an 8-bit input `addr` and a 16-bit output `dout`.
+- **Memory Array**: `mem` is a 2D register array with 256 locations, each 16 bits wide.
+- **Initial Block**: This block initializes the ROM with fixed data. In this example, the first four memory locations (`mem[0]` to `mem[3]`) are initialized with specific values. The remaining locations are initialized to `16'h0000`.
+- **Behavioral Block**: The `always @(*)` block continuously reads the data from the memory location specified by the input `addr` and assigns it to the output `dout`.
+
+This code represents a simple read-only memory that can be used in various digital design applications. You can modify the initial values or the size of the memory array as needed for your specific requirements.

@@ -1,0 +1,62 @@
+Certainly! Below is a Verilog implementation of the described 4-bit Linear Feedback Shift Register (LFSR) with the specified feedback mechanism:
+
+```verilog
+module LFSR (
+    input clk,          // Clock signal
+    input rst,          // Active high reset signal
+    output reg [3:0] out // 4-bit output representing the current state of the LFSR
+);
+
+always @(posedge clk or posedge rst) begin
+    if (rst) begin
+        // Initialize the register to zero on active high reset
+        out <= 4'b0000;
+    end else begin
+        // Calculate the feedback bit as the inverted XOR of out[3] and out[2]
+        reg feedback;
+        feedback = ~(out[3] ^ out[2]);
+
+        // Shift the register left and insert the feedback bit at the LSB
+        out <= {out[2:0], feedback};
+    end
+end
+
+endmodule
+```
+
+### Explanation:
+
+1. **Module Declaration:**
+   - The module is named `LFSR`.
+   - It has two input ports: `clk` (clock) and `rst` (reset).
+   - It has one output port: `out` (4-bit register state).
+
+2. **Behavioral Description:**
+   - The `always` block is triggered on the rising edge of the clock (`posedge clk`) or the rising edge of the reset (`posedge rst`).
+   - When `rst` is high, the register `out` is initialized to `4'b0000` (all zeros).
+   - When `rst` is low, the LFSR performs its normal operation:
+     - The feedback bit is calculated as the inverted XOR of the most significant bit (`out[3]`) and the second most significant bit (`out[2]`).
+     - The register `out` is then shifted left, and the feedback bit is inserted at the least significant bit (LSB).
+
+### Usage:
+
+To use this module, you would instantiate it in a higher-level design, providing the necessary clock and reset signals, and connecting the output as needed. Here is an example of how you might instantiate the `LFSR` module:
+
+```verilog
+module top_module (
+    input clk,          // Clock signal
+    input rst,          // Active high reset signal
+    output reg [3:0] lfsr_out // 4-bit output from the LFSR
+);
+
+    // Instantiate the LFSR module
+    LFSR lfsr_inst (
+        .clk(clk),
+        .rst(rst),
+        .out(lfsr_out)
+    );
+
+endmodule
+```
+
+In this example, `top_module` is a higher-level module that instantiates the `LFSR` module and connects its outputs to `lfsr_out`.

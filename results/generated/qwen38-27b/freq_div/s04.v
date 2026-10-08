@@ -1,0 +1,46 @@
+module freq_div (
+    input  wire CLK_in,
+    input  wire RST,
+    output reg  CLK_50,
+    output reg  CLK_10,
+    output reg  CLK_1
+);
+
+    // Counter for CLK_10 (divide by 10)
+    // Toggle every 5 cycles to get divide by 10
+    reg [2:0] cnt_10;
+
+    // Counter for CLK_1 (divide by 100)
+    // Toggle every 50 cycles to get divide by 100
+    reg [5:0] cnt_100;
+
+    always @(posedge CLK_in or posedge RST) begin
+        if (RST) begin
+            CLK_50 <= 1'b0;
+            CLK_10 <= 1'b0;
+            CLK_1  <= 1'b0;
+            cnt_10 <= 3'd0;
+            cnt_100 <= 6'd0;
+        end else begin
+            // CLK_50: toggle every cycle -> divide by 2
+            CLK_50 <= ~CLK_50;
+
+            // CLK_10: toggle when cnt_10 == 4, then reset counter
+            if (cnt_10 == 3'd4) begin
+                CLK_10 <= ~CLK_10;
+                cnt_10 <= 3'd0;
+            end else begin
+                cnt_10 <= cnt_10 + 3'd1;
+            end
+
+            // CLK_1: toggle when cnt_100 == 49, then reset counter
+            if (cnt_100 == 6'd49) begin
+                CLK_1 <= ~CLK_1;
+                cnt_100 <= 6'd0;
+            end else begin
+                cnt_100 <= cnt_100 + 6'd1;
+            end
+        end
+    end
+
+endmodule

@@ -1,0 +1,7 @@
+# stage=sim rc=0
+# STDOUT
+=========== Test completed with          20 failures ===========
+/home/cvl/Documents/syn/RTLLM/Miscellaneous/RISC-V/clkgenerator/testbench.v:29: $finish called at 100 (1s)
+
+# STDERR
+

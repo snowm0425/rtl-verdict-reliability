@@ -1,0 +1,44 @@
+Certainly! Below is the Verilog implementation of the 4-bit Linear Feedback Shift Register (LFSR) based on the specifications you provided.
+
+```verilog
+module LFSR (
+    input wire clk,    // Clock signal
+    input wire rst,    // Active high reset signal
+    output reg [3:0] out // 4-bit output representing the current state of the LFSR
+);
+
+reg feedback; // Internal signal to hold the feedback value
+
+always @(posedge clk or posedge rst) begin
+    if (rst) begin
+        // Initialize the register to zero on reset
+        out <= 4'b0000;
+    end else begin
+        // Calculate the feedback by XORing out[3] and out[2], then invert the result
+        feedback = ~(out[3] ^ out[2]);
+        
+        // Shift the register left and insert the feedback value at the LSB
+        out <= {out[2:0], feedback};
+    end
+end
+
+endmodule
+```
+
+### Explanation:
+
+1. **Module Declaration**:
+   - The module is named `LFSR`.
+   - It has two input ports: `clk` (clock) and `rst` (reset).
+   - It has one output port: `out` (4-bit output).
+
+2. **Internal Signals**:
+   - `feedback`: A 1-bit register to hold the feedback value calculated by XORing `out[3]` and `out[2]`, and then inverting the result.
+
+3. **Behavioral Description**:
+   - The `always` block is triggered on the rising edge of `clk` or `rst`.
+   - When `rst` is high, the `out` register is initialized to `4'b0000` (all zeros).
+   - Otherwise, the feedback is calculated by XORing `out[3]` and `out[2]`, and then inverting the result.
+   - The `out` register is then shifted left, and the new feedback value is inserted at the least significant bit (LSB).
+
+This implementation ensures that the LFSR generates a pseudo-random sequence based on the specified feedback mechanism.

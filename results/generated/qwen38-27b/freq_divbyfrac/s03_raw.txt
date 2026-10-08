@@ -1,0 +1,56 @@
+```verilog
+module freq_divbyfrac (
+    input  wire clk,
+    input  wire rst_n,
+    output wire clk_div
+);
+
+    // Internal signals
+    reg [2:0] counter_r;
+    wire      div_clk_a;  // Intermediate clock with 4-cycle high / 3-cycle low pattern
+    wire      div_clk_b;  // Phase-shifted version (delayed by half clock)
+    wire      clk_div_int;
+
+    // Counter to generate the 7-cycle period
+    // For 3.5x division, we need a 7-cycle period (since 3.5 * 2 = 7)
+    // The counter counts from 0 to 6 and wraps around
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            counter_r <= 3'd0;
+        end else begin
+            if (counter_r == 3'd6) begin
+                counter_r <= 3'd0;
+            end else begin
+                counter_r <= counter_r + 3'd1;
+            end
+        end
+    end
+
+    // Generate the first divided clock signal
+    // High for 4 cycles, low for 3 cycles (or vice versa)
+    // Let's define:
+    // counter 0,1,2,3 -> high (4 cycles)
+    // counter 4,5,6   -> low  (3 cycles)
+    assign div_clk_a = (counter_r[2:0] >= 3'd0 && counter_r[2:0] <= 3'd3);
+
+    // Generate a phase-shifted version by using the negedge clock
+    // This creates a signal that is shifted by half a clock period
+    reg div_clk_b_r;
+    always @(negedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            div_clk_b_r <= 1'b0;
+        end else begin
+            // Use the same counter logic but on negedge to get phase shift
+            // We need to sample the counter on negedge
+            div_clk_b_r <= (counter_r[2:0] >= 3'd0 && counter_r[2:0] <= 3'd3);
+        end
+    end
+    assign div_clk_b = div_clk_b_r;
+
+    // OR the two clocks to get the final fractional divided clock
+    // The OR operation ensures that the output is high when either signal is high,
+    // effectively creating a uniform period output with 3.5x division
+    assign clk_div = div_clk_a | div_clk_b;
+
+endmodule
+```

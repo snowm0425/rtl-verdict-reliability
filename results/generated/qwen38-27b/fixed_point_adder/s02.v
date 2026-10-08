@@ -1,0 +1,43 @@
+module fixed_point_adder #(
+    parameter Q = 8,
+    parameter N = 16
+) (
+    input  wire [N-1:0] a,
+    input  wire [N-1:0] b,
+    output wire [N-1:0] c
+);
+
+    // Internal register to store the result
+    reg [N-1:0] res;
+
+    // Determine the sign bits of a and b
+    wire sign_a = a[N-1];
+    wire sign_b = b[N-1];
+
+    // Absolute values: if negative, invert and add 1 (two's complement)
+    wire [N-1:0] abs_a = sign_a ? (~a + 1'b1) : a;
+    wire [N-1:0] abs_b = sign_b ? (~b + 1'b1) : b;
+
+    always @(*) begin
+        if (sign_a == sign_b) begin
+            // Same sign: add absolute values
+            res = abs_a + abs_b;
+            // Set the sign bit of the result to match the input signs
+            res[N-1] = sign_a;
+        end else begin
+            // Different signs: subtract the smaller absolute value from the larger
+            if (abs_a >= abs_b) begin
+                // a >= b in magnitude, result is positive (or zero)
+                res = abs_a - abs_b;
+                res[N-1] = 1'b0;
+            end else begin
+                // b > a in magnitude, result is negative
+                res = abs_b - abs_a;
+                res[N-1] = 1'b1;
+            end
+        end
+    end
+
+    assign c = res;
+
+endmodule

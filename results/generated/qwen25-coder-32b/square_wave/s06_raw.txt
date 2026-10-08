@@ -1,0 +1,43 @@
+Certainly! Below is the complete Verilog code for the `square_wave` module as per your specifications:
+
+```verilog
+module square_wave (
+    input wire clk,          // Clock signal
+    input wire [7:0] freq,   // Frequency control
+    output reg wave_out      // Square wave output
+);
+
+    reg [7:0] count;         // Counter register
+
+    // Always block sensitive to the rising edge of the clock
+    always @(posedge clk) begin
+        if (count == (freq - 1)) begin
+            count <= 0;           // Reset the counter
+            wave_out <= ~wave_out; // Toggle the wave_out signal
+        end else begin
+            count <= count + 1; // Increment the counter
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Module Definition**:
+   - The module is named `square_wave`.
+   - It has three ports: `clk`, `freq`, and `wave_out`.
+
+2. **Internal Registers**:
+   - `count` is an 8-bit register used to keep track of the number of clock cycles.
+
+3. **Always Block**:
+   - The `always` block is triggered on the rising edge of the `clk` signal.
+   - It checks if `count` has reached `freq - 1`.
+   - If true, it resets `count` to 0 and toggles `wave_out` using the bitwise NOT operator (`~`).
+   - If not, it simply increments `count` by 1.
+
+### Notes:
+- The `freq` input is an 8-bit value, so the maximum value for `freq` is 255.
+- The frequency of the output square wave is inversely proportional to the `freq` value. A higher `freq` value results in a lower output frequency because the counter needs to reach a higher number before toggling `wave_out`.
+
+This design should work effectively for generating a square wave with a variable frequency based on the `freq` input.

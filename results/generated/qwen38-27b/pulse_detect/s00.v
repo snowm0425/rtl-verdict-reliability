@@ -1,0 +1,69 @@
+module pulse_detect (
+    input clk,
+    input rst_n,
+    input data_in,
+    output reg data_out
+);
+
+    // State encoding
+    localparam S_IDLE = 2'd0;
+    localparam S_RISING = 2'd1;
+    localparam S_HIGH = 2'd2;
+    localparam S_FALLING = 2'd3;
+
+    reg [1:0] state;
+    reg [1:0] state_next;
+
+    // State register
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n)
+            state <= S_IDLE;
+        else
+            state <= state_next;
+    end
+
+    // Next state logic
+    always @(*) begin
+        state_next = state;
+        case (state)
+            S_IDLE: begin
+                if (data_in)
+                    state_next = S_RISING;
+                else
+                    state_next = S_IDLE;
+            end
+            S_RISING: begin
+                if (data_in)
+                    state_next = S_HIGH;
+                else
+                    state_next = S_IDLE;
+            end
+            S_HIGH: begin
+                if (data_in)
+                    state_next = S_HIGH;
+                else
+                    state_next = S_FALLING;
+            end
+            S_FALLING: begin
+                // data_in is 0 here (we transitioned from HIGH because data_in went to 0)
+                // Check if data_in goes back to 1 (new pulse start) or stays 0
+                if (data_in)
+                    state_next = S_RISING;
+                else
+                    state_next = S_IDLE;
+            end
+            default: state_next = S_IDLE;
+        endcase
+    end
+
+    // Output logic
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n)
+            data_out <= 1'b0;
+        else if (state == S_FALLING)
+            data_out <= 1'b1;
+        else
+            data_out <= 1'b0;
+    end
+
+endmodule

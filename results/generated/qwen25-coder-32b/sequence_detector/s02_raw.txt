@@ -1,0 +1,81 @@
+Sure, I'll provide you with a Verilog implementation of the `sequence_detector` module as per your requirements. This module will use a state machine to detect the 4-bit sequence "1001".
+
+```verilog
+module sequence_detector (
+    input wire clk,         // Clock signal
+    input wire reset_n,     // Reset signal (active low)
+    input wire data_in,     // 1-bit input signal
+    output reg sequence_detected // 1-bit output signal
+);
+
+    // Define the states
+    typedef enum reg [1:0] {
+        IDLE,
+        S1,
+        S2,
+        S3,
+        S4
+    } state_t;
+
+    // State registers
+    state_t current_state;
+    state_t next_state;
+
+    // State transition logic
+    always @(posedge clk or negedge reset_n) begin
+        if (!reset_n) begin
+            current_state <= IDLE;
+            sequence_detected <= 0;
+        end else begin
+            current_state <= next_state;
+            sequence_detected <= (current_state == S4);
+        end
+    end
+
+    // Next state and output logic
+    always @(*) begin
+        case (current_state)
+            IDLE: begin
+                if (data_in == 1'b1)
+                    next_state = S1;
+                else
+                    next_state = IDLE;
+            end
+            S1: begin
+                if (data_in == 1'b0)
+                    next_state = S2;
+                else
+                    next_state = IDLE;
+            end
+            S2: begin
+                if (data_in == 1'b0)
+                    next_state = S3;
+                else
+                    next_state = IDLE;
+            end
+            S3: begin
+                if (data_in == 1'b1)
+                    next_state = S4;
+                else
+                    next_state = IDLE;
+            end
+            S4: begin
+                next_state = IDLE; // Once the sequence is detected, we can either stay in S4 or reset to IDLE
+            end
+            default: begin
+                next_state = IDLE;
+            end
+        endcase
+    end
+
+endmodule
+```
+
+### Explanation:
+- **State Definition:** The states are defined using an `enum` to make the code more readable. The states are `IDLE`, `S1`, `S2`, `S3`, and `S4`.
+- **State Registers:** `current_state` holds the current state of the FSM, and `next_state` holds the state the FSM will transition to on the next clock cycle.
+- **Reset Behavior:** When `reset_n` is low (active reset), the FSM is reset to the `IDLE` state, and `sequence_detected` is set to 0.
+- **State Transition Logic:** The state transitions are determined based on the current state and the `data_in` value. The FSM moves from `IDLE` to `S1` when it detects a '1', from `S1` to `S2` when it detects a '0', and so on until it reaches `S4`.
+- **Output Logic:** The `sequence_detected` signal is set high when the FSM reaches the `S4` state, indicating that the sequence "1001" has been detected.
+
+This implementation ensures that the sequence detector correctly identifies the 4-bit sequence "1001" and sets the `sequence_detected` signal high when the sequence is detected.

@@ -1,0 +1,51 @@
+Certainly! Below is the complete Verilog code for a 32-bit Multiplying Accumulator (MAC_PE) module as per your specifications:
+
+```verilog
+module pe (
+    input wire clk,          // Clock signal
+    input wire rst,          // Reset signal (active high)
+    input wire [31:0] a,     // 32-bit input operand A
+    input wire [31:0] b,     // 32-bit input operand B
+    output reg [31:0] c      // 32-bit output representing the accumulated result
+);
+
+    // Register to store the accumulated result
+    reg [63:0] acc_reg;  // Using 64-bit to prevent overflow during multiplication
+
+    // On the positive edge of the clock signal or the positive edge of the reset signal
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            // If reset is high, set the accumulator to 0
+            acc_reg <= 64'b0;
+            c <= 32'b0;
+        end else begin
+            // Multiply a and b, and add the result to the accumulator
+            acc_reg <= acc_reg + ($signed(a) * $signed(b));
+            // Assign the lower 32 bits of the accumulator to the output c
+            c <= acc_reg[31:0];
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+
+1. **Inputs and Outputs:**
+   - `clk`: The clock signal for synchronization.
+   - `rst`: The reset signal, active high.
+   - `a` and `b`: 32-bit input operands.
+   - `c`: 32-bit output representing the accumulated result.
+
+2. **Internal Register:**
+   - `acc_reg`: A 64-bit register to hold the intermediate accumulation result. This is done to prevent overflow when multiplying two 32-bit numbers, which can result in a 64-bit product.
+
+3. **Synchronous Logic:**
+   - The `always @(posedge clk or posedge rst)` block ensures that the logic inside is triggered on the rising edge of the clock or the reset signal.
+   - If `rst` is high, both `acc_reg` and `c` are reset to 0.
+   - If `rst` is low, the product of `a` and `b` is added to `acc_reg`, and the lower 32 bits of `acc_reg` are assigned to `c`.
+
+4. **Signed Multiplication:**
+   - The multiplication is performed using `$signed(a) * $signed(b)` to ensure that the multiplication respects the signed nature of the operands.
+
+This module provides a basic implementation of a 32-bit Multiplying Accumulator. You can further enhance it by adding features like saturation arithmetic if needed.

@@ -1,0 +1,41 @@
+```verilog
+module adder_8bit (
+    input  [7:0] a,
+    input  [7:0] b,
+    input        cin,
+    output [7:0] sum,
+    output       cout
+);
+
+    wire [7:0] carry;
+
+    // Instantiate 8 full adders in a ripple-carry configuration
+    genvar i;
+    generate
+        for (i = 0; i < 8; i = i + 1) begin : fa_gen
+            if (i == 0) begin : fa0
+                // First full adder with external carry-in
+                wire s_i;
+                wire c_i;
+                // Full adder logic for bit 0
+                assign s_i = a[0] ^ b[0] ^ cin;
+                assign c_i = (a[0] & b[0]) | (b[0] & cin) | (a[0] & cin);
+                assign sum[0] = s_i;
+                assign carry[0] = c_i;
+            end
+            else begin : fa_n
+                // Full adder for bits 1 through 7
+                wire s_i;
+                wire c_i;
+                assign s_i = a[i] ^ b[i] ^ carry[i-1];
+                assign c_i = (a[i] & b[i]) | (b[i] & carry[i-1]) | (a[i] & carry[i-1]);
+                assign sum[i] = s_i;
+                assign carry[i] = c_i;
+            end
+        end
+    endgenerate
+
+    assign cout = carry[7];
+
+endmodule
+```

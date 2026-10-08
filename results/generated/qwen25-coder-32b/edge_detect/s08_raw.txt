@@ -1,0 +1,67 @@
+Certainly! Below is the Verilog implementation of the `edge_detect` module as per your requirements:
+
+```verilog
+module edge_detect (
+    input clk,       // Clock signal
+    input rst_n,     // Reset signal (active low)
+    input a,         // Input signal
+
+    output reg rise, // Output signal indicating a rising edge
+    output reg down  // Output signal indicating a falling edge
+);
+
+    reg a_prev; // Previous value of the input signal 'a'
+
+    // Sequential block to detect edges
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            // Reset both outputs and the previous value of 'a'
+            rise <= 0;
+            down <= 0;
+            a_prev <= 0;
+        end else begin
+            // Detect rising edge
+            if (a && !a_prev) begin
+                rise <= 1;
+                down <= 0;
+            end
+            // Detect falling edge
+            else if (!a && a_prev) begin
+                rise <= 0;
+                down <= 1;
+            end
+            // No edge detected
+            else begin
+                rise <= 0;
+                down <= 0;
+            end
+
+            // Update the previous value of 'a'
+            a_prev <= a;
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Inputs and Outputs**:
+   - `clk`: The clock signal used to synchronize the edge detection.
+   - `rst_n`: The reset signal, active low. When `rst_n` is 0, the module is reset.
+   - `a`: The input signal to detect edges on.
+   - `rise`: The output signal that is 1 when a rising edge of `a` is detected.
+   - `down`: The output signal that is 1 when a falling edge of `a` is detected.
+
+2. **Internal Register**:
+   - `a_prev`: A register to store the previous value of `a` to detect changes.
+
+3. **Sequential Block**:
+   - The `always` block is triggered on the positive edge of `clk` or the negative edge of `rst_n`.
+   - If `rst_n` is low, the module is reset, and all outputs and `a_prev` are set to 0.
+   - If `rst_n` is high, the block checks the current and previous values of `a`:
+     - If `a` is 1 and `a_prev` is 0, a rising edge is detected, and `rise` is set to 1 while `down` is set to 0.
+     - If `a` is 0 and `a_prev` is 1, a falling edge is detected, and `down` is set to 1 while `rise` is set to 0.
+     - If no edge is detected, both `rise` and `down` are set to 0.
+   - `a_prev` is updated to the current value of `a` at the end of each clock cycle.
+
+This module ensures that the `rise` and `down` signals are set to 1 for one clock cycle when a rising or falling edge is detected on the input signal `a`.

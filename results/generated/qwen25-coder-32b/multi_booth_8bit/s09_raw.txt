@@ -1,0 +1,70 @@
+Sure, below is the Verilog code for the 8-bit Radix-4 Booth Multiplier (`multi_booth_8bit`). This module uses the Booth algorithm to perform multiplication and provides the product and a ready signal.
+
+```verilog
+module multi_booth_8bit (
+    input clk,          // Clock signal
+    input reset,        // Reset signal
+    input [7:0] a,      // 8-bit multiplicand
+    input [7:0] b,      // 8-bit multiplier
+    output reg [15:0] p, // 16-bit product
+    output reg rdy      // Ready signal
+);
+
+    reg [15:0] multiplier;
+    reg [15:0] multiplicand;
+    reg [4:0] ctr;      // Counter for Booth algorithm (0 to 15)
+
+    always @(posedge clk or posedge reset) begin
+        if (reset) begin
+            // Initialize registers on reset
+            multiplier <= {{8{a[7]}}, a};
+            multiplicand <= {{8{b[7]}}, b};
+            p <= 16'b0;
+            ctr <= 5'b0;
+            rdy <= 1'b0;
+        end else begin
+            if (ctr < 16) begin
+                // Booth algorithm processing
+                if (multiplier[ctr]) begin
+                    p <= p + multiplicand;
+                end
+                // Left shift the multiplicand
+                multiplicand <= {multiplicand[14:0], 1'b0};
+                // Increment the counter
+                ctr <= ctr + 1;
+                // Set ready signal to 0 during multiplication
+                rdy <= 1'b0;
+            end else begin
+                // Multiplication complete
+                rdy <= 1'b1;
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Registers**:
+   - `multiplier`: A 16-bit register initialized with the sign-extended version of the multiplicand `a`.
+   - `multiplicand`: A 16-bit register initialized with the sign-extended version of the multiplier `b`.
+   - `ctr`: A 5-bit counter used to track the number of iterations in the Booth algorithm.
+   - `p`: A 16-bit register to accumulate the product.
+   - `rdy`: A 1-bit register to indicate when the multiplication is complete.
+
+2. **Initialization**:
+   - On the positive edge of the `reset` signal, the `multiplier` and `multiplicand` registers are initialized with the sign-extended versions of `a` and `b`, respectively. The `p` register is set to 0, the `ctr` register is set to 0, and the `rdy` signal is set to 0.
+
+3. **Booth Algorithm Execution**:
+   - On the positive edge of the `clk` signal, the module checks if the `ctr` is less than 16.
+   - If `ctr` is less than 16, the module checks if the current bit of the `multiplier` register (`multiplier[ctr]`) is 1. If it is, the `p` register accumulates the value of the `multiplicand` register.
+   - The `multiplicand` register is left-shifted by 1 bit.
+   - The `ctr` register is incremented by 1.
+   - The `rdy` signal is set to 0 during the multiplication process.
+   - Once `ctr` reaches 16, indicating the completion of the multiplication process, the `rdy` signal is set to 1.
+
+### Notes:
+- The Booth algorithm implementation here is simplified to a Radix-2 Booth (also known as signed Booth) for demonstration purposes. For a true Radix-4 Booth multiplier, you would need to consider pairs of bits and perform additional logic to handle the different cases.
+- The sign extension is done by replicating the most significant bit of the input to fill the upper bits of the 16-bit registers.
+
+This code provides a basic framework for an 8-bit Booth multiplier. For a full Radix-4 implementation, additional logic would be required to handle the different cases of the Radix-4 Booth algorithm.

@@ -1,0 +1,37 @@
+Certainly! Below is the complete Verilog code for the Multiplying Accumulator (MAC_PE) module as per your specifications:
+
+```verilog
+module pe (
+    input wire clk,          // Clock signal
+    input wire rst,          // Reset signal (active high)
+    input wire [31:0] a,     // 32-bit input operand A
+    input wire [31:0] b,     // 32-bit input operand B
+    output reg [31:0] c      // 32-bit output representing the accumulated result
+);
+
+    // Register to store the partial sum (accumulated result)
+    reg [63:0] partial_sum; // Using 64-bit to avoid overflow during multiplication
+
+    // Always block to handle clock and reset
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            // Reset condition: set the accumulated result to 0
+            partial_sum <= 64'd0;
+            c <= 32'd0;
+        end else begin
+            // Normal operation: accumulate the product of a and b
+            partial_sum <= partial_sum + (a * b);
+            c <= partial_sum[31:0]; // Assign the lower 32 bits to the output
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+- **Clock and Reset:** The `always @(posedge clk or posedge rst)` block ensures that the operation is triggered on the rising edge of either the clock (`clk`) or the reset (`rst`).
+- **Reset Condition:** When `rst` is high, `partial_sum` and `c` are reset to 0.
+- **Normal Operation:** When `rst` is low, the product of `a` and `b` is added to `partial_sum`. The lower 32 bits of `partial_sum` are then assigned to `c` to ensure that `c` remains a 32-bit register.
+- **64-bit Partial Sum:** The `partial_sum` register is 64 bits wide to handle the potential overflow from the multiplication of two 32-bit numbers.
+
+This implementation ensures that the multiplication and accumulation are performed correctly and efficiently in each clock cycle.

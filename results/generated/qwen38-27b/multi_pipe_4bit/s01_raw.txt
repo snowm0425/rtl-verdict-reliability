@@ -1,0 +1,134 @@
+Here is the complete Verilog code for the `multi_pipe_4bit` module, implemented according to your specifications.
+
+### Design Analysis
+
+1.  **Architecture**:
+    *   **Stage 0 (Combinational)**: Generates partial products. For each bit `i` of `mul_b`, if `mul_b[i]` is 1, the partial product is `mul_a << i`; otherwise, it is 0. These are extended to `2*size` bits.
+    *   **Stage 1 (Register)**: Stores the first set of partial products. Since we have `size` partial products, we can sum them in a tree or sequentially. To keep the pipeline simple and match the "two levels of registers" description, we will:
+        *   **Register Level 1**: Store the individual partial products (or a first stage of summation).
+        *   **Register Level 2**: Store the final sum.
+    *   *Refinement for "Two Levels of Registers"*:
+        *   **Level 1**: Registers to hold the generated partial products (or a first partial sum).
+        *   **Level 2**: Registers to hold the final accumulated product.
+        *   The description says: "On the positive edge... the module performs add operations... If reset... registers are set to 0... If reset high, registers are updated with the sum of the corresponding partial products." This implies:
+            *   **Cycle 1**: Inputs are sampled, partial products are generated.
+            *   **Cycle 2 (Reg Level 1)**: Partial products are stored in registers.
+            *   **Cycle 3 (Reg Level 2)**: The stored partial products are summed, and the result is stored in `mul_out`.
+
+2.  **Implementation Strategy**:
+    *   Use a `generate` block to create the partial product logic.
+    *   Use a `for` loop or explicit addition to sum the partial products.
+    *   Since `size` is a parameter (default 4), we can use a simple adder tree or a sequential addition in the second stage. For clarity and to strictly follow the "two levels" description, we will:
+        1.  Generate all partial products combinationally.
+        2.  **First Register Stage**: Latch the partial products into registers.
+        3.  **Second Register Stage**: Sum the latched partial products and latch the result into `mul_out`.
+
+    However, the prompt says: *"If the reset signal (rst_n) is high, the registers are updated with the sum of the corresponding partial products."* and *"the product output (mul_out) is updated with the sum of registers."*
+
+    This suggests:
+    *   **Reg 1**: Stores intermediate sums or partial products.
+    *   **Reg 2**: Stores the final `mul_out`.
+
+    Let's interpret "two levels of registers" as:
+    1.  **Level 1 Registers**: Hold the partial products (or a first stage sum).
+    2.  **Level 2 Registers**: Hold the final result.
+
+    A common 2-stage pipelined multiplier:
+    *   **Stage 1**: Compute partial products.
+    *   **Stage 2 (Reg 1)**: Store partial products.
+    *   **Stage 3 (Reg 2)**: Sum the stored partial products and output.
+
+    Let's implement it as:
+    *   Combinational: Generate `partial_products[0..size-1]`.
+    *   `always @(posedge clk)` #1: Store `partial_products` into `reg_partial[0..size-1]`.
+    *   `always @(posedge clk)` #2: Sum `reg_partial[0..size-1]` into `mul_out`.
+
+    But the prompt says: *"On the positive edge... the module performs add operations... If reset high, the registers are updated with the sum of the corresponding partial products."* This could mean that the first register stage actually performs a *first* addition. To be safe and efficient, let's use a simple approach:
+    *   **Stage 1**: Compute all partial products combinationally.
+    *   **Stage 2 (Reg 1)**: Latch the partial products.
+    *   **Stage 3 (Reg 2)**: Sum the latched partial products and latch the result.
+
+    This fits "two levels of registers" (Reg 1 and Reg 2).
+
+### Verilog Code
+
+```verilog
+module multi_pipe_4bit #(
+    parameter size = 4
+) (
+    input  wire              clk,
+    input  wire              rst_n,
+    input  wire [size-1:0]   mul_a,
+    input  wire [size-1:0]   mul_b,
+    output reg  [2*size-1:0] mul_out
+);
+
+    // Internal signals
+    wire [2*size-1:0] partial_products [0:size-1];
+    reg  [2*size-1:0] reg_partial      [0:size-1];
+
+    // Generate partial products
+    genvar i;
+    generate
+        for (i = 0; i < size; i = i + 1) begin : gen_partial
+            // If mul_b[i] is 1, partial product is mul_a << i
+            // Otherwise, 0
+            assign partial_products[i] = mul_b[i] ? ({{size{1'b0}}, mul_a} << i) : {2*size{1'b0}};
+        end
+    endgenerate
+
+    // First level of registers: Store the partial products
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            for (i = 0; i < size; i = i + 1) begin
+                reg_partial[i] <= {2*size{1'b0}};
+            end
+        end else begin
+            for (i = 0; i < size; i = i + 1) begin
+                reg_partial[i] <= partial_products[i];
+            end
+        end
+    end
+
+    // Second level of registers: Sum the registered partial products and store in mul_out
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            mul_out <= {2*size{1'b0}};
+        end else begin
+            // Sum all reg_partial[i]
+            reg [2*size-1:0] sum;
+            sum = reg_partial[0];
+            for (i = 1; i < size; i = i + 1) begin
+                sum = sum + reg_partial[i];
+            end
+            mul_out <= sum;
+        end
+    end
+
+endmodule
+```
+
+### Explanation
+
+1.  **Parameterization**: The module uses a `size` parameter (default 4) to define the width of the inputs and the output width (`2*size`).
+2.  **Partial Product Generation**:
+    *   A `generate` block iterates from `0` to `size-1`.
+    *   For each bit `i` of `mul_b`, it checks if `mul_b[i]` is `1`.
+    *   If `1`, the partial product is `mul_a` shifted left by `i` positions. The shift is done on an extended version of `mul_a` (zero-extended to `2*size` bits) to ensure correct bit width.
+    *   If `0`, the partial product is `0`.
+3.  **First Register Stage (`reg_partial`)**:
+    *   An `always` block triggered on the positive edge of `clk` or negative edge of `rst_n`.
+    *   On reset, all `reg_partial` registers are set to `0`.
+    *   Otherwise, the combinationally generated `partial_products` are stored in `reg_partial`. This is the first level of pipeline registers.
+4.  **Second Register Stage (`mul_out`)**:
+    *   Another `always` block, also triggered on `clk` and `rst_n`.
+    *   On reset, `mul_out` is set to `0`.
+    *   Otherwise, it sums all the values in `reg_partial` (which now hold the partial products from the previous cycle) and stores the result in `mul_out`. This is the second level of pipeline registers.
+
+### Pipeline Timing
+
+*   **Cycle 1**: `mul_a` and `mul_b` are input. Partial products are computed combinationally.
+*   **Cycle 2**: Partial products are latched into `reg_partial`.
+*   **Cycle 3**: The sum of `reg_partial` is computed and latched into `mul_out`.
+
+Thus, the output `mul_out` reflects the product of the inputs from **two clock cycles ago**.

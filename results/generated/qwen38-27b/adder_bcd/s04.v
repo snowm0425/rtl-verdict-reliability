@@ -1,0 +1,48 @@
+module adder_bcd (
+    input  [3:0] A,
+    input  [3:0] B,
+    input        Cin,
+    output [3:0] Sum,
+    output       Cout
+);
+
+    wire [4:0] binary_sum;
+    wire [3:0] sum_4bit;
+    wire       carry_out_binary;
+    wire       needs_correction;
+    wire [3:0] corrected_sum;
+    wire       cout;
+
+    // Binary addition of A, B, and Cin
+    assign binary_sum = {1'b0, A} + {1'b0, B} + {4'd0, Cin};
+
+    // Extract the lower 4 bits and the carry from binary addition
+    assign sum_4bit = binary_sum[3:0];
+    assign carry_out_binary = binary_sum[4];
+
+    // Determine if BCD correction is needed:
+    // Correction is needed if the binary sum (including carry-out from the 4-bit adder) exceeds 9.
+    // This happens if:
+    // 1. The 4-bit sum is greater than 9 (i.e., 10, 11, 12, 13, 14, or 15)
+    // 2. OR there is a carry-out from the binary addition (which means the total is >= 16, but in BCD context,
+    //    we need to consider that if carry_out_binary is 1, the effective sum is >= 16, which definitely needs correction)
+    // Actually, let's think more carefully:
+    // The total binary sum is a 5-bit value. We need to check if this total is > 9.
+    // But the standard BCD correction logic is:
+    // If (sum_4bit > 9) OR (carry_out_binary == 1), then add 6.
+    // However, carry_out_binary being 1 means the sum is at least 16, which is definitely > 9.
+    // And sum_4bit > 9 covers the cases where sum is 10-15.
+    // So the condition is: needs_correction = (sum_4bit > 4'd9) | carry_out_binary;
+
+    assign needs_correction = (sum_4bit > 4'd9) | carry_out_binary;
+
+    // Perform BCD correction: add 6 if needed
+    assign corrected_sum = needs_correction ? (sum_4bit + 4'd6) : sum_4bit;
+
+    // The carry-out for BCD is generated if correction was needed
+    assign Cout = needs_correction;
+
+    // Output the corrected 4-bit sum
+    assign Sum = corrected_sum;
+
+endmodule

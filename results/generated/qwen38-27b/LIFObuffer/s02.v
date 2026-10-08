@@ -1,0 +1,69 @@
+module LIFObuffer (
+    input wire [3:0] dataIn,
+    input wire RW,
+    input wire EN,
+    input wire Rst,
+    input wire Clk,
+    output reg EMPTY,
+    output reg FULL,
+    output reg [3:0] dataOut
+);
+
+    reg [3:0] stack_mem [0:3];
+    reg [1:0] SP; // Stack pointer, 2 bits to represent 0-4
+
+    // Initialize stack_mem
+    integer i;
+    initial begin
+        for (i = 0; i < 4; i = i + 1) begin
+            stack_mem[i] = 4'b0000;
+        end
+    end
+
+    always @(posedge Clk) begin
+        if (Rst) begin
+            // Reset: clear stack, set SP to 4 (empty), initialize memory
+            SP <= 2'd4;
+            for (i = 0; i < 4; i = i + 1) begin
+                stack_mem[i] <= 4'b0000;
+            end
+            dataOut <= 4'b0000;
+            EMPTY <= 1'b1;
+            FULL <= 1'b0;
+        end
+        else if (EN) begin
+            if (RW == 1'b0) begin
+                // Write operation (push)
+                if (SP != 2'd4) begin
+                    // Buffer not full
+                    stack_mem[SP] <= dataIn;
+                    SP <= SP - 1;
+                end
+            end
+            else begin
+                // Read operation (pop)
+                if (SP != 2'd0) begin
+                    // Buffer not empty
+                    dataOut <= stack_mem[SP];
+                    stack_mem[SP] <= 4'b0000;
+                    SP <= SP + 1;
+                end
+            end
+            
+            // Update flags based on new SP value
+            if (SP == 2'd4) begin
+                EMPTY <= 1'b1;
+                FULL <= 1'b0;
+            end
+            else if (SP == 2'd0) begin
+                EMPTY <= 1'b0;
+                FULL <= 1'b1;
+            end
+            else begin
+                EMPTY <= 1'b0;
+                FULL <= 1'b0;
+            end
+        end
+    end
+
+endmodule

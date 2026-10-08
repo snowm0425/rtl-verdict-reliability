@@ -1,0 +1,65 @@
+Certainly! Below is the complete Verilog code for the `width_8to16` module as per your specifications:
+
+```verilog
+module width_8to16 (
+    input wire clk,       // Clock signal
+    input wire rst_n,     // Active-low reset signal
+    input wire valid_in,  // Validity of the input data
+    input wire [7:0] data_in,  // 8-bit input data
+
+    output reg valid_out, // Validity of the output data
+    output reg [15:0] data_out  // 16-bit output data
+);
+
+    reg [7:0] data_lock; // Register to store the first 8-bit data
+    reg flag;            // Flag to indicate if the first data is stored
+
+    // Synchronous logic on rising edge of clock or falling edge of reset
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            // Reset condition
+            data_lock <= 8'b0;
+            flag <= 0;
+            valid_out <= 0;
+            data_out <= 16'b0;
+        end else begin
+            if (valid_in) begin
+                if (!flag) begin
+                    // First valid data received
+                    data_lock <= data_in;
+                    flag <= 1;
+                    valid_out <= 0;
+                end else begin
+                    // Second valid data received, concatenate with stored data
+                    data_out <= {data_lock, data_in};
+                    valid_out <= 1;
+                    flag <= 0;
+                end
+            end else begin
+                // If no valid data, keep valid_out low
+                valid_out <= 0;
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Registers**:
+   - `data_lock`: This register stores the first 8-bit input data.
+   - `flag`: This flag indicates whether the first 8-bit data has been stored.
+   - `valid_out` and `data_out`: These are the output signals. `valid_out` indicates whether the output data is valid, and `data_out` is the 16-bit concatenated result.
+
+2. **Synchronous Logic**:
+   - The `always` block is triggered on the positive edge of the clock (`posedge clk`) or the negative edge of the reset (`negedge rst_n`).
+   - On reset (`!rst_n`), all registers are cleared to their initial state.
+   - When a valid input data (`valid_in`) is received:
+     - If `flag` is 0, it means the first 8-bit data is being received. This data is stored in `data_lock`, and `flag` is set to 1.
+     - If `flag` is 1, it means the second 8-bit data is being received. The two 8-bit data (`data_lock` and `data_in`) are concatenated to form the 16-bit `data_out`, and `valid_out` is set to 1. The `flag` is then reset to 0.
+
+3. **Output**:
+   - `valid_out` is high only when the 16-bit data has been formed by concatenating two 8-bit inputs.
+   - `data_out` contains the concatenated 16-bit data.
+
+This code ensures that the conversion from 8-bit to 16-bit data occurs only after two valid 8-bit inputs have been received, and the outputs are generated in the next clock cycle.

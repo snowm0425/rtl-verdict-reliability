@@ -1,0 +1,6 @@
+# stage=compile rc=1
+# STDOUT
+
+# STDERR
+/home/cvl/Documents/syn/RTLLM/Memory/FIFO/asyn_fifo/testbench.v:102: sorry: break statements not supported.
+

@@ -1,0 +1,68 @@
+Sure! Below is a complete implementation of the `accu` module in Verilog. This module accumulates four 8-bit input data values and outputs their sum as a 10-bit value. The `valid_out` signal indicates when the accumulation is complete.
+
+```verilog
+module accu (
+    input wire clk,
+    input wire rst_n,
+    input wire [7:0] data_in,
+    input wire valid_in,
+    output reg [9:0] data_out,
+    output reg valid_out
+);
+
+    // Internal registers to hold the accumulated sum and the count of received data
+    reg [9:0] acc_sum;
+    reg [1:0] data_count;
+
+    // Initialize the accumulated sum and count on reset
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            acc_sum <= 10'b0;
+            data_count <= 2'b0;
+            valid_out <= 1'b0;
+        end else begin
+            // Check if valid_in is high and accumulate the data
+            if (valid_in) begin
+                acc_sum <= acc_sum + data_in;
+                data_count <= data_count + 1;
+            end
+
+            // Check if we have accumulated 4 data points
+            if (data_count == 2'b11) begin
+                data_out <= acc_sum;
+                valid_out <= 1'b1;
+                // Reset the accumulated sum and count
+                acc_sum <= 10'b0;
+                data_count <= 2'b0;
+            end else begin
+                valid_out <= 1'b0;
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Inputs and Outputs:**
+   - `clk`: Clock signal for synchronization.
+   - `rst_n`: Active-low reset signal.
+   - `data_in[7:0]`: 8-bit input data for addition.
+   - `valid_in`: Input signal indicating readiness for new data.
+   - `data_out[9:0]`: 10-bit output data representing the accumulated sum.
+   - `valid_out`: Output signal indicating when 4 input data accumulation is reached.
+
+2. **Internal Registers:**
+   - `acc_sum`: Accumulates the sum of the input data.
+   - `data_count`: Counts the number of valid data inputs received.
+
+3. **Reset and Synchronization:**
+   - The module is reset asynchronously on the falling edge of `rst_n`.
+   - The module is synchronized to the rising edge of `clk`.
+
+4. **Accumulation Logic:**
+   - When `valid_in` is high, the module accumulates the `data_in` into `acc_sum` and increments `data_count`.
+   - When `data_count` reaches 3 (binary `11`), the module outputs the accumulated sum on `data_out` and sets `valid_out` to high for one cycle.
+   - After outputting, the module resets `acc_sum` and `data_count` to zero.
+
+This implementation ensures that the accumulation and output are correctly synchronized with the clock and reset signals, and it handles the valid signal appropriately.

@@ -1,0 +1,82 @@
+Certainly! Below is the complete Verilog code for a dual-port RAM with the specified parameters and functionality:
+
+```verilog
+module RAM (
+    input clk,          // Clock signal
+    input rst_n,        // Active-low reset signal
+    input write_en,     // Write enable signal
+    input [2:0] write_addr, // Write address (3 bits for 8 locations)
+    input [5:0] write_data, // Write data (6 bits)
+    input read_en,      // Read enable signal
+    input [2:0] read_addr,  // Read address (3 bits for 8 locations)
+    output reg [5:0] read_data // Read data (6 bits)
+);
+
+    // Parameters
+    parameter WIDTH = 6;
+    parameter DEPTH = 8;
+
+    // RAM array declaration
+    reg [WIDTH-1:0] RAM [DEPTH-1:0];
+
+    // Initialization
+    initial begin
+        // Initialize all memory locations to 0
+        for (integer i = 0; i < DEPTH; i = i + 1) begin
+            RAM[i] <= {WIDTH{1'b0}};
+        end
+    end
+
+    // Write operation
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            // Clear all memory locations on reset
+            for (integer i = 0; i < DEPTH; i = i + 1) begin
+                RAM[i] <= {WIDTH{1'b0}};
+            end
+        end else if (write_en) begin
+            // Write data to the specified address
+            RAM[write_addr] <= write_data;
+        end
+    end
+
+    // Read operation
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            // Clear read_data on reset
+            read_data <= {WIDTH{1'b0}};
+        end else if (read_en) begin
+            // Read data from the specified address
+            read_data <= RAM[read_addr];
+        end else begin
+            // Clear read_data if read_en is not active
+            read_data <= {WIDTH{1'b0}};
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Parameters**:
+   - `WIDTH`: The width of each memory location, set to 6 bits.
+   - `DEPTH`: The depth of the RAM, set to 8 locations.
+
+2. **RAM Array**:
+   - Declared as `reg [WIDTH-1:0] RAM [DEPTH-1:0]`, which means it has 8 memory locations, each 6 bits wide.
+
+3. **Initialization**:
+   - The `initial` block sets all memory locations to 0 when the simulation starts.
+
+4. **Write Operation**:
+   - The `always` block triggered on the positive edge of the clock or the negative edge of the reset signal handles the write operation.
+   - On reset, all memory locations are set to 0.
+   - If `write_en` is high, the data at `write_addr` is updated with `write_data`.
+
+5. **Read Operation**:
+   - The `always` block triggered on the positive edge of the clock or the negative edge of the reset signal handles the read operation.
+   - On reset, `read_data` is set to 0.
+   - If `read_en` is high, `read_data` is assigned the value from the memory location specified by `read_addr`.
+   - If `read_en` is low, `read_data` is set to 0.
+
+This implementation ensures that the RAM supports concurrent read and write operations, as specified.

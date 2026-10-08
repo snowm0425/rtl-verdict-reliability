@@ -1,0 +1,43 @@
+```verilog
+module comparator_4bit (
+    input  [3:0] A,
+    input  [3:0] B,
+    output A_greater,
+    output A_equal,
+    output A_less
+);
+
+    // Perform subtraction A - B
+    // We use a 4-bit subtractor which is equivalent to A + (~B) + 1
+    // The carry out of this addition indicates no borrow (i.e., A >= B)
+    // If borrow occurs, carry_out = 0, meaning A < B
+    
+    wire [3:0] diff;
+    wire carry_out;
+
+    // A - B = A + (~B) + 1
+    // Use an adder: A + (~B) + 1
+    // We can compute this as:
+    //   temp = A + (~B)
+    //   diff = temp + 1
+    // But more efficiently, we can use a 4-bit adder with carry-in = 1
+    
+    wire [3:0] not_B = ~B;
+    
+    // Add A + not_B + 1
+    // carry_out is the carry out of the addition, which is 1 if A >= B (no borrow)
+    // diff is the 4-bit result of A - B (mod 16)
+    
+    assign {carry_out, diff} = A + not_B + 4'b0001;
+
+    // Determine outputs:
+    // If carry_out is 0, then a borrow occurred, so A < B
+    // If carry_out is 1 and diff is 0, then A == B
+    // If carry_out is 1 and diff is not 0, then A > B
+    
+    assign A_less    = ~carry_out;
+    assign A_equal   = carry_out & (~diff[0] & ~diff[1] & ~diff[2] & ~diff[3]);
+    assign A_greater = carry_out & (diff[0] | diff[1] | diff[2] | diff[3]);
+
+endmodule
+```

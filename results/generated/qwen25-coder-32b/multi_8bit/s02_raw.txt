@@ -1,0 +1,117 @@
+Certainly! Below is the complete Verilog code for an 8-bit multiplier using the shift-and-add method:
+
+```verilog
+module multi_8bit (
+    input  [7:0] A,       // First 8-bit input operand (multiplicand)
+    input  [7:0] B,       // Second 8-bit input operand (multiplier)
+    output [15:0] product // 16-bit output representing the product (A * B)
+);
+
+    reg [15:0] acc;       // Accumulator to store the intermediate product
+    reg [7:0] multiplicand; // Copy of multiplicand A
+    reg [7:0] multiplier; // Copy of multiplier B
+    integer i;             // Loop variable
+
+    // Initialize the accumulator to 0 and copies of A and B
+    initial begin
+        acc = 16'b0;
+        multiplicand = A;
+        multiplier = B;
+    end
+
+    // Sequential logic to perform the shift-and-add multiplication
+    always @(posedge clk or posedge reset) begin
+        if (reset) begin
+            acc <= 16'b0;
+        end else begin
+            for (i = 0; i < 8; i = i + 1) begin
+                if (multiplier[0]) begin
+                    acc <= acc + {8'b0, multiplicand}; // Add the multiplicand if the current bit of multiplier is 1
+                end
+                multiplicand <= multiplicand << 1; // Shift the multiplicand left by 1 bit
+                multiplier <= multiplier >> 1; // Shift the multiplier right by 1 bit
+            end
+        end
+    end
+
+    // Assign the final product
+    assign product = acc;
+
+endmodule
+```
+
+### Explanation:
+
+1. **Inputs and Outputs:**
+   - `A` and `B` are the 8-bit inputs representing the multiplicand and multiplier, respectively.
+   - `product` is the 16-bit output that holds the result of the multiplication.
+
+2. **Registers:**
+   - `acc`: Accumulator to store the intermediate and final product.
+   - `multiplicand`: A copy of the multiplicand `A` that gets shifted left during the multiplication process.
+   - `multiplier`: A copy of the multiplier `B` that gets shifted right during the multiplication process.
+
+3. **Initial Block:**
+   - Initializes the accumulator to 0 and sets `multiplicand` and `multiplier` to the values of `A` and `B`, respectively.
+
+4. **Sequential Logic (always block):**
+   - The block is sensitive to the rising edge of the clock (`clk`) and asynchronous reset (`reset`).
+   - On reset, the accumulator is set to 0.
+   - The loop runs for 8 iterations (since `B` is an 8-bit number).
+   - If the least significant bit of the `multiplier` is 1, the `multiplicand` is added to the accumulator.
+   - The `multiplicand` is then shifted left by 1 bit, and the `multiplier` is shifted right by 1 bit.
+
+5. **Final Assignment:**
+   - The final product is assigned to the `product` output port.
+
+### Note:
+- The code assumes the presence of a clock signal (`clk`) and a reset signal (`reset`). These should be added to the module's port list if they are not already included.
+- The reset is assumed to be active high (`posedge reset`). If you need an active-low reset, adjust the condition accordingly.
+
+Here is the modified module with `clk` and `reset` added to the port list:
+
+```verilog
+module multi_8bit (
+    input clk,            // Clock signal
+    input reset,          // Reset signal (active high)
+    input  [7:0] A,       // First 8-bit input operand (multiplicand)
+    input  [7:0] B,       // Second 8-bit input operand (multiplier)
+    output [15:0] product // 16-bit output representing the product (A * B)
+);
+
+    reg [15:0] acc;       // Accumulator to store the intermediate product
+    reg [7:0] multiplicand; // Copy of multiplicand A
+    reg [7:0] multiplier; // Copy of multiplier B
+    integer i;             // Loop variable
+
+    // Initialize the accumulator to 0 and copies of A and B
+    initial begin
+        acc = 16'b0;
+        multiplicand = A;
+        multiplier = B;
+    end
+
+    // Sequential logic to perform the shift-and-add multiplication
+    always @(posedge clk or posedge reset) begin
+        if (reset) begin
+            acc <= 16'b0;
+            multiplicand <= A;
+            multiplier <= B;
+        end else begin
+            for (i = 0; i < 8; i = i + 1) begin
+                if (multiplier[0]) begin
+                    acc <= acc + {8'b0, multiplicand}; // Add the multiplicand if the current bit of multiplier is 1
+                end
+                multiplicand <= multiplicand << 1; // Shift the multiplicand left by 1 bit
+                multiplier <= multiplier >> 1; // Shift the multiplier right by 1 bit
+            end
+        end
+    end
+
+    // Assign the final product
+    assign product = acc;
+
+endmodule
+```
+
+This version includes the clock and reset signals in the module's port list and ensures proper initialization within the reset condition.

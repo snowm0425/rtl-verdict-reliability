@@ -1,0 +1,61 @@
+module fixed_point_subtractor #(
+    parameter Q = 8,  // Number of fractional bits
+    parameter N = 16  // Total number of bits (integer + fractional)
+)(
+    input  wire [N-1:0] a,  // First N-bit fixed-point input operand
+    input  wire [N-1:0] b,  // Second N-bit fixed-point input operand
+    output wire [N-1:0] c   // N-bit output representing the result of the fixed-point subtraction
+);
+
+    // Internal register to store the result
+    reg [N-1:0] res;
+
+    // Wires for absolute values and comparison
+    wire [N-1:0] abs_a;
+    wire [N-1:0] abs_b;
+    wire [N-1:0] add_res;
+    wire a_is_positive;
+    wire b_is_positive;
+    wire a_greater_than_b;
+
+    // Calculate absolute values
+    assign abs_a = a[N-1] ? (~a + 1) : a;
+    assign abs_b = b[N-1] ? (~b + 1) : b;
+
+    // Determine the signs of a and b
+    assign a_is_positive = ~a[N-1];
+    assign b_is_positive = ~b[N-1];
+
+    // Compare absolute values
+    assign a_greater_than_b = (abs_a > abs_b);
+
+    // Perform subtraction based on signs
+    always @(*) begin
+        if (a[N-1] == b[N-1]) begin
+            // Same sign subtraction
+            res = a - b;
+        end else begin
+            // Different sign subtraction
+            add_res = abs_a + abs_b;
+            if (a_is_positive && ~b_is_positive) begin
+                // a is positive, b is negative
+                res = a_greater_than_b ? abs_a - abs_b : -1 * (abs_b - abs_a);
+            end else if (~a_is_positive && b_is_positive) begin
+                // a is negative, b is positive
+                res = a_greater_than_b ? -1 * (abs_a - abs_b) : abs_b - abs_a;
+            end else begin
+                // This case should not happen due to the previous conditions
+                res = 0;
+            end
+        end
+
+        // Handle zero result explicitly
+        if (res == -1 * (1 << (N-1))) begin
+            res = 0;
+        end
+    end
+
+    // Assign the result to the output
+    assign c = res;
+
+endmodule

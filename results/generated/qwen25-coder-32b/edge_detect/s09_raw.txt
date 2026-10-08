@@ -1,0 +1,58 @@
+Certainly! Below is the complete Verilog code for the `edge_detect` module that detects rising and falling edges of a 1-bit input signal `a` and provides corresponding output signals `rise` and `down` synchronized with the clock signal `clk`.
+
+```verilog
+module edge_detect (
+    input wire clk,       // Clock signal
+    input wire rst_n,     // Reset signal (active low)
+    input wire a,         // Input signal
+    output reg rise,      // Output signal indicating a rising edge
+    output reg down       // Output signal indicating a falling edge
+);
+
+    reg a_prev;  // Previous value of the input signal 'a'
+
+    // Sequential block to detect edges
+    always @(posedge clk or negedge rst_n) begin
+        if (~rst_n) begin
+            // Reset condition: clear the edge detection signals and previous value
+            a_prev <= 0;
+            rise <= 0;
+            down <= 0;
+        end else begin
+            // Store the previous value of 'a'
+            a_prev <= a;
+
+            // Detect rising and falling edges
+            if (a == 1 && a_prev == 0) begin
+                rise <= 1;
+            end else if (a == 0 && a_prev == 1) begin
+                down <= 1;
+            end else begin
+                rise <= 0;
+                down <= 0;
+            end
+        end
+    end
+endmodule
+```
+
+### Explanation:
+1. **Inputs and Outputs:**
+   - `clk`: Clock signal used for synchronization.
+   - `rst_n`: Active low reset signal. When `rst_n` is low, all signals are reset.
+   - `a`: The input signal whose edges are to be detected.
+   - `rise`: Output signal that goes high for one clock cycle when a rising edge is detected on `a`.
+   - `down`: Output signal that goes high for one clock cycle when a falling edge is detected on `a`.
+
+2. **Internal Register:**
+   - `a_prev`: A register to store the previous value of the input signal `a`.
+
+3. **Sequential Logic:**
+   - The `always` block is triggered on the positive edge of `clk` or the negative edge of `rst_n`.
+   - Upon reset (`rst_n` is low), all output signals and `a_prev` are set to 0.
+   - The previous value of `a` is stored in `a_prev`.
+   - The rising edge is detected when `a` transitions from 0 to 1.
+   - The falling edge is detected when `a` transitions from 1 to 0.
+   - The `rise` and `down` signals are set to 1 when the corresponding edge is detected and reset to 0 otherwise.
+
+This module ensures that the `rise` and `down` signals are synchronized with the clock and remain high for only one clock cycle after the respective edge is detected.

@@ -1,0 +1,64 @@
+Sure, here is the complete Verilog code for the `freq_diveven` module that divides the input clock frequency by an even number specified by the `NUM_DIV` parameter:
+
+```verilog
+module freq_diveven #(
+    parameter NUM_DIV = 8  // Must be an even number
+) (
+    input wire clk,       // Input clock signal
+    input wire rst_n,     // Active-low reset signal
+    output reg clk_div    // Divided clock output signal
+);
+
+    // Ensure NUM_DIV is even
+    generate
+        if (NUM_DIV % 2 != 0) begin : check_even
+            initial begin
+                $error("NUM_DIV must be an even number.");
+            end
+        end
+    endgenerate
+
+    // Counter to track clock cycles
+    reg [3:0] cnt;
+
+    // Reset and counting logic
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            cnt <= 4'b0;
+            clk_div <= 1'b0;
+        end else begin
+            if (cnt < (NUM_DIV / 2 - 1)) begin
+                cnt <= cnt + 1;
+            end else begin
+                cnt <= 4'b0;
+                clk_div <= ~clk_div;
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Module Parameters:**
+   - `NUM_DIV`: This parameter specifies the division factor and must be an even number.
+
+2. **Inputs:**
+   - `clk`: The input clock signal that will be divided.
+   - `rst_n`: The active-low reset signal used to initialize the module.
+
+3. **Output:**
+   - `clk_div`: The divided clock output signal.
+
+4. **Counter:**
+   - A 4-bit register (`cnt`) is used to track the number of clock cycles.
+
+5. **Reset and Counting Logic:**
+   - On the negative edge of `rst_n`, the counter and the `clk_div` signal are reset to 0.
+   - On the positive edge of `clk`, the counter increments until it reaches `(NUM_DIV / 2 - 1)`.
+   - When the counter reaches `(NUM_DIV / 2 - 1)`, it resets to 0, and `clk_div` is toggled.
+
+6. **Even Check:**
+   - A generate block is used to ensure that `NUM_DIV` is even. If `NUM_DIV` is odd, an error message is generated during synthesis.
+
+This code will divide the input clock frequency by the even number specified by `NUM_DIV` and generate the `clk_div` signal accordingly.

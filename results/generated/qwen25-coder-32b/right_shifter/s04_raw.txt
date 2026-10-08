@@ -1,0 +1,46 @@
+Certainly! Below is the complete Verilog code for the `right_shifter` module as per your requirements. This module takes a 1-bit input `d`, performs an 8-bit right shift operation on an 8-bit register `q`, and inserts the new input bit `d` into the most significant position of the register on each rising edge of the clock `clk`.
+
+```verilog
+module right_shifter (
+    input clk,  // Clock signal used for synchronous operation
+    input d,    // 1-bit input signal to be right-shifted
+    output [7:0] q  // 8-bit output signal representing the result of the right shift operation
+);
+
+    // Register definition and initialization
+    reg [7:0] q;
+
+    // Initialization block
+    initial begin
+        q = 8'b0;  // Initialize the register to 0
+    end
+
+    // Synchronous always block on rising edge of clk
+    always @(posedge clk) begin
+        // Right shift the contents of q by 1 bit
+        q <= (q >> 1);
+        // Insert the new input bit d into the most significant position of the register
+        q[7] <= d;
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Inputs and Outputs**:
+   - `clk`: Clock signal used to synchronize the shift operation.
+   - `d`: 1-bit input signal that will be inserted into the most significant bit of the register.
+   - `q`: 8-bit output signal representing the current state of the register after the right shift operation.
+
+2. **Register Definition**:
+   - `q` is defined as an 8-bit register using `reg [7:0] q;`.
+
+3. **Initialization**:
+   - The `initial` block sets the initial value of `q` to 0.
+
+4. **Synchronous Logic**:
+   - The `always @(posedge clk)` block executes on the rising edge of the clock signal.
+   - Inside this block, the contents of `q` are right-shifted by 1 bit using `q <= (q >> 1);`.
+   - The most significant bit (MSB) of `q` is then set to the value of the input `d` using `q[7] <= d;`.
+
+This implementation ensures that the register `q` is updated synchronously with the clock signal, and the new input bit `d` is inserted at the MSB position on each clock cycle.

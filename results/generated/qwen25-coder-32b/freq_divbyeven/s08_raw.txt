@@ -1,0 +1,65 @@
+Certainly! Below is the complete Verilog code for the `freq_diveven` module, which divides the input clock frequency by an even number specified by the `NUM_DIV` parameter.
+
+```verilog
+module freq_diveven #(
+    parameter NUM_DIV = 8  // Must be an even number
+)(
+    input wire clk,        // Input clock signal
+    input wire rst_n,      // Active-low reset signal
+    output reg clk_div     // Divided clock output signal
+);
+
+    // Ensure NUM_DIV is even
+    generate
+        if (NUM_DIV % 2 != 0) begin
+            `ifdef VCS
+                $fatal("NUM_DIV must be an even number.");
+            `else
+                initial $fatal("NUM_DIV must be an even number.");
+            `endif
+        end
+    endgenerate
+
+    // Counter to track clock cycles
+    reg [3:0] cnt;
+
+    // Initialize counter and clk_div on reset
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            cnt <= 4'b0000;
+            clk_div <= 1'b0;
+        end else begin
+            if (cnt < (NUM_DIV / 2) - 1) begin
+                cnt <= cnt + 1;
+            end else begin
+                cnt <= 4'b0000;
+                clk_div <= ~clk_div;
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+
+1. **Module Parameters:**
+   - `NUM_DIV`: This parameter specifies the division factor. It must be an even number.
+
+2. **Ports:**
+   - `clk`: The input clock signal.
+   - `rst_n`: Active-low reset signal.
+   - `clk_div`: The output divided clock signal.
+
+3. **Counter:**
+   - A 4-bit register `cnt` is used to count the number of clock cycles.
+
+4. **Reset and Counting Logic:**
+   - On the positive edge of the clock (`clk`), if the reset signal (`rst_n`) is low, the counter and the divided clock signal (`clk_div`) are initialized to zero.
+   - If the counter is less than half of `NUM_DIV - 1`, the counter increments without changing the divided clock output.
+   - When the counter reaches the specified limit, it resets to zero and toggles the `clk_div` output signal, effectively dividing the frequency of the input clock by the even number specified by `NUM_DIV`.
+
+5. **Assertion for Even `NUM_DIV`:**
+   - The code includes a generate block to check if `NUM_DIV` is even. If not, it issues a fatal error.
+
+This module should work for any even `NUM_DIV` value up to 16, as the counter is 4 bits wide. If you need a larger division factor, you can increase the width of the counter accordingly.

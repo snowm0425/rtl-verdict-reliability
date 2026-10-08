@@ -1,0 +1,232 @@
+```verilog
+module fixed_point_subtractor #(
+    parameter Q = 8,
+    parameter N = 16
+) (
+    input  wire [N-1:0] a,
+    input  wire [N-1:0] b,
+    output wire [N-1:0] c
+);
+
+    // Internal register to store the result
+    reg [N-1:0] res;
+
+    // Determine signs of a and b
+    wire sign_a = a[N-1];
+    wire sign_b = b[N-1];
+
+    // Absolute values of a and b (clear the sign bit)
+    wire [N-1:0] abs_a = {1'b0, a[N-2:0]};
+    wire [N-1:0] abs_b = {1'b0, b[N-2:0]};
+
+    // We need to compute a - b in fixed-point representation
+    // Case 1: Same sign
+    //   If both positive or both negative, we subtract the absolute values
+    //   and the result sign depends on which is larger
+    // Case 2: Different signs
+    //   If a positive, b negative: a - (-|b|) = a + |b|, result positive
+    //   If a negative, b positive: -|a| - b = -( |a| + b ), result negative
+
+    // Let's compute using a general approach:
+    // a - b can be computed as:
+    //   if sign_a == sign_b:
+    //     if sign_a == 0 (both positive): result = a - b
+    //     if sign_a == 1 (both negative): result = -( |a| - |b| ) = b - a (since both negative, b - a = -|b| - (-|a|) = |a| - |b|... wait)
+    //     Let me think more carefully.
+    //
+    // Actually, let's use a cleaner approach:
+    // a - b in two's complement is simply a + (~b + 1)
+    // But the problem describes a specific implementation with sign handling.
+    //
+    // Let me re-read the requirements:
+    // Same Sign Subtraction: When signs are the same, fractional and integer parts are subtracted.
+    // Different Sign: add absolute values.
+    //
+    // This suggests a magnitude-based approach with separate sign handling.
+    //
+    // Let me implement this properly:
+    //
+    // For same sign (both positive or both negative):
+    //   We subtract the magnitudes: |a| - |b|
+    //   If |a| >= |b|, the result has the same sign as a (and b)
+    //   If |a| < |b|, the result has the opposite sign
+    //   Wait, the requirement says "The sign of the result will be the same as the inputs" for same sign.
+    //   This is only true if |a| >= |b|. If |a| < |b|, the sign would flip.
+    //   Let me re-read: "When the signs of a and b are the same, their fractional and integer parts are subtracted. The sign of the result will be the same as the inputs."
+    //   This seems to imply that we assume |a| >= |b| or handle it differently.
+    //
+    // Actually, for a proper subtractor, we need to handle the case where |a| < |b| even when signs are the same.
+    // Let me implement a correct magnitude-based subtractor:
+    //
+    // Compute |a| and |b|
+    // If sign_a == sign_b:
+    //   If |a| >= |b|:
+    //     result_magnitude = |a| - |b|
+    //     result_sign = sign_a
+    //   Else:
+    //     result_magnitude = |b| - |a|
+    //     result_sign = ~sign_a
+    // If sign_a != sign_b:
+    //   If sign_a == 0 (a positive, b negative):
+    //     result_magnitude = |a| + |b|
+    //     result_sign = 0 (positive)
+    //   Else (a negative, b positive):
+    //     result_magnitude = |a| + |b|
+    //     result_sign = 1 (negative)
+    //
+    // Then if result_magnitude == 0, set result_sign = 0.
+
+    wire [N-1:0] mag_a = {1'b0, a[N-2:0]};
+    wire [N-1:0] mag_b = {1'b0, b[N-2:0]};
+
+    // Compare magnitudes
+    wire a_geq_b = (mag_a >= mag_b);
+
+    // Same sign case
+    wire [N-1:0] same_sign_mag;
+    wire same_sign_res_sign;
+
+    // Different sign case
+    wire [N-1:0] diff_sign_mag;
+    wire diff_sign_res_sign;
+
+    // For same sign:
+    if (sign_a == sign_b) begin
+        if (a_geq_b) begin
+            same_sign_mag = mag_a - mag_b;
+            same_sign_res_sign = sign_a;
+        end else begin
+            same_sign_mag = mag_b - mag_a;
+            same_sign_res_sign = ~sign_a;
+        end
+    end else begin
+        // This block won't be used, but we need to assign something
+        same_sign_mag = mag_a;
+        same_sign_res_sign = sign_a;
+    end
+
+    // For different sign:
+    if (sign_a != sign_b) begin
+        diff_sign_mag = mag_a + mag_b;
+        if (sign_a == 0) begin
+            diff_sign_res_sign = 1'b0;
+        end else begin
+            diff_sign_res_sign = 1'b1;
+        end
+    end else begin
+        // This block won't be used
+        diff_sign_mag = mag_a;
+        diff_sign_res_sign = sign_a;
+    end
+
+    // Select the appropriate result
+    wire [N-1:0] final_mag;
+    wire final_res_sign;
+
+    if (sign_a == sign_b) begin
+        final_mag = same_sign_mag;
+        final_res_sign = same_sign_res_sign;
+    end else begin
+        final_mag = diff_sign_mag;
+        final_res_sign = diff_sign_res_sign;
+    end
+
+    // Handle zero: if magnitude is zero, sign must be 0
+    wire is_zero = (final_mag == {N{1'b0}});
+    wire [N-1:0] result_value;
+    wire [N-1:0] result_sign_bit;
+
+    if (is_zero) begin
+        result_sign_bit = 1'b0;
+    end else begin
+        result_sign_bit = final_res_sign;
+    end
+
+    // Construct the result with sign bit
+    // The magnitude is stored in the lower N-1 bits, and the sign bit is the MSB
+    // But we need to be careful: if the magnitude subtraction/addition produces a value that fits in N-1 bits
+    // For subtraction of magnitudes, the result fits in N-1 bits
+    // For addition of magnitudes, the result could overflow N-1 bits, but since we're dealing with fixed-point
+    // and the problem states N-bit output, we should handle this appropriately.
+    //
+    // Actually, in a proper fixed-point subtractor using magnitude representation:
+    // The magnitude should fit in N-1 bits for subtraction cases.
+    // For addition cases (different signs), the magnitude could be up to 2^(N-1) - 1 + 2^(N-1) - 1 = 2^N - 2
+    // which doesn't fit in N-1 bits. However, in two's complement, the result of a - b when a and b have different signs
+    // should still fit in N bits.
+    //
+    // Let me reconsider: the problem says "fixed-point subtractor" and the output is N bits.
+    // The magnitude-based approach might not be the cleanest. Let me use a two's complement approach
+    // but with the sign handling as described.
+    //
+    // Actually, re-reading the problem, it seems to want a magnitude-based approach with explicit sign handling.
+    // Let me ensure the magnitude fits properly.
+    //
+    // For the addition case (different signs), the sum of two (N-1)-bit magnitudes can be N bits.
+    // We need to handle this. Let's use an N-bit magnitude internally.
+
+    // Let me redo this with N-bit magnitudes to handle potential overflow in addition
+    wire [N-1:0] mag_a_ext = {1'b0, a[N-2:0]};
+    wire [N-1:0] mag_b_ext = {1'b0, b[N-2:0]};
+
+    wire [N-1:0] add_result = mag_a_ext + mag_b_ext;
+    wire [N-1:0] sub_result_ab = mag_a_ext - mag_b_ext;
+    wire [N-1:0] sub_result_ba = mag_b_ext - mag_a_ext;
+
+    wire a_geq_b_ext = (mag_a_ext >= mag_b_ext);
+
+    wire [N-1:0] final_mag2;
+    wire final_sign2;
+
+    if (sign_a == sign_b) begin
+        if (a_geq_b_ext) begin
+            final_mag2 = sub_result_ab;
+            final_sign2 = sign_a;
+        end else begin
+            final_mag2 = sub_result_ba;
+            final_sign2 = ~sign_a;
+        end
+    end else begin
+        final_mag2 = add_result;
+        if (sign_a == 0) begin
+            final_sign2 = 1'b0;
+        end else begin
+            final_sign2 = 1'b1;
+        end
+    end
+
+    wire is_zero2 = (final_mag2 == {N{1'b0}});
+    wire result_sign_bit2 = is_zero2 ? 1'b0 : final_sign2;
+
+    // The result is represented as sign-magnitude with N bits total:
+    // MSB is sign, lower N-1 bits are magnitude
+    // But if the magnitude overflows N-1 bits (in addition case), we need to handle it.
+    // In practice, for a fixed-point subtractor, the result should fit in N bits two's complement.
+    //
+    // Let me just use a simple two's complement subtraction: a - b = a + (~b + 1)
+    // This is the standard approach and handles all cases correctly.
+    //
+    // But the problem specifically describes a magnitude-based approach. Let me stick with that
+    // and ensure the output is in the correct format.
+    //
+    // The output c[N-1:0] should be the fixed-point representation. If we're using sign-magnitude,
+    // then c[N-1] is the sign and c[N-2:0] is the magnitude.
+    //
+    // However, for fixed-point arithmetic, two's complement is more standard.
+    // Let me re-read the problem statement...
+    //
+    // The problem says "fixed-point subtractor" and mentions "fractional and integer parts are subtracted"
+    // and "absolute values are added". This strongly suggests a magnitude-based approach.
+    //
+    // Let me complete the sign-magnitude implementation:
+    // The result is: {result_sign_bit2, final_mag2[N-2:0]}
+    // But if final_mag2 has bit N-1 set (overflow in addition), we have a problem.
+    //
+    // For safety, let's assume the inputs are such that the result fits in the format.
+    // In a real design, we would check for overflow.
+
+    assign res = {result_sign_bit2, final_mag2[N-2:0]};
+    assign c = res;
+
+endmodule
+```

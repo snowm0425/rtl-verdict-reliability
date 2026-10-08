@@ -1,0 +1,258 @@
+```verilog
+module traffic_light (
+    input wire rst_n,
+    input wire clk,
+    input wire pass_request,
+    output wire [7:0] clock,
+    output wire red,
+    output wire yellow,
+    output wire green
+);
+
+    // Parameter definitions for states
+    localparam [1:0] idle = 2'd0;
+    localparam [1:0] s1_red = 2'd1;
+    localparam [1:0] s2_yellow = 2'd2;
+    localparam [1:0] s3_green = 2'd3;
+
+    // Registers
+    reg [7:0] cnt;
+    reg [1:0] state;
+    reg p_red, p_yellow, p_green;
+
+    // Output assignment
+    assign clock = cnt;
+    assign red = p_red;
+    assign yellow = p_yellow;
+    assign green = p_green;
+
+    // First always block: State transition logic
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            state <= idle;
+            p_red <= 1'b0;
+            p_yellow <= 1'b0;
+            p_green <= 1'b0;
+        end else begin
+            case (state)
+                idle: begin
+                    p_red <= 1'b0;
+                    p_yellow <= 1'b0;
+                    p_green <= 1'b0;
+                    state <= s1_red;
+                end
+                s1_red: begin
+                    p_red <= 1'b1;
+                    p_yellow <= 1'b0;
+                    p_green <= 1'b0;
+                    if (cnt == 3'd0)
+                        state <= s3_green;
+                    else
+                        state <= s1_red;
+                end
+                s2_yellow: begin
+                    p_red <= 1'b0;
+                    p_yellow <= 1'b1;
+                    p_green <= 1'b0;
+                    if (cnt == 3'd0)
+                        state <= s1_red;
+                    else
+                        state <= s2_yellow;
+                end
+                s3_green: begin
+                    p_red <= 1'b0;
+                    p_yellow <= 1'b0;
+                    p_green <= 1'b1;
+                    if (cnt == 3'd0)
+                        state <= s2_yellow;
+                    else
+                        state <= s3_green;
+                end
+                default: begin
+                    p_red <= 1'b0;
+                    p_yellow <= 1'b0;
+                    p_green <= 1'b0;
+                    state <= idle;
+                end
+            endcase
+        end
+    end
+
+    // Second always block: Counting logic
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            cnt <= 8'd10;
+        end else begin
+            if (pass_request && p_green) begin
+                // If pedestrian button is pressed and green is active,
+                // shorten green time to 10 if remaining > 10
+                if (cnt > 8'd10)
+                    cnt <= 8'd10;
+                else
+                    cnt <= cnt - 1'b1;
+            end else begin
+                // Check for state transitions to reload counter
+                if (!p_green && state == s3_green && state != s3_green) begin
+                    // This condition is not quite right, let's use the previous state logic
+                end
+
+                // Better approach: detect state change
+                // When transitioning from s3_green to s2_yellow, load 5
+                // When transitioning from s2_yellow to s1_red, load 10 (red duration)
+                // When transitioning from s1_red to s3_green, load 60
+
+                // We need to detect when we are entering a new state
+                // Since state changes are determined in the first block, we can check
+                // if the next state is different from current, but we don't have next_state here.
+
+                // Let's use the approach from the description:
+                // If green is inactive and previous green was active -> set to 60? No, that's when entering green.
+                // The description says:
+                // If the green signal is inactive and the previous green signal (p_green) was active, the counter is set to 60.
+                // This seems to mean when leaving green, but that doesn't make sense for loading the green time.
+
+                // Re-reading: "If the green signal is inactive and the previous green signal (p_green) was active, the counter is set to 60."
+                // This likely means when we are NOT in green and we WERE in green, i.e., just left green.
+                // But we should load 60 when ENTERING green, not leaving.
+
+                // Let me re-interpret based on standard traffic light design:
+                // - Enter s3_green: load 60
+                // - Enter s2_yellow: load 5
+                // - Enter s1_red: load 10
+
+                // To detect entering a state, we can check if the current state is different from what it was.
+                // But we don't have the previous state. Let's use a different approach.
+
+                // Since the state transition happens in the same clock edge, we can infer:
+                // If we are now in s3_green and we were not in s3_green before, load 60.
+                // But we don't have "before" state.
+
+                // Alternative: use the fact that state changes are deterministic.
+                // Let's just decrement and handle the initial load and pass_request.
+
+                // Actually, looking at the state machine, when we transition:
+                // idle -> s1_red: should load 10
+                // s1_red -> s3_green: should load 60
+                // s3_green -> s2_yellow: should load 5
+                // s2_yellow -> s1_red: should load 10
+
+                // We can detect transitions by checking the state change.
+                // Let's declare a variable for previous state.
+            end
+
+            // Let me restructure this properly
+            // For now, let's just decrement
+            cnt <= cnt - 1'b1;
+        end
+    end
+
+    // Wait, the above is not correct. Let me redo the counting logic properly.
+
+endmodule
+```
+
+I realize I made a mess in the second always block. Let me rewrite the complete code properly.
+
+```verilog
+module traffic_light (
+    input wire rst_n,
+    input wire clk,
+    input wire pass_request,
+    output wire [7:0] clock,
+    output wire red,
+    output wire yellow,
+    output wire green
+);
+
+    // Parameter definitions for states
+    localparam [1:0] idle = 2'd0;
+    localparam [1:0] s1_red = 2'd1;
+    localparam [1:0] s2_yellow = 2'd2;
+    localparam [1:0] s3_green = 2'd3;
+
+    // Registers
+    reg [7:0] cnt;
+    reg [1:0] state;
+    reg [1:0] state_next;
+    reg p_red, p_yellow, p_green;
+
+    // Output assignment
+    assign clock = cnt;
+    assign red = p_red;
+    assign yellow = p_yellow;
+    assign green = p_green;
+
+    // First always block: State transition logic
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            state <= idle;
+            p_red <= 1'b0;
+            p_yellow <= 1'b0;
+            p_green <= 1'b0;
+        end else begin
+            state <= state_next;
+            p_red <= (state_next == s1_red) ? 1'b1 : 1'b0;
+            p_yellow <= (state_next == s2_yellow) ? 1'b1 : 1'b0;
+            p_green <= (state_next == s3_green) ? 1'b1 : 1'b0;
+        end
+    end
+
+    // Compute next state
+    always @(*) begin
+        case (state)
+            idle: begin
+                state_next = s1_red;
+            end
+            s1_red: begin
+                if (cnt == 8'd0)
+                    state_next = s3_green;
+                else
+                    state_next = s1_red;
+            end
+            s2_yellow: begin
+                if (cnt == 8'd0)
+                    state_next = s1_red;
+                else
+                    state_next = s2_yellow;
+            end
+            s3_green: begin
+                if (cnt == 8'd0)
+                    state_next = s2_yellow;
+                else
+                    state_next = s3_green;
+            end
+            default: begin
+                state_next = idle;
+            end
+        endcase
+    end
+
+    // Second always block: Counting logic
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            cnt <= 8'd10;
+        end else begin
+            // Detect state transitions to reload counter
+            if (state == idle && state_next == s1_red) begin
+                cnt <= 8'd10;
+            end
+            else if (state == s1_red && state_next == s3_green) begin
+                cnt <= 8'd60;
+            end
+            else if (state == s3_green && state_next == s2_yellow) begin
+                cnt <= 8'd5;
+            end
+            else if (state == s2_yellow && state_next == s1_red) begin
+                cnt <= 8'd10;
+            end
+            else if (pass_request && p_green && cnt > 8'd10) begin
+                cnt <= 8'd10;
+            end
+            else begin
+                cnt <= cnt - 1'b1;
+            end
+        end
+    end
+
+endmodule
+```

@@ -1,0 +1,128 @@
+```verilog
+module fsm (
+    input  wire IN,
+    input  wire CLK,
+    input  wire RST,
+    output reg   MATCH
+);
+
+    // State encoding for Mealy FSM detecting sequence 10011
+    // States represent the longest prefix of the pattern that matches the suffix of the input so far
+    // S0: initial state, no match
+    // S1: seen '1'
+    // S2: seen '10'
+    // S3: seen '100'
+    // S4: seen '1001'
+    // S5: seen '10011' -> MATCH=1, then transition based on next input
+
+    localparam S0 = 3'd0;
+    localparam S1 = 3'd1;
+    localparam S2 = 3'd2;
+    localparam S3 = 3'd3;
+    localparam S4 = 3'd4;
+    localparam S5 = 3'd5;
+
+    reg [2:0] state, next_state;
+
+    // Mealy output: MATCH is 1 when in state S4 and IN=1 (completing the sequence 10011)
+    // Actually, let's trace through:
+    // S0 --1--> S1
+    // S1 --0--> S2, --1--> S1 (since '1' is a prefix)
+    // S2 --0--> S3, --1--> S0 (since '1' doesn't extend '10', but '1' is a prefix of '10011'? Wait, '1' is prefix, so go to S1)
+    // Let me reconsider. The pattern is 10011.
+    // We need to handle overlaps properly.
+    
+    // Let's use a standard approach:
+    // State = length of longest suffix of input that is also a prefix of "10011"
+    // Prefixes of "10011": "", "1", "10", "100", "1001", "10011"
+    
+    // State 0: "" (length 0)
+    // State 1: "1" (length 1)
+    // State 2: "10" (length 2)
+    // State 3: "100" (length 3)
+    // State 4: "1001" (length 4)
+    // State 5: "10011" (length 5) -> MATCH
+    
+    // Transitions:
+    // From S0:
+    //   IN=0 -> S0
+    //   IN=1 -> S1
+    // From S1 (saw "1"):
+    //   IN=0 -> S2 (now "10")
+    //   IN=1 -> S1 (suffix "1" is prefix)
+    // From S2 (saw "10"):
+    //   IN=0 -> S3 (now "100")
+    //   IN=1 -> S0 (suffix "1" is not a prefix... wait, "10" + "1" = "101", longest suffix that is prefix: "1" is a prefix, so S1? Let me check: suffixes of "101": "101", "01", "1". "1" is a prefix of "10011". So S1.)
+    //   Correction: From S2, IN=1: string is "101". Suffixes: "101", "01", "1". "1" is a prefix. So next_state = S1.
+    // From S3 (saw "100"):
+    //   IN=0 -> "1000". Suffixes: "1000", "000", "00", "0". None are prefixes except "". So S0.
+    //   IN=1 -> "1001". Suffixes: "1001", "001", "01", "1". "1001" is a prefix (length 4). So S4.
+    // From S4 (saw "1001"):
+    //   IN=0 -> "10010". Suffixes: "10010", "0010", "010", "10", "0". "10" is a prefix (length 2). So S2.
+    //   IN=1 -> "10011". This matches! MATCH=1. Suffixes: "10011", "0011", "011", "11", "1". "1" is a prefix. So next_state = S1.
+    // From S5: Actually, in a Mealy machine, we don't need to stay in S5. When we match, we output MATCH=1 and transition based on the input. So we can treat S4 with IN=1 as producing MATCH=1 and going to S1.
+    
+    // Let me reconsider the state machine. We don't actually need S5 as a separate state for the next cycle. When we are in S4 and IN=1, we output MATCH=1, and the next state is determined by the longest suffix of "10011" that is a prefix. The suffixes of "10011" that are prefixes: "10011" (but that's the whole thing, and we're moving on), "1" is a prefix. Actually, after matching, we look at the input history. The last 1 bit is "1", which is a prefix. So next_state = S1.
+    
+    // So states are S0-S4, and MATCH is combinational based on current state and input.
+    
+    // Let me redo with 4 bits or just 3 bits for 5 states (S0-S4).
+    
+    localparam S0 = 2'd0;
+    localparam S1 = 2'd1;
+    localparam S2 = 2'd2;
+    localparam S3 = 2'd3;
+    localparam S4 = 2'd4; // Wait, that's 3 bits. Let me use 3 bits.
+    
+    // Let me use 3-bit states for S0-S4 (5 states).
+    
+    localparam S0 = 3'd0;
+    localparam S1 = 3'd1;
+    localparam S2 = 3'd2;
+    localparam S3 = 3'd3;
+    localparam S4 = 3'd4;
+    
+    reg [2:0] state, next_state;
+    
+    // Mealy output
+    wire match_comb = (state == S4) && IN;
+    
+    always @(posedge CLK or posedge RST) begin
+        if (RST) begin
+            state <= S0;
+            MATCH <= 1'b0;
+        end else begin
+            state <= next_state;
+            MATCH <= match_comb;
+        end
+    end
+    
+    // Next state logic
+    always @(*) begin
+        case (state)
+            S0: begin
+                if (IN) next_state = S1;
+                else    next_state = S0;
+            end
+            S1: begin
+                if (IN) next_state = S1;
+                else    next_state = S2;
+            end
+            S2: begin
+                if (IN) next_state = S1;
+                else    next_state = S3;
+            end
+            S3: begin
+                if (IN) next_state = S4;
+                else    next_state = S0;
+            end
+            S4: begin
+                if (IN) next_state = S1; // Match occurred, longest suffix "1" is prefix
+                else    next_state = S2; // "10010", suffix "10" is prefix
+            end
+            default: next_state = S0;
+        endcase
+    end
+
+endmodule
+```

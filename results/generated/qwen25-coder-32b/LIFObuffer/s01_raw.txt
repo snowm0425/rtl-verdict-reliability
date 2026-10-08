@@ -1,0 +1,94 @@
+Certainly! Below is the complete Verilog code for the `LIFObuffer` module as per your specifications:
+
+```verilog
+module LIFObuffer (
+    input [3:0] dataIn,  // 4-bit input data
+    input RW,            // Read/Write control signal (1 for read, 0 for write)
+    input EN,            // Enable signal
+    input Rst,           // Active high reset signal
+    input Clk,           // Clock signal
+
+    output reg EMPTY,    // Flag indicating if the buffer is empty
+    output reg FULL,     // Flag indicating if the buffer is full
+    output reg [3:0] dataOut // 4-bit output data
+);
+
+    // Define the stack size
+    localparam SIZE = 4;
+
+    // Stack memory declaration
+    reg [3:0] stack_mem [SIZE-1:0];
+
+    // Stack pointer declaration
+    reg [2:0] SP;
+
+    // Initialize the stack pointer to indicate an empty buffer
+    initial begin
+        SP = SIZE; // Indicates empty buffer
+        EMPTY = 1;
+        FULL = 0;
+        dataOut = 4'b0000;
+    end
+
+    // Main logic
+    always @(posedge Clk) begin
+        if (Rst) begin
+            // Reset the stack pointer and clear the stack memory
+            SP = SIZE;
+            EMPTY = 1;
+            FULL = 0;
+            for (int i = 0; i < SIZE; i = i + 1) begin
+                stack_mem[i] = 4'b0000;
+            end
+        end else if (EN) begin
+            // Check for write operation
+            if (!RW && !FULL) begin
+                // Push data onto the stack
+                SP = SP - 1;
+                stack_mem[SP] = dataIn;
+                // Update flags
+                if (SP == 0) begin
+                    FULL = 1;
+                end
+                EMPTY = 0;
+            end
+
+            // Check for read operation
+            else if (RW && !EMPTY) begin
+                // Pop data from the stack
+                dataOut = stack_mem[SP];
+                stack_mem[SP] = 4'b0000; // Clear the memory location
+                SP = SP + 1;
+                // Update flags
+                if (SP == SIZE) begin
+                    EMPTY = 1;
+                end
+                FULL = 0;
+            end
+        end
+    end
+endmodule
+```
+
+### Explanation:
+
+1. **Module Definition:**
+   - The module `LIFObuffer` is defined with the specified input and output ports.
+
+2. **Parameters and Registers:**
+   - `SIZE` is defined as 4 to represent the maximum number of entries in the buffer.
+   - `stack_mem` is a 4-bit wide stack memory array with 4 locations.
+   - `SP` is the stack pointer that tracks the current position in the stack.
+
+3. **Initial Block:**
+   - Initializes the stack pointer to 4 (indicating an empty buffer) and sets the `EMPTY` flag to 1 and the `FULL` flag to 0.
+
+4. **Main Logic:**
+   - On the rising edge of the clock (`posedge Clk`), the module checks the `Rst` signal.
+   - If `Rst` is high, the stack is reset, the stack pointer is set to 4, and all memory locations are cleared.
+   - If `Rst` is low, the module checks the `EN` signal.
+     - If `EN` is high and `RW` is low (write operation) and the buffer is not full, data from `dataIn` is pushed onto the stack, and the stack pointer is decremented.
+     - If `EN` is high and `RW` is high (read operation) and the buffer is not empty, data is popped from the stack into `dataOut`, the corresponding stack memory is cleared, and the stack pointer is incremented.
+   - The `EMPTY` and `FULL` flags are updated based on the stack pointer status.
+
+This code implements a simple 4-bit LIFO buffer with the specified functionality.

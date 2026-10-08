@@ -1,0 +1,21 @@
+```verilog
+module sub_64bit (
+    input  [63:0] A,
+    input  [63:0] B,
+    output [63:0] result,
+    output overflow
+);
+
+    // Perform subtraction: A - B
+    assign result = A - B;
+
+    // Overflow detection for subtraction:
+    // Positive overflow: A is positive (A[63] == 0), B is negative (B[63] == 1), and result is negative (result[63] == 1)
+    // Negative overflow: A is negative (A[63] == 1), B is positive (B[63] == 0), and result is positive (result[63] == 0)
+    wire pos_overflow = (~A[63]) & (B[63]) & (result[63]);
+    wire neg_overflow = (A[63]) & (~B[63]) & (~result[63]);
+
+    assign overflow = pos_overflow | neg_overflow;
+
+endmodule
+```

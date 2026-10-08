@@ -1,0 +1,49 @@
+Sure, I can provide you with a complete Verilog implementation of a 64-bit Johnson counter (torsional ring counter) based on your specifications. Below is the code for the `JC_counter` module:
+
+```verilog
+module JC_counter (
+    input wire clk,       // Clock signal
+    input wire rst_n,     // Active-low reset signal
+    output reg [63:0] Q   // 64-bit output register
+);
+
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        // Reset condition: Set Q to 0
+        Q <= 64'b0;
+    end else begin
+        // Johnson counter logic
+        if (Q[0] == 1'b0) begin
+            // If the least significant bit is 0, shift right and append 1 at MSB
+            Q <= {Q[62:0], 1'b1};
+        end else begin
+            // If the least significant bit is 1, shift right and append 0 at MSB
+            Q <= {Q[62:0], 1'b0};
+        end
+    end
+end
+
+endmodule
+```
+
+### Explanation:
+1. **Module Declaration**: The module `JC_counter` has three ports:
+   - `clk`: A clock signal used for synchronous operation.
+   - `rst_n`: An active-low reset signal to initialize the counter.
+   - `Q`: A 64-bit register representing the current count value.
+
+2. **Sensitivity List**: The `always` block is sensitive to both the positive edge of `clk` and the negative edge of `rst_n`.
+
+3. **Reset Logic**: When `rst_n` is low, the counter is reset, and the register `Q` is set to `64'b0`.
+
+4. **Johnson Counter Logic**:
+   - If the least significant bit (`Q[0]`) is `0`, the current value of `Q` is right-shifted, and `1` is appended to the most significant bit position.
+   - If the least significant bit (`Q[0]`) is `1`, the current value of `Q` is right-shifted, and `0` is appended to the most significant bit position.
+
+### Simulation Notes:
+To simulate this module, you would need to create a testbench that provides the `clk` and `rst_n` signals and observes the `Q` output over time. The testbench would typically include:
+- Generation of a clock signal with a defined period.
+- Assertion and deassertion of the reset signal at specific times.
+- Observation of the `Q` register to verify the correct operation of the Johnson counter.
+
+If you need a testbench example, let me know, and I can provide one as well.

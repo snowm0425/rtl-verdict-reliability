@@ -1,0 +1,48 @@
+module freq_div (
+    input wire CLK_in,    // 100MHz input clock signal
+    input wire RST,       // Reset signal (active high)
+    output reg CLK_50,    // 50MHz output clock signal
+    output reg CLK_10,    // 10MHz output clock signal
+    output reg CLK_1      // 1MHz output clock signal
+);
+
+    // Counters for CLK_10 and CLK_1 generation
+    reg [2:0] cnt_10;   // 3-bit counter for 10MHz generation (max value 4)
+    reg [5:0] cnt_100;  // 6-bit counter for 1MHz generation (max value 49)
+
+    // CLK_50 generation
+    always @(posedge CLK_in or posedge RST) begin
+        if (RST) begin
+            CLK_50 <= 0;
+        end else begin
+            CLK_50 <= ~CLK_50;  // Toggle CLK_50 on every CLK_in edge
+        end
+    end
+
+    // CLK_10 generation
+    always @(posedge CLK_in or posedge RST) begin
+        if (RST) begin
+            CLK_10 <= 0;
+            cnt_10 <= 0;
+        end else if (cnt_10 == 4) begin
+            CLK_10 <= ~CLK_10;  // Toggle CLK_10 when cnt_10 reaches 4
+            cnt_10 <= 0;
+        end else begin
+            cnt_10 <= cnt_10 + 1;  // Increment cnt_10
+        end
+    end
+
+    // CLK_1 generation
+    always @(posedge CLK_in or posedge RST) begin
+        if (RST) begin
+            CLK_1 <= 0;
+            cnt_100 <= 0;
+        end else if (cnt_100 == 49) begin
+            CLK_1 <= ~CLK_1;  // Toggle CLK_1 when cnt_100 reaches 49
+            cnt_100 <= 0;
+        end else begin
+            cnt_100 <= cnt_100 + 1;  // Increment cnt_100
+        end
+    end
+
+endmodule

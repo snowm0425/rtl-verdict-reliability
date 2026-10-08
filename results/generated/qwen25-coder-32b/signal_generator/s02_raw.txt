@@ -1,0 +1,80 @@
+Certainly! Below is the complete Verilog code for the `signal_generator` module that generates a triangle wave signal. This module uses a state machine to control the incrementing and decrementing of the 5-bit `wave` signal.
+
+```verilog
+module signal_generator (
+    input clk,        // Clock signal
+    input rst_n,      // Active-low reset signal
+    output reg [4:0] wave // 5-bit output waveform signal
+);
+
+    // Define states for the state machine
+    typedef enum logic { 
+        INCREMENT = 0, 
+        DECREMENT = 1 
+    } state_t;
+
+    // State register
+    reg state;
+
+    // Initial block to set initial state and wave value
+    initial begin
+        state = INCREMENT;
+        wave = 5'b00000;
+    end
+
+    // Always block to handle state transitions and wave generation
+    always @(posedge clk or negedge rst_n) begin
+        if (~rst_n) begin
+            // Reset condition: clear state and wave
+            state <= INCREMENT;
+            wave <= 5'b00000;
+        end else begin
+            // State machine logic
+            case (state)
+                INCREMENT: begin
+                    if (wave == 5'b11111) begin
+                        // If wave reaches 31, transition to DECREMENT
+                        state <= DECREMENT;
+                        wave <= wave - 1;
+                    end else begin
+                        // Otherwise, increment wave
+                        wave <= wave + 1;
+                    end
+                end
+                DECREMENT: begin
+                    if (wave == 5'b00000) begin
+                        // If wave reaches 0, transition to INCREMENT
+                        state <= INCREMENT;
+                        wave <= wave + 1;
+                    end else begin
+                        // Otherwise, decrement wave
+                        wave <= wave - 1;
+                    end
+                end
+                default: begin
+                    // Default case: should not reach here
+                    state <= INCREMENT;
+                    wave <= 5'b00000;
+                end
+            endcase
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **State Definition**: The `state_t` enum defines two states: `INCREMENT` and `DECREMENT`.
+2. **State and Wave Registers**: 
+   - `state` register keeps track of the current state (either `INCREMENT` or `DECREMENT`).
+   - `wave` register is a 5-bit register that holds the current value of the waveform.
+3. **Initial Block**: Initializes the `state` to `INCREMENT` and `wave` to 0 when the simulation starts.
+4. **Always Block**: 
+   - Sensitive to the positive edge of `clk` and the negative edge of `rst_n`.
+   - On reset (`rst_n` is low), the `state` and `wave` are reset to their initial values.
+   - On clock edge, the state machine logic is executed:
+     - If in `INCREMENT` state and `wave` reaches 31, transition to `DECREMENT` and decrement `wave`.
+     - If in `DECREMENT` state and `wave` reaches 0, transition to `INCREMENT` and increment `wave`.
+     - Otherwise, continue incrementing or decrementing `wave` based on the current state.
+
+This module will generate a continuous triangle wave on the `wave` output, cycling between 0 and 31.

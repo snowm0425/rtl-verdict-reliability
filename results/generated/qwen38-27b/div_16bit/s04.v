@@ -1,0 +1,414 @@
+module div_16bit (
+    input  [15:0] A,
+    input  [7:0]  B,
+    output [15:0] result,
+    output [15:0] odd
+);
+
+    reg [15:0] a_reg;
+    reg [7:0]  b_reg;
+
+    // First always block: combinational, updates a_reg and b_reg with A and B
+    always @* begin
+        a_reg = A;
+        b_reg = B;
+    end
+
+    // Second always block: combinational, performs the division
+    always @* begin
+        // Declare local variables
+        // We need to simulate the long division process.
+        // The dividend is 16 bits, divisor is 8 bits.
+        // We process from the most significant bit.
+        
+        // Let's use a temporary remainder variable.
+        // The standard algorithm for restoring division:
+        // We have a 16-bit dividend A and 8-bit divisor B.
+        // We want to produce a 16-bit quotient and a remainder.
+        
+        // The description says:
+        // "Extract the higher bits of the dividend, matching the bit width of the divisor."
+        // So we look at the top 8 bits of the 16-bit dividend first.
+        // Compare with divisor: if >= divisor, quotient bit = 1, remainder = difference.
+        // Then concatenate remainder with next bit of dividend, repeat.
+        
+        // Let's implement this step by step.
+        // We'll use a 16-bit remainder accumulator.
+        
+        // Actually, let me re-read carefully:
+        // "Extract the higher bits of the dividend, matching the bit width of the divisor. Compare these bits with the divisor: if the dividend bits are greater, set the quotient to 1, otherwise set it to 0, and use the difference as the remainder. Concatenate the remainder with the highest remaining 1-bit of the dividend, and repeat the process until all dividend bits are processed."
+        
+        // So we start with the top 8 bits of A (bits 15:8).
+        // Step 1: rem = A[15:8]
+        // If rem >= B, then q[15] = 1, rem = rem - B
+        // Else q[15] = 0, rem = rem
+        // Step 2: rem = {rem[6:0], A[7]}  (shift left and bring in next bit)
+        // If rem >= B, then q[14] = 1, rem = rem - B
+        // Else q[14] = 0, rem = rem
+        // ... and so on until we've processed all 16 bits.
+        
+        // Wait, we have 16 dividend bits and 8 divisor bits.
+        // The first step uses bits 15:8 (8 bits).
+        // Then we bring in bit 7, making it 8 bits again (rem[6:0] concatenated with A[7]).
+        // Then bit 6, etc.
+        // So we have 16 steps total? Let's count:
+        // Step 1: bits 15:8 -> produces q[15]
+        // Step 2: bits 7 (brought in) -> produces q[14]
+        // Step 3: bit 6 -> produces q[13]
+        // ...
+        // Step 16: bit 0 -> produces q[0]
+        
+        // So we do 16 iterations. The first iteration uses the top 8 bits, subsequent iterations shift in one bit at a time.
+        
+        // Let's implement this with a loop.
+        
+        // We'll use an array or just sequential logic.
+        // Since it's combinational, we can unroll the loop.
+        
+        // Let's use temporary registers for the remainder and quotient.
+        reg [7:0] rem;
+        reg [15:0] q;
+        
+        // Initialize
+        rem = a_reg[15:8];
+        q = 16'b0;
+        
+        // Step 1: Process bit 15
+        if (rem >= b_reg) begin
+            q[15] = 1;
+            rem = rem - b_reg;
+        end else begin
+            q[15] = 0;
+            // rem stays the same
+        end
+        
+        // Step 2: Bring in bit 7
+        rem = {rem[6:0], a_reg[7]};
+        if (rem >= b_reg) begin
+            q[14] = 1;
+            rem = rem - b_reg;
+        end else begin
+            q[14] = 0;
+        end
+        
+        // Step 3: Bring in bit 6
+        rem = {rem[6:0], a_reg[6]};
+        if (rem >= b_reg) begin
+            q[13] = 1;
+            rem = rem - b_reg;
+        end else begin
+            q[13] = 0;
+        end
+        
+        // Step 4: Bring in bit 5
+        rem = {rem[6:0], a_reg[5]};
+        if (rem >= b_reg) begin
+            q[12] = 1;
+            rem = rem - b_reg;
+        end else begin
+            q[12] = 0;
+        end
+        
+        // Step 5: Bring in bit 4
+        rem = {rem[6:0], a_reg[4]};
+        if (rem >= b_reg) begin
+            q[11] = 1;
+            rem = rem - b_reg;
+        end else begin
+            q[11] = 0;
+        end
+        
+        // Step 6: Bring in bit 3
+        rem = {rem[6:0], a_reg[3]};
+        if (rem >= b_reg) begin
+            q[10] = 1;
+            rem = rem - b_reg;
+        end else begin
+            q[10] = 0;
+        end
+        
+        // Step 7: Bring in bit 2
+        rem = {rem[6:0], a_reg[2]};
+        if (rem >= b_reg) begin
+            q[9] = 1;
+            rem = rem - b_reg;
+        end else begin
+            q[9] = 0;
+        end
+        
+        // Step 8: Bring in bit 1
+        rem = {rem[6:0], a_reg[1]};
+        if (rem >= b_reg) begin
+            q[8] = 1;
+            rem = rem - b_reg;
+        end else begin
+            q[8] = 0;
+        end
+        
+        // Step 9: Bring in bit 0
+        rem = {rem[6:0], a_reg[0]};
+        if (rem >= b_reg) begin
+            q[7] = 1;
+            rem = rem - b_reg;
+        end else begin
+            q[7] = 0;
+        end
+        
+        // Step 10: Bring in bit 0 again? No, we've processed all 16 bits.
+        // Wait, let me recount.
+        // A is 16 bits: A[15] down to A[0].
+        // Step 1: uses A[15:8] -> q[15]
+        // Step 2: uses A[7] -> q[14]
+        // Step 3: uses A[6] -> q[13]
+        // Step 4: uses A[5] -> q[12]
+        // Step 5: uses A[4] -> q[11]
+        // Step 6: uses A[3] -> q[10]
+        // Step 7: uses A[2] -> q[9]
+        // Step 8: uses A[1] -> q[8]
+        // Step 9: uses A[0] -> q[7]
+        
+        // That's only 9 steps, producing q[15] down to q[7].
+        // But we need 16 quotient bits q[15:0].
+        
+        // Hmm, I think I'm misunderstanding the algorithm. Let me re-read.
+        
+        // "Extract the higher bits of the dividend, matching the bit width of the divisor."
+        // Divisor is 8 bits. So we extract 8 bits from the dividend.
+        
+        // "Compare these bits with the divisor: if the dividend bits are greater, set the quotient to 1, otherwise set it to 0, and use the difference as the remainder."
+        
+        // "Concatenate the remainder with the highest remaining 1-bit of the dividend, and repeat the process until all dividend bits are processed."
+        
+        // So the process is:
+        // 1. Start with the top 8 bits of the 16-bit dividend.
+        // 2. Compare with divisor. Set quotient bit. Update remainder.
+        // 3. Shift in the next bit of the dividend (from high to low).
+        // 4. Repeat until all 16 bits are processed.
+        
+        // But wait, if we start with 8 bits and shift in one bit at a time, we can only process 8 + 16 = 24 bits? No.
+        
+        // Let me think again. The dividend is 16 bits. The divisor is 8 bits.
+        // The quotient should be 16 bits (as per output port).
+        
+        // Standard long division for a 16-bit dividend by an 8-bit divisor:
+        // The quotient can be up to 16 bits.
+        
+        // Let's think of it differently. We're dividing A (16 bits) by B (8 bits).
+        // The result quotient is 16 bits, remainder is 16 bits (but actually remainder should be less than B, so at most 7 bits, but the port is 16 bits).
+        
+        // Let me reconsider the algorithm. Perhaps the "extract higher bits matching divisor width" means we start with the top 8 bits, and then for each subsequent step, we shift in one bit. Since the dividend is 16 bits, we have 8 initial bits + 8 more bits to shift in = 16 steps total.
+        
+        // Step 1: rem = A[15:8], compare with B, get q[15], update rem
+        // Step 2: rem = {rem[6:0], A[7]}, compare with B, get q[14], update rem
+        // Step 3: rem = {rem[6:0], A[6]}, compare with B, get q[13], update rem
+        // Step 4: rem = {rem[6:0], A[5]}, compare with B, get q[12], update rem
+        // Step 5: rem = {rem[6:0], A[4]}, compare with B, get q[11], update rem
+        // Step 6: rem = {rem[6:0], A[3]}, compare with B, get q[10], update rem
+        // Step 7: rem = {rem[6:0], A[2]}, compare with B, get q[9], update rem
+        // Step 8: rem = {rem[6:0], A[1]}, compare with B, get q[8], update rem
+        // Step 9: rem = {rem[6:0], A[0]}, compare with B, get q[7], update rem
+        
+        // That's 9 steps, giving q[15] down to q[7]. We still need q[6] down to q[0].
+        
+        // I think the issue is that after processing all 16 bits of the dividend, we still have 7 more steps? That doesn't make sense.
+        
+        // Let me reconsider. Perhaps the algorithm is different. Maybe we're not doing traditional long division.
+        
+        // Actually, I think the key is that the remainder after each step is at most 7 bits (since it's less than the 8-bit divisor). When we concatenate with the next bit, we get an 8-bit value. So the remainder is always 8 bits wide.
+        
+        // But we only have 16 dividend bits. Starting with 8 bits, we can shift in 8 more bits. So 8 + 8 = 16 steps? No, 8 initial bits + 8 shifted bits = 16 total bits processed, but the number of quotient bits produced is 8 (one per shift) + 1 (initial) = 9? 
+        
+        // I'm confused. Let me just implement it as 16 steps, where the first step uses A[15:8], and subsequent steps shift in A[7], A[6], ..., A[0], and then continue shifting in 0s for the remaining steps? That doesn't make sense either.
+        
+        // Let me look at this from a different angle. The output quotient is 16 bits. The output remainder is 16 bits. 
+        
+        // Perhaps the algorithm is:
+        // We have a 16-bit dividend and an 8-bit divisor.
+        // We perform 16 iterations.
+        // In each iteration, we shift the remainder left by 1, bring in the next bit of the dividend (starting from the MSB), compare with the divisor, set the quotient bit, and update the remainder.
+        
+        // But the first iteration needs to handle the top 8 bits specially?
+        
+        // Actually, I think the standard way is:
+        // Initialize rem = 0
+        // For i from 15 down to 0:
+        //   rem = {rem[7:1], A[i]}  (shift left 1, bring in A[i])
+        //   if rem >= B:
+        //     q[i] = 1
+        //     rem = rem - B
+        //   else:
+        //     q[i] = 0
+        
+        // But this only works if we start with rem = 0. The first few iterations will have rem < B, so q bits will be 0 until rem becomes large enough.
+        
+        // However, the description specifically says "Extract the higher bits of the dividend, matching the bit width of the divisor." This suggests a different approach where we start with the top 8 bits.
+        
+        // Let me just go with 16 steps, where:
+        // Step 0: rem = A[15:8], compare with B, set q[15]
+        // Step 1: rem = {rem[6:0], A[7]}, compare with B, set q[14]
+        // Step 2: rem = {rem[6:0], A[6]}, compare with B, set q[13]
+        // ...
+        // Step 7: rem = {rem[6:0], A[0]}, compare with B, set q[8]
+        // Steps 8-15: rem = {rem[6:0], 0}, compare with B, set q[7] down to q[0]
+        
+        // Hmm, that seems odd. Let me just implement the standard restoring division with 16 iterations, starting from the MSB.
+        
+        // Actually, let me just implement it cleanly with 16 iterations.
+        
+        // Reset
+        rem = 8'b0;
+        q = 16'b0;
+        
+        // Iterate from bit 15 down to bit 0
+        // For each step, shift rem left by 1, bring in A[i]
+        
+        // Step for i=15
+        rem = {rem[6:0], a_reg[15]};
+        if (rem >= b_reg) begin
+            q[15] = 1;
+            rem = rem - b_reg;
+        end else begin
+            q[15] = 0;
+        end
+        
+        // Step for i=14
+        rem = {rem[6:0], a_reg[14]};
+        if (rem >= b_reg) begin
+            q[14] = 1;
+            rem = rem - b_reg;
+        end else begin
+            q[14] = 0;
+        end
+        
+        // Step for i=13
+        rem = {rem[6:0], a_reg[13]};
+        if (rem >= b_reg) begin
+            q[13] = 1;
+            rem = rem - b_reg;
+        end else begin
+            q[13] = 0;
+        end
+        
+        // Step for i=12
+        rem = {rem[6:0], a_reg[12]};
+        if (rem >= b_reg) begin
+            q[12] = 1;
+            rem = rem - b_reg;
+        end else begin
+            q[12] = 0;
+        end
+        
+        // Step for i=11
+        rem = {rem[6:0], a_reg[11]};
+        if (rem >= b_reg) begin
+            q[11] = 1;
+            rem = rem - b_reg;
+        end else begin
+            q[11] = 0;
+        end
+        
+        // Step for i=10
+        rem = {rem[6:0], a_reg[10]};
+        if (rem >= b_reg) begin
+            q[10] = 1;
+            rem = rem - b_reg;
+        end else begin
+            q[10] = 0;
+        end
+        
+        // Step for i=9
+        rem = {rem[6:0], a_reg[9]};
+        if (rem >= b_reg) begin
+            q[9] = 1;
+            rem = rem - b_reg;
+        end else begin
+            q[9] = 0;
+        end
+        
+        // Step for i=8
+        rem = {rem[6:0], a_reg[8]};
+        if (rem >= b_reg) begin
+            q[8] = 1;
+            rem = rem - b_reg;
+        end else begin
+            q[8] = 0;
+        end
+        
+        // Step for i=7
+        rem = {rem[6:0], a_reg[7]};
+        if (rem >= b_reg) begin
+            q[7] = 1;
+            rem = rem - b_reg;
+        end else begin
+            q[7] = 0;
+        end
+        
+        // Step for i=6
+        rem = {rem[6:0], a_reg[6]};
+        if (rem >= b_reg) begin
+            q[6] = 1;
+            rem = rem - b_reg;
+        end else begin
+            q[6] = 0;
+        end
+        
+        // Step for i=5
+        rem = {rem[6:0], a_reg[5]};
+        if (rem >= b_reg) begin
+            q[5] = 1;
+            rem = rem - b_reg;
+        end else begin
+            q[5] = 0;
+        end
+        
+        // Step for i=4
+        rem = {rem[6:0], a_reg[4]};
+        if (rem >= b_reg) begin
+            q[4] = 1;
+            rem = rem - b_reg;
+        end else begin
+            q[4] = 0;
+        end
+        
+        // Step for i=3
+        rem = {rem[6:0], a_reg[3]};
+        if (rem >= b_reg) begin
+            q[3] = 1;
+            rem = rem - b_reg;
+        end else begin
+            q[3] = 0;
+        end
+        
+        // Step for i=2
+        rem = {rem[6:0], a_reg[2]};
+        if (rem >= b_reg) begin
+            q[2] = 1;
+            rem = rem - b_reg;
+        end else begin
+            q[2] = 0;
+        end
+        
+        // Step for i=1
+        rem = {rem[6:0], a_reg[1]};
+        if (rem >= b_reg) begin
+            q[1] = 1;
+            rem = rem - b_reg;
+        end else begin
+            q[1] = 0;
+        end
+        
+        // Step for i=0
+        rem = {rem[6:0], a_reg[0]};
+        if (rem >= b_reg) begin
+            q[0] = 1;
+            rem = rem - b_reg;
+        end else begin
+            q[0] = 0;
+        end
+        
+        // Assign outputs
+        result = q;
+        odd = {8'b0, rem}; // Pad remainder to 16 bits
+    end
+
+endmodule

@@ -1,0 +1,65 @@
+```verilog
+module width_8to16 (
+    input wire clk,
+    input wire rst_n,
+    input wire valid_in,
+    input wire [7:0] data_in,
+    output reg valid_out,
+    output reg [15:0] data_out
+);
+
+    // Internal signals
+    reg [7:0] data_lock;  // Stores the first 8-bit data
+    reg flag;             // Indicates whether we have the first data waiting for the second
+
+    // Always block for data_out and valid_out registers
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            data_out <= 16'b0;
+            valid_out <= 1'b0;
+        end
+        else begin
+            // Default: clear valid_out
+            valid_out <= 1'b0;
+            
+            // If we have a valid input and we already have the first data stored
+            if (valid_in && flag) begin
+                // Concatenate: first data in higher 8 bits, second data in lower 8 bits
+                data_out <= {data_lock, data_in};
+                valid_out <= 1'b1;
+                // Clear the flag since we've completed the pair
+                flag <= 1'b0;
+            end
+            else if (valid_in && !flag) begin
+                // First valid data: store it and set the flag
+                data_lock <= data_in;
+                flag <= 1'b1;
+            end
+            // If no valid input, do nothing (data_out and valid_out remain as is, but valid_out is cleared by default)
+        end
+    end
+
+    // Always block for data_lock and flag
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            data_lock <= 8'b0;
+            flag <= 1'b0;
+        end
+        else begin
+            // If we have a valid input and we already have the first data stored,
+            // the pair is completed, so clear the flag
+            if (valid_in && flag) begin
+                flag <= 1'b0;
+                // data_lock can remain or be updated, but it will be overwritten next time
+            end
+            // If we have a valid input and we don't have the first data stored yet
+            else if (valid_in && !flag) begin
+                data_lock <= data_in;
+                flag <= 1'b1;
+            end
+            // If no valid input, do nothing
+        end
+    end
+
+endmodule
+```

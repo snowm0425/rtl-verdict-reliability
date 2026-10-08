@@ -1,0 +1,10 @@
+# stage=sim rc=0
+# STDOUT
+Error: dividend=156, divisor= 10, expected=00f6, got=faf1
+Error: dividend=156, divisor=246, expected=000a, got=fa0f
+Error: dividend=123, divisor=123, expected=0001, got=6400
+===========Failed===========          3
+/home/cvl/Documents/syn/RTLLM/Arithmetic/Divider/radix2_div/testbench.v:87: $finish called at 825000 (1ps)
+
+# STDERR
+

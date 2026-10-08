@@ -1,0 +1,38 @@
+Certainly! Below is the complete Verilog code for the `square_wave` module as per your specifications:
+
+```verilog
+module square_wave (
+    input clk,          // Clock signal that drives the module
+    input [7:0] freq,   // Frequency control, specifying how often the square wave toggles
+    output reg wave_out // Square wave output signal
+);
+
+    reg [7:0] count;    // Counter register used to track cycles between wave toggles
+
+    always @(posedge clk) begin
+        if (count == (freq - 1)) begin
+            count <= 0;       // Reset count to 0
+            wave_out <= ~wave_out; // Toggle wave_out
+        end else begin
+            count <= count + 1; // Increment count
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+- **Module Declaration**: The module is named `square_wave` with three ports: `clk`, `freq`, and `wave_out`.
+- **Internal Register**: The `count` register is a 8-bit register used to keep track of the number of clock cycles.
+- **Always Block**: This block is sensitive to the positive edge of the `clk` signal.
+  - **Condition Check**: If `count` equals `(freq - 1)`, it means the number of cycles has reached the specified frequency value.
+    - **Reset Count**: The `count` is reset to 0.
+    - **Toggle Output**: The `wave_out` is toggled using the bitwise NOT operator (`~`).
+  - **Increment Count**: If `count` has not reached `(freq - 1)`, it is incremented by 1.
+- **Output Signal**: The `wave_out` signal toggles based on the frequency value provided.
+
+### Key Points:
+- The higher the `freq` value, the more clock cycles it takes to toggle the `wave_out`, resulting in a lower frequency output.
+- The `wave_out` signal starts at 0 and toggles to 1, then back to 0, and so on, creating a square wave.
+
+This implementation assumes that the input `freq` is a non-zero value. If `freq` is 0, the `wave_out` will not toggle at all. You may want to add additional logic to handle such edge cases if necessary.

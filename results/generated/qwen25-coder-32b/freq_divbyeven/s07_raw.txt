@@ -1,0 +1,51 @@
+Sure, I'll provide you with the complete Verilog code for the `freq_diveven` module as per your specifications.
+
+```verilog
+module freq_diveven #(
+    parameter NUM_DIV = 8  // NUM_DIV must be an even number
+) (
+    input wire clk,        // Input clock signal
+    input wire rst_n,      // Active-low reset signal
+    output reg clk_div     // Divided clock output signal
+);
+
+    // Ensure NUM_DIV is an even number
+    generate
+        if (NUM_DIV % 2 != 0) begin : gen_error
+            initial begin
+                $error("NUM_DIV must be an even number.");
+                $stop;
+            end
+        end
+    endgenerate
+
+    // Counter to count the clock cycles
+    reg [3:0] cnt;  // Assuming NUM_DIV will not exceed 16 (2^4)
+
+    // State machine to handle the frequency division
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            cnt <= 4'b0000;
+            clk_div <= 1'b0;
+        end else begin
+            if (cnt < (NUM_DIV / 2 - 1)) begin
+                cnt <= cnt + 1;
+            end else begin
+                cnt <= 4'b0000;
+                clk_div <= ~clk_div;
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Parameter Declaration**: `NUM_DIV` is a parameter that specifies the division factor. It must be an even number.
+2. **Generate Block**: A generate block checks if `NUM_DIV` is even. If not, it throws an error and stops the simulation.
+3. **Counter Declaration**: A 4-bit counter (`cnt`) is used to count the number of clock cycles. This is sufficient for `NUM_DIV` values up to 16.
+4. **Always Block**: The always block handles the logic for frequency division:
+   - On a negative edge of `rst_n`, both the counter and `clk_div` are reset to zero.
+   - On a positive edge of `clk`, the counter increments until it reaches `(NUM_DIV / 2 - 1)`. At this point, the counter resets to zero and the `clk_div` signal is toggled, effectively dividing the input clock frequency by `NUM_DIV`.
+
+This code ensures that the frequency of the output clock (`clk_div`) is divided by the specified even number (`NUM_DIV`).

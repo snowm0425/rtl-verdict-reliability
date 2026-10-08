@@ -1,0 +1,93 @@
+design,verdict,log
+JC_counter,pass,"DIFF_PASS checked=2000
+t.v:54: $finish called at 20021 (1ns)"
+LFSR,pass,"DIFF_PASS checked=2000
+t.v:54: $finish called at 20021000 (1ps)"
+LIFObuffer,pass,"DIFF_PASS checked=4802
+t.v:149: $finish called at 20021000 (1ps)"
+RAM,pass,"DIFF_PASS checked=2000
+t.v:113: $finish called at 20021000 (1ps)"
+ROM,pass,"DIFF_PASS checked=154
+t.v:68: $finish called at 2583000 (1ps)"
+accu,pass,"DIFF_PASS checked=4000
+t.v:190: $finish called at 20021 (1ns)"
+adder_16bit,pass,"DIFF_PASS checked=1024
+t.v:282: $finish called at 2583000 (1ps)"
+adder_32bit,pass,"DIFF_PASS checked=1024
+t.v:395: $finish called at 2583000 (1ps)"
+adder_8bit,pass,"DIFF_PASS checked=1024
+t.v:82: $finish called at 2583000 (1ps)"
+adder_bcd,pass,"DIFF_PASS checked=1024
+t.v:82: $finish called at 2583000 (1ps)"
+adder_pipe_64bit,pass,"DIFF_PASS checked=4000
+t.v:429: $finish called at 20021000 (1ps)"
+alu,pass,"DIFF_PASS checked=426
+t.v:284: $finish called at 2583000 (1ps)"
+barrel_shifter,pass,"DIFF_PASS checked=512
+t.v:117: $finish called at 2583000 (1ps)"
+calendar,pass,"DIFF_PASS checked=6000
+t.v:110: $finish called at 20021000 (1ps)"
+comparator_3bit,pass,"DIFF_PASS checked=1536
+t.v:65: $finish called at 2583000 (1ps)"
+comparator_4bit,pass,"DIFF_PASS checked=1536
+t.v:83: $finish called at 2583000 (1ps)"
+counter_12,pass,"DIFF_PASS checked=2000
+t.v:95: $finish called at 20021000 (1ps)"
+div_16bit,pass,"DIFF_PASS checked=1024
+t.v:109: $finish called at 2583000 (1ps)"
+edge_detect,pass,"DIFF_PASS checked=4000
+t.v:109: $finish called at 20021 (1ns)"
+fixed_point_adder,pass,"DIFF_PASS checked=512
+t.v:131: $finish called at 2583000 (1ps)"
+fixed_point_substractor,pass,"DIFF_PASS checked=512
+t.v:129: $finish called at 2583000 (1ps)"
+float_multi,pass,"DIFF_PASS checked=1995
+t.v:360: $finish called at 20021000 (1ps)"
+freq_div,pass,"DIFF_PASS checked=6000
+t.v:126: $finish called at 20021000 (1ps)"
+freq_divbyeven,pass,"DIFF_PASS checked=2000
+t.v:78: $finish called at 20021000 (1ps)"
+freq_divbyfrac,pass,"DIFF_PASS checked=2000
+t.v:142: $finish called at 20021000 (1ps)"
+freq_divbyodd,pass,"DIFF_PASS checked=2000
+t.v:122: $finish called at 20021000 (1ps)"
+fsm,pass,"DIFF_PASS checked=2000
+t.v:181: $finish called at 20021000 (1ps)"
+instr_reg,pass,"DIFF_PASS checked=6000
+t.v:112: $finish called at 20021000 (1ps)"
+multi_16bit,pass,"DIFF_PASS checked=4000
+t.v:153: $finish called at 20021000 (1ps)"
+multi_8bit,pass,"DIFF_PASS checked=512
+t.v:73: $finish called at 2583000 (1ps)"
+multi_booth_8bit,pass,"DIFF_PASS checked=4000
+t.v:120: $finish called at 20021000 (1ps)"
+multi_pipe_4bit,pass,"DIFF_PASS checked=2000
+t.v:138: $finish called at 20021 (1ns)"
+multi_pipe_8bit,pass,"DIFF_PASS checked=4000
+t.v:223: $finish called at 20021000 (1ps)"
+parallel2serial,pass,"DIFF_PASS checked=4000
+t.v:111: $finish called at 20021 (1ns)"
+pe,pass,"DIFF_PASS checked=2000
+t.v:84: $finish called at 20021000 (1ps)"
+pulse_detect,pass,"DIFF_PASS checked=2000
+t.v:181: $finish called at 20021 (1ns)"
+right_shifter,pass,"DIFF_PASS checked=2000
+t.v:56: $finish called at 20021000 (1ps)"
+sequence_detector,pass,"DIFF_PASS checked=2000
+t.v:123: $finish called at 20021000 (1ps)"
+serial2parallel,pass,"DIFF_PASS checked=4000
+t.v:128: $finish called at 20021000 (1ps)"
+signal_generator,pass,"DIFF_PASS checked=2000
+t.v:94: $finish called at 20021000 (1ps)"
+square_wave,pass,"DIFF_PASS checked=2000
+t.v:74: $finish called at 20021000 (1ps)"
+sub_64bit,pass,"DIFF_PASS checked=1024
+t.v:69: $finish called at 2583000 (1ps)"
+synchronizer,pass,"DIFF_PASS checked=1997
+t.v:126: $finish called at 20021000 (1ps)"
+traffic_light,pass,"DIFF_PASS checked=8000
+t.v:249: $finish called at 20021 (1ns)"
+up_down_counter,pass,"DIFF_PASS checked=2000
+t.v:89: $finish called at 20021000 (1ps)"
+width_8to16,pass,"DIFF_PASS checked=4000
+t.v:124: $finish called at 20021 (1ns)"

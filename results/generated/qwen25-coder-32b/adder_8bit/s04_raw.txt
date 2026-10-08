@@ -1,0 +1,61 @@
+Certainly! Below is the complete Verilog code for an 8-bit adder using multiple bit-level adders (full adders) in combinational logic. Each bit of the sum is computed using a full adder, taking into account the carry from the previous bit.
+
+```verilog
+// Full Adder Module
+module full_adder (
+    input a,        // First input bit
+    input b,        // Second input bit
+    input cin,      // Carry-in
+    output sum,     // Sum of the three inputs
+    output cout     // Carry-out
+);
+    assign sum = a ^ b ^ cin;
+    assign cout = (a & b) | (b & cin) | (a & cin);
+endmodule
+
+// 8-bit Adder Module
+module adder_8bit (
+    input [7:0] a,  // 8-bit input operand A
+    input [7:0] b,  // 8-bit input operand B
+    input cin,      // Carry-in
+    output [7:0] sum, // 8-bit output representing the sum of A and B
+    output cout     // Carry-out
+);
+
+    wire [7:0] carry; // Internal carry wires
+
+    // Full adder for the least significant bit (LSB)
+    full_adder fa0 (
+        .a(a[0]),
+        .b(b[0]),
+        .cin(cin),
+        .sum(sum[0]),
+        .cout(carry[0])
+    );
+
+    // Full adders for the remaining bits
+    genvar i;
+    generate
+        for (i = 1; i < 8; i = i + 1) begin : fa_gen
+            full_adder fa (
+                .a(a[i]),
+                .b(b[i]),
+                .cin(carry[i-1]),
+                .sum(sum[i]),
+                .cout(carry[i])
+            );
+        end
+    endgenerate
+
+    // The carry-out of the most significant bit (MSB) is the final cout
+    assign cout = carry[7];
+
+endmodule
+```
+
+### Explanation:
+- **Full Adder Module**: This module takes three inputs (`a`, `b`, and `cin`) and produces two outputs (`sum` and `cout`). The `sum` is the XOR of the three inputs, and the `cout` is the OR of the AND combinations of the inputs.
+  
+- **8-bit Adder Module**: This module uses eight instances of the full adder module to compute the sum of two 8-bit numbers (`a` and `b`). The carry-in for the first bit (`fa0`) is the input `cin`. The carry-out from each full adder is fed into the next full adder as the carry-in. The final carry-out (`cout`) from the last full adder is the output `cout`.
+
+This code should work correctly in any standard Verilog simulator.

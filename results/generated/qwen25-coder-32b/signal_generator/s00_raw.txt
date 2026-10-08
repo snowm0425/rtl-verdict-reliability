@@ -1,0 +1,65 @@
+Certainly! Below is the complete Verilog code for the `signal_generator` module that generates a triangle wave signal as described:
+
+```verilog
+module signal_generator (
+    input wire clk,      // Clock signal
+    input wire rst_n,    // Active-low reset signal
+    output reg [4:0] wave // 5-bit output waveform signal
+);
+
+    reg state; // State register to control the direction of the waveform
+
+    // Always block triggered on the positive edge of the clock or negative edge of reset
+    always @(posedge clk or negedge rst_n) begin
+        if (~rst_n) begin
+            // Reset state and waveform to 0 on reset
+            state <= 0;
+            wave <= 5'b00000;
+        end else begin
+            // State machine to control waveform generation
+            case (state)
+                0: begin
+                    if (wave == 5'b11111) begin // If waveform reaches 31
+                        state <= 1; // Change state to decrement
+                    end else begin
+                        wave <= wave + 1; // Increment waveform
+                    end
+                end
+                1: begin
+                    if (wave == 5'b00000) begin // If waveform reaches 0
+                        state <= 0; // Change state to increment
+                    end else begin
+                        wave <= wave - 1; // Decrement waveform
+                    end
+                end
+                default: begin
+                    state <= 0; // Default state to increment
+                    wave <= 5'b00000; // Reset waveform to 0
+                end
+            endcase
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+- **Inputs:**
+  - `clk`: Clock signal used for synchronous operation.
+  - `rst_n`: Active-low reset signal. When `rst_n` is 0, the module resets; when `rst_n` is 1, the module operates normally.
+
+- **Outputs:**
+  - `wave`: A 5-bit register that represents the generated waveform.
+
+- **Registers:**
+  - `state`: A 1-bit register used to control the direction of the waveform generation (0 for increment, 1 for decrement).
+  - `wave`: A 5-bit register that holds the current value of the waveform.
+
+- **Operation:**
+  - The `always` block is sensitive to the positive edge of `clk` and the negative edge of `rst_n`.
+  - On reset (`~rst_n`), both `state` and `wave` are set to 0.
+  - When `state` is 0, `wave` is incremented by 1 until it reaches 31, at which point `state` is set to 1.
+  - When `state` is 1, `wave` is decremented by 1 until it reaches 0, at which point `state` is set back to 0.
+  - This cycle continues indefinitely, generating a triangle wave.
+
+This module should work correctly in a synchronous design, generating a triangle wave with a range from 0 to 31 based on the clock and reset signals provided.

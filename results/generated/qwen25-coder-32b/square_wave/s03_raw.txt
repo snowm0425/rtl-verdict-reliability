@@ -1,0 +1,47 @@
+Certainly! Below is the Verilog code for the `square_wave` module as per your specifications. This module generates a square wave signal with a frequency determined by the `freq` input. The frequency control is a bit counter-intuitive as you described, where a higher `freq` value results in a lower output frequency. If you meant the opposite (higher `freq` for higher output frequency), I can adjust that as well. Let me know if you need any changes!
+
+```verilog
+module square_wave (
+    input wire clk,          // Clock signal
+    input wire [7:0] freq,   // Frequency control (8-bit)
+    output reg wave_out      // Square wave output
+);
+
+    // Internal register to count clock cycles
+    reg [7:0] count;
+
+    // Always block to handle the clock edge
+    always @(posedge clk) begin
+        if (count == freq - 1) begin
+            // Reset counter and toggle wave_out
+            count <= 0;
+            wave_out <= ~wave_out;
+        end else begin
+            // Increment counter
+            count <= count + 1;
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+- **Inputs:**
+  - `clk`: The clock signal that drives the module.
+  - `freq`: An 8-bit input that controls the frequency of the square wave. A higher value results in a lower output frequency as per your description.
+
+- **Outputs:**
+  - `wave_out`: The square wave signal output.
+
+- **Internal Register:**
+  - `count`: An 8-bit register used to track the number of clock cycles since the last toggle of `wave_out`.
+
+- **Logic:**
+  - The `always` block is triggered on the rising edge of `clk`.
+  - If `count` reaches `freq - 1`, it resets `count` to 0 and toggles `wave_out`.
+  - If `count` has not reached `freq - 1`, it simply increments `count` by 1.
+
+### Frequency Control:
+- The frequency control is such that a higher `freq` value means the square wave toggles less frequently (lower output frequency). If you intended the opposite, please let me know, and I can modify the code accordingly.
+
+Feel free to test and integrate this module into your design. If you have any further questions or need modifications, don't hesitate to ask!

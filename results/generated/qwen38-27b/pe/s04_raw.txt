@@ -1,0 +1,26 @@
+```verilog
+module pe (
+    input  wire        clk,
+    input  wire        rst,
+    input  wire [31:0] a,
+    input  wire [31:0] b,
+    output reg  [31:0] c
+);
+
+    // Partial product: 32-bit * 32-bit = up to 64 bits, but we only keep lower 32 bits for accumulation
+    // The problem states 32-bit integer accumulation, so we use 32-bit result
+    wire [31:0] product;
+    
+    // Multiply a and b, take lower 32 bits of the 64-bit product
+    assign product = a * b;
+
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            c <= 32'd0;
+        end else begin
+            c <= c + product;
+        end
+    end
+
+endmodule
+```

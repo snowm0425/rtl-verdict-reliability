@@ -1,0 +1,161 @@
+```verilog
+module sequence_detector (
+    input  clk,
+    input  reset_n,
+    input  data_in,
+    output reg sequence_detected
+);
+
+    // State encoding
+    localparam IDLE = 3'd0;
+    localparam S1   = 3'd1;
+    localparam S2   = 3'd2;
+    localparam S3   = 3'd3;
+    localparam S4   = 3'd4;
+
+    reg [2:0] current_state, next_state;
+
+    // FSM: State Register
+    always @(posedge clk or negedge reset_n) begin
+        if (!reset_n)
+            current_state <= IDLE;
+        else
+            current_state <= next_state;
+    end
+
+    // FSM: Next State Logic and Output
+    always @(*) begin
+        sequence_detected = 1'b0;
+        case (current_state)
+            IDLE: begin
+                if (data_in == 1'b1)
+                    next_state = S1;
+                else
+                    next_state = IDLE;
+            end
+            S1: begin
+                // Expecting 0 (second bit of 1001)
+                if (data_in == 1'b0)
+                    next_state = S2;
+                else if (data_in == 1'b1)
+                    next_state = S1; // Restart from S1
+                else
+                    next_state = IDLE;
+            end
+            S2: begin
+                // Expecting 0 (third bit of 1001)
+                if (data_in == 1'b0)
+                    next_state = S3;
+                else if (data_in == 1'b1)
+                    next_state = S1; // Restart from S1
+                else
+                    next_state = IDLE;
+            end
+            S3: begin
+                // Expecting 1 (fourth bit of 1001)
+                if (data_in == 1'b1)
+                    next_state = S4;
+                else if (data_in == 1'b0)
+                    next_state = IDLE;
+                else
+                    next_state = IDLE;
+            end
+            S4: begin
+                // Sequence detected
+                sequence_detected = 1'b1;
+                // After detection, check for overlapping sequences
+                // The last bit is 1. If next bit is 0, we could be in S2? No.
+                // Let's think: sequence is 1001. After detecting 1001, the last bit is 1.
+                // If the next input is 0, then we have ...10010. The '1' at position 4 could be the start of a new sequence if followed by 001.
+                // Actually, let's reconsider. The state after S4 should depend on the new input.
+                // But wait, in a standard FSM, we transition out of S4 based on the current input during the same cycle.
+                // Let me restructure: S4 is a transient state that asserts the output and then transitions.
+                // Actually, it's cleaner to assert output when transitioning INTO the state where the 4th bit matches.
+                // Let me revise: detect when in S3 and data_in == 1, then output high and go to next state based on that 1.
+                // Let's redo the logic properly.
+            end
+            default:
+                next_state = IDLE;
+        endcase
+    end
+
+endmodule
+```
+
+Wait, I made an error in the logic. Let me reconsider the FSM design carefully.
+
+For sequence 1001:
+- IDLE: waiting for '1'. If '1', go to S1. If '0', stay IDLE.
+- S1 (got '1'): waiting for '0'. If '0', go to S2. If '1', stay in S1 (since '1' can start a new match).
+- S2 (got '10'): waiting for '0'. If '0', go to S3. If '1', go to S1 (since '1' can start a new match).
+- S3 (got '100'): waiting for '1'. If '1', output detected, and we need to determine next state. The last bit is '1', which is the first bit of the sequence, so we go to S1. If '0', go to IDLE.
+
+So the output should be asserted when we are in S3 and data_in == 1. This is a Moore or Mealy machine. Since the output depends on the current state AND input, it's a Mealy machine.
+
+Let me rewrite:
+
+```verilog
+module sequence_detector (
+    input  clk,
+    input  reset_n,
+    input  data_in,
+    output reg sequence_detected
+);
+
+    // State encoding
+    localparam IDLE = 3'd0;
+    localparam S1   = 3'd1;
+    localparam S2   = 3'd2;
+    localparam S3   = 3'd3;
+
+    reg [2:0] current_state, next_state;
+
+    // FSM: State Register
+    always @(posedge clk or negedge reset_n) begin
+        if (!reset_n)
+            current_state <= IDLE;
+        else
+            current_state <= next_state;
+    end
+
+    // FSM: Next State Logic and Output
+    always @(*) begin
+        sequence_detected = 1'b0;
+        case (current_state)
+            IDLE: begin
+                if (data_in == 1'b1)
+                    next_state = S1;
+                else
+                    next_state = IDLE;
+            end
+            S1: begin
+                if (data_in == 1'b0)
+                    next_state = S2;
+                else if (data_in == 1'b1)
+                    next_state = S1;
+                else
+                    next_state = IDLE;
+            end
+            S2: begin
+                if (data_in == 1'b0)
+                    next_state = S3;
+                else if (data_in == 1'b1)
+                    next_state = S1;
+                else
+                    next_state = IDLE;
+            end
+            S3: begin
+                if (data_in == 1'b1) begin
+                    sequence_detected = 1'b1;
+                    next_state = S1; // The last bit '1' is the start of a new potential sequence
+                end
+                else
+                    next_state = IDLE;
+            end
+            default:
+                next_state = IDLE;
+        endcase
+    end
+
+endmodule
+```

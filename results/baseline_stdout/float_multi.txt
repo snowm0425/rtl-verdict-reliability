@@ -1,0 +1,7 @@
+# stage=sim rc=0
+# STDOUT
+=========== Your Design Passed ===========
+/home/cvl/Documents/syn/RTLLM/Arithmetic/Other/float_multi/testbench.v:35: $finish called at 243 (1s)
+
+# STDERR
+

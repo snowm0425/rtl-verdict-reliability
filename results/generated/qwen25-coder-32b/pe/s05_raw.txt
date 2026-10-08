@@ -1,0 +1,52 @@
+Certainly! Below is the complete Verilog code for the Multiplying Accumulator (MAC_PE) module as described:
+
+```verilog
+module pe (
+    input wire clk,          // Clock signal
+    input wire rst,          // Reset signal (active high)
+    input wire [31:0] a,     // 32-bit input operand A
+    input wire [31:0] b,     // 32-bit input operand B
+    output reg [31:0] c      // 32-bit accumulated result
+);
+
+// Intermediate wire to store the product of a and b
+wire [63:0] product;
+
+// Multiplier to calculate the product of a and b
+assign product = a * b;
+
+// Register to store the accumulated result
+always @(posedge clk or posedge rst) begin
+    if (rst) begin
+        c <= 32'b0;  // Reset the accumulator to 0
+    end else begin
+        c <= c + product[31:0];  // Accumulate the lower 32 bits of the product
+    end
+end
+
+endmodule
+```
+
+### Explanation:
+
+1. **Module Declaration**:
+   - `pe`: Module name.
+   - `clk`, `rst`, `a`, `b`, `c`: Inputs and output ports as specified.
+
+2. **Intermediate Product Calculation**:
+   - `product`: A 64-bit wire to store the result of multiplying `a` and `b`. This is because the product of two 32-bit numbers can result in a 64-bit number.
+
+3. **Multiplier**:
+   - The product of `a` and `b` is calculated and stored in the `product` wire.
+
+4. **Accumulator Register**:
+   - `c`: A 32-bit register to store the accumulated result.
+   - The `always` block is sensitive to the positive edge of `clk` and `rst`.
+   - If `rst` is high, `c` is reset to `0`.
+   - If `rst` is low, the lower 32 bits of `product` are added to `c`.
+
+### Note:
+- The accumulation only considers the lower 32 bits of the product. If you need to handle overflow or the upper 32 bits of the product, you might need to modify the design accordingly.
+- This module assumes that the inputs `a` and `b` are valid at every clock cycle where accumulation is needed.
+
+This code should be synthesized and simulated in a Verilog simulator to ensure it behaves as expected.

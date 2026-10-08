@@ -1,0 +1,93 @@
+Sure, below is the complete Verilog code for a 4-bit unsigned number pipeline multiplier using two levels of registers to store intermediate values and control the multiplication process:
+
+```verilog
+module multi_pipe_4bit (
+    input clk,          // Clock signal
+    input rst_n,        // Active-low reset signal
+    input [3:0] mul_a,  // 4-bit multiplicand
+    input [3:0] mul_b,  // 4-bit multiplier
+    output [7:0] mul_out // 8-bit product
+);
+
+    parameter size = 4;
+
+    // Extended partial products
+    reg [7:0] partial_products [0:size-1];
+
+    // Intermediate sum registers
+    reg [7:0] sum_reg1;
+    reg [7:0] sum_reg2;
+
+    // Final product
+    reg [7:0] product;
+
+    // Generate block to calculate partial products
+    generate
+        genvar i;
+        for (i = 0; i < size; i = i + 1) begin : gen_partial_products
+            always @(posedge clk or negedge rst_n) begin
+                if (!rst_n) begin
+                    partial_products[i] <= 8'b0;
+                end else begin
+                    if (mul_b[i])
+                        partial_products[i] <= {mul_a, 4'b0} << i;
+                    else
+                        partial_products[i] <= 8'b0;
+                end
+            end
+        end
+    endgenerate
+
+    // First level of adder
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            sum_reg1 <= 8'b0;
+        end else begin
+            sum_reg1 <= partial_products[0] + partial_products[1];
+        end
+    end
+
+    // Second level of adder
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            sum_reg2 <= 8'b0;
+        end else begin
+            sum_reg2 <= sum_reg1 + partial_products[2] + partial_products[3];
+        end
+    end
+
+    // Final product calculation
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            product <= 8'b0;
+        end else begin
+            product <= sum_reg2;
+        end
+    end
+
+    // Assign final product to output
+    assign mul_out = product;
+
+endmodule
+```
+
+### Explanation:
+1. **Parameters and Inputs/Outputs**:
+   - `size` is set to 4.
+   - `mul_a` and `mul_b` are 4-bit inputs.
+   - `mul_out` is an 8-bit output.
+
+2. **Partial Products**:
+   - For each bit of `mul_b`, if the bit is 1, the corresponding partial product is the left-shifted version of `mul_a` by the bit position. Otherwise, it is 0.
+
+3. **Intermediate Sum Registers**:
+   - `sum_reg1` accumulates the sum of the first two partial products.
+   - `sum_reg2` accumulates the sum of `sum_reg1` and the remaining two partial products.
+
+4. **Final Product**:
+   - The final product is stored in `product` and is updated with the value of `sum_reg2`.
+
+5. **Reset Condition**:
+   - All registers are reset to 0 when `rst_n` is low.
+
+This design ensures that the multiplication process is pipelined over two clock cycles, with intermediate results stored in registers.

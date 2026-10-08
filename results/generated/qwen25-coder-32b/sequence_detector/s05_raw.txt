@@ -1,0 +1,90 @@
+Certainly! Below is the implementation of the `sequence_detector` module in Verilog. This module uses a 4-state FSM to detect the specific 4-bit binary sequence `1001` from the input data stream.
+
+```verilog
+module sequence_detector (
+    input wire clk,          // Clock signal
+    input wire reset_n,      // Active-low reset signal
+    input wire data_in,      // 1-bit input data
+    output reg sequence_detected  // Output signal indicating sequence detection
+);
+
+    // State definitions
+    typedef enum reg [1:0] {
+        IDLE = 2'b00,
+        S1 = 2'b01,
+        S2 = 2'b10,
+        S3 = 2'b11
+    } state_t;
+
+    // Internal state register
+    reg [1:0] current_state, next_state;
+
+    // State transition logic
+    always @(posedge clk or negedge reset_n) begin
+        if (!reset_n) begin
+            current_state <= IDLE;
+            sequence_detected <= 0;
+        end else begin
+            current_state <= next_state;
+            if (current_state == S3 && data_in == 1'b1)
+                sequence_detected <= 1;
+            else
+                sequence_detected <= 0;
+        end
+    end
+
+    // Next state logic
+    always @(*) begin
+        case (current_state)
+            IDLE: begin
+                if (data_in == 1'b1)
+                    next_state = S1;
+                else
+                    next_state = IDLE;
+            end
+            S1: begin
+                if (data_in == 1'b0)
+                    next_state = S2;
+                else
+                    next_state = IDLE;
+            end
+            S2: begin
+                if (data_in == 1'b0)
+                    next_state = S3;
+                else
+                    next_state = IDLE;
+            end
+            S3: begin
+                if (data_in == 1'b1)
+                    next_state = IDLE;  // Sequence detected, reset to IDLE
+                else
+                    next_state = IDLE;
+            end
+            default: next_state = IDLE;
+        endcase
+    end
+
+endmodule
+```
+
+### Explanation:
+
+1. **State Definitions:**
+   - The FSM has four states: `IDLE`, `S1`, `S2`, and `S3`.
+   - `IDLE` is the initial state, waiting for the start of the sequence.
+   - `S1`, `S2`, and `S3` are intermediate states representing the detection of the first, second, and third bits of the sequence `1001`, respectively.
+
+2. **State Transition Logic:**
+   - The state transition logic is handled by two `always` blocks.
+   - The first `always` block handles the state register updates and the `sequence_detected` signal.
+   - The second `always` block determines the next state based on the current state and the input data `data_in`.
+
+3. **Reset Behavior:**
+   - The state machine resets to `IDLE` when `reset_n` is low.
+   - The `sequence_detected` signal is set high only when the sequence `1001` is detected (i.e., when transitioning from `S3` to `IDLE` with `data_in` being `1`).
+
+4. **Sequence Detection:**
+   - The sequence is detected when the state machine transitions from `S3` to `IDLE` with `data_in` being `1`.
+   - At this point, the `sequence_detected` signal is asserted high for one clock cycle.
+
+This implementation ensures that the sequence detector correctly identifies the sequence `1001` in the input data stream and provides a reliable output signal when the sequence is detected.

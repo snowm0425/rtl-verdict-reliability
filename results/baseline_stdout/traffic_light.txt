@@ -1,0 +1,13 @@
+# stage=sim rc=0
+# STDOUT
+At time                   40, clock =  10, red = 1, yellow = 0, green = 0
+At time                  140, clock =  60, red = 0, yellow = 0, green = 1
+At time                  740, clock =   5, red = 0, yellow = 1, green = 0
+At time                  890, clock =  60, red = 0, yellow = 0, green = 1
+At time                  920, clock =  57, red = 0, yellow = 0, green = 1
+At time                  930, clock =  10, red = 0, yellow = 0, green = 1
+===========Your Design Passed===========
+/home/cvl/Documents/syn/RTLLM/Miscellaneous/Others/traffic_light/testbench.v:78: $finish called at 930 (1ns)
+
+# STDERR
+

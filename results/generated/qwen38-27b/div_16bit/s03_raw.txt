@@ -1,0 +1,80 @@
+```verilog
+module div_16bit (
+    input  [15:0] A,
+    input  [7:0]  B,
+    output [15:0] result,
+    output [15:0] odd
+);
+
+    // Registers to hold the dividend and divisor values
+    reg [15:0] a_reg;
+    reg [7:0]  b_reg;
+
+    // First combinational block: update registers with input values
+    always @* begin
+        a_reg = A;
+        b_reg = B;
+    end
+
+    // Second combinational block: perform the division
+    always @* begin
+        reg [15:0] quotient;
+        reg [15:0] remainder;
+        reg [15:0] dividend_bits;
+        reg [7:0]  divisor;
+        reg [7:0]  high_bits;
+        reg [7:0]  sub_result;
+        reg        cmp_result;
+        integer i;
+        reg [15:0] temp_remainder;
+
+        // Initialize
+        quotient = 16'b0;
+        temp_remainder = 16'b0;
+        divisor = b_reg;
+
+        // Handle division by zero
+        if (divisor == 8'b0) begin
+            result = 16'b0;
+            odd = 16'b0;
+        end else begin
+            // Perform bit-by-bit division
+            // The dividend is 16 bits, divisor is 8 bits
+            // We process from the most significant bit to the least significant bit
+            // For each bit position, we take the current remainder (8 bits) and bring down the next bit
+            
+            // Initialize remainder to 0
+            temp_remainder = 16'b0;
+            quotient = 16'b0;
+
+            for (i = 15; i >= 0; i = i - 1) begin
+                // Shift remainder left by 1 and bring down the next bit of the dividend
+                temp_remainder = {temp_remainder[14:0], a_reg[i]};
+
+                // Take the upper 8 bits of the remainder for comparison
+                high_bits = temp_remainder[15:8];
+
+                // Compare high_bits with divisor
+                if (high_bits >= divisor) begin
+                    quotient[i] = 1'b1;
+                    // Subtract divisor from high_bits and keep the lower 8 bits
+                    sub_result = high_bits - divisor;
+                    temp_remainder = {sub_result, temp_remainder[7:0]};
+                end else begin
+                    quotient[i] = 1'b0;
+                    // No subtraction, keep remainder as is
+                    temp_remainder = temp_remainder;
+                end
+            end
+
+            // The final remainder is in the upper 8 bits of temp_remainder
+            // But we need to output it as a 16-bit value
+            // The remainder should be less than the divisor (8-bit), so it fits in 8 bits
+            // Pad to 16 bits
+            result = quotient;
+            odd = {8'b0, temp_remainder[7:0]};
+        end
+    end
+
+endmodule
+```

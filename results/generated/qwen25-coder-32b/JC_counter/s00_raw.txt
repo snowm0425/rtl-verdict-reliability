@@ -1,0 +1,49 @@
+Certainly! Below is the complete Verilog implementation of a 64-bit Johnson counter (torsional ring counter) based on your specifications:
+
+```verilog
+module JC_counter (
+    input clk,      // Clock signal used for synchronous operation
+    input rst_n,    // Active-low reset signal to initialize the counter
+    output reg [63:0] Q // 64-bit register representing the current count value
+);
+
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        // Reset condition: Set Q to 0
+        Q <= 64'b0;
+    end else begin
+        // Johnson counter logic
+        if (Q[0] == 0) begin
+            // If the least significant bit is 0, shift right and append 1
+            Q <= {Q[62:0], 1'b1};
+        end else begin
+            // If the least significant bit is 1, shift right and append 0
+            Q <= {Q[62:0], 1'b0};
+        end
+    end
+end
+
+endmodule
+```
+
+### Explanation:
+1. **Module Definition**:
+   - `JC_counter` is the module name.
+   - `clk` is the clock signal for synchronous operations.
+   - `rst_n` is the active-low reset signal.
+   - `Q` is a 64-bit register that holds the current state of the counter.
+
+2. **Sensitivity List**:
+   - The `always` block is triggered on the rising edge of `clk` or the falling edge of `rst_n`.
+
+3. **Reset Condition**:
+   - If `rst_n` is low (`!rst_n` evaluates to true), the register `Q` is set to 0 (all bits are 0).
+
+4. **Johnson Counter Logic**:
+   - If the least significant bit (`Q[0]`) is 0, the current value of `Q` is shifted right by one bit, and a `1` is appended to the most significant bit position.
+   - If the least significant bit (`Q[0]`) is 1, the current value of `Q` is shifted right by one bit, and a `0` is appended to the most significant bit position.
+
+### Usage:
+- Instantiate this module in your testbench and apply a clock signal along with a reset signal to observe the behavior of the 64-bit Johnson counter.
+
+This code should meet the requirements you specified for the 64-bit Johnson counter.

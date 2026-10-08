@@ -1,0 +1,62 @@
+Sure, below is the complete Verilog code for a 4-bit unsigned number pipeline multiplier using two levels of registers. The module is named `multi_pipe_4bit` and includes the specified parameters and ports.
+
+```verilog
+module multi_pipe_4bit (
+    input clk,          // Clock signal
+    input rst_n,        // Active-low reset signal
+    input [3:0] mul_a,  // 4-bit multiplicand
+    input [3:0] mul_b,  // 4-bit multiplier
+    output [7:0] mul_out // 8-bit product
+);
+
+    parameter size = 4;
+
+    // Extended inputs
+    wire [7:0] ext_mul_a = {4'b0000, mul_a};
+    wire [7:0] ext_mul_b = {4'b0000, mul_b};
+
+    // Partial products
+    wire [7:0] partial_prod [0:size-1];
+
+    // Registers for intermediate sums
+    reg [7:0] reg_sum1;
+    reg [7:0] reg_sum2;
+
+    // Generate partial products
+    genvar i;
+    generate
+        for (i = 0; i < size; i = i + 1) begin : gen_partial_prod
+            assign partial_prod[i] = (ext_mul_b[i]) ? (ext_mul_a << i) : 8'b0;
+        end
+    endgenerate
+
+    // Register for storing intermediate sums
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            reg_sum1 <= 8'b0;
+            reg_sum2 <= 8'b0;
+        end else begin
+            reg_sum1 <= partial_prod[0] + partial_prod[1];
+            reg_sum2 <= reg_sum1 + partial_prod[2] + partial_prod[3];
+        end
+    end
+
+    // Final product calculation
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            mul_out <= 8'b0;
+        end else begin
+            mul_out <= reg_sum2;
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Extended Inputs**: The inputs `mul_a` and `mul_b` are extended by adding four zero bits at the most significant bit positions to handle the multiplication without overflow.
+2. **Partial Products**: The `partial_prod` array stores the partial products for each bit position of the multiplier `mul_b`. If the bit is 1, the multiplicand is left-shifted by the bit position. If the bit is 0, the partial product is 0.
+3. **Intermediate Registers**: Two registers (`reg_sum1` and `reg_sum2`) are used to store intermediate sums of the partial products. This introduces the pipeline stages.
+4. **Final Product Calculation**: The final product is stored in the `mul_out` register after the second stage of summation.
+
+This design ensures that the multiplication process is pipelined and controlled by the clock and reset signals.

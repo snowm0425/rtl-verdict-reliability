@@ -1,0 +1,63 @@
+Certainly! Below is the complete Verilog code for the `width_8to16` module as per your specifications:
+
+```verilog
+module width_8to16 (
+    input wire clk,
+    input wire rst_n,
+    input wire valid_in,
+    input wire [7:0] data_in,
+    output reg valid_out,
+    output reg [15:0] data_out
+);
+
+    // Internal registers
+    reg [7:0] data_lock;
+    reg flag;
+
+    // Initialization
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            valid_out <= 0;
+            data_out <= 16'b0;
+            data_lock <= 8'b0;
+            flag <= 0;
+        end else begin
+            if (valid_in) begin
+                if (flag) begin
+                    // Concatenate data_lock and data_in to produce data_out
+                    data_out <= {data_lock, data_in};
+                    valid_out <= 1;
+                    flag <= 0; // Reset the flag for the next pair of data
+                end else begin
+                    // Store the first valid data
+                    data_lock <= data_in;
+                    valid_out <= 0;
+                    flag <= 1; // Set the flag to indicate the first data is stored
+                end
+            end else begin
+                valid_out <= 0;
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Registers**:
+   - `data_lock`: Used to store the first arriving 8-bit data.
+   - `flag`: Used to indicate whether the first data has been stored.
+
+2. **Reset**:
+   - On the negative edge of `rst_n`, all registers are reset to their initial states. `data_out` and `data_lock` are set to `0`, `valid_out` is set to `0`, and `flag` is set to `0`.
+
+3. **Data Handling**:
+   - When `valid_in` is high, the module checks the `flag`.
+     - If `flag` is high, it means the first 8-bit data has already been stored in `data_lock`. The module then concatenates `data_lock` and `data_in` to form `data_out`, sets `valid_out` to `1`, and resets `flag` to `0`.
+     - If `flag` is low, it means no data has been stored yet. The module stores `data_in` in `data_lock`, sets `valid_out` to `0`, and sets `flag` to `1`.
+
+4. **Output**:
+   - `valid_out` is set to `1` only when a complete 16-bit data is formed by concatenating two 8-bit inputs.
+   - `data_out` is the concatenated 16-bit data.
+
+This module ensures that the first arriving 8-bit data is placed in the higher 8 bits of the 16-bit output, and the valid output is generated only after two valid inputs are received.

@@ -1,0 +1,45 @@
+```verilog
+module comparator_4bit (
+    input  [3:0] A,
+    input  [3:0] B,
+    output       A_greater,
+    output       A_equal,
+    output       A_less
+);
+
+    // Perform subtraction A - B using two's complement: A + (~B + 1)
+    // The carry out of the subtraction indicates whether A >= B
+    // If carry out is 1, then A >= B (no borrow)
+    // If carry out is 0, then A < B (borrow occurred)
+
+    // Compute A - B
+    wire [3:0] diff;
+    wire       borrow_out;
+
+    // Subtraction: A + (~B) + 1
+    // The final carry out from the adder is the inverse of borrow
+    // If we compute A + (~B) + 1, the carry out = 1 means no borrow (A >= B)
+    // If carry out = 0, means borrow (A < B)
+
+    assign diff = A + (~B) + 1'b1;
+    assign borrow_out = ~$bits(A); // This won't work, need proper carry
+
+    // Let's use a proper approach: compute the carry from the full addition
+    // We'll explicitly compute the carry chain or use a wider addition
+
+    // Better approach: use a 5-bit addition to capture the carry
+    wire [4:0] sum_ext;
+    assign sum_ext = {1'b0, A} + {1'b0, ~B} + 5'b1;
+
+    // The MSB of sum_ext (bit 4) is the carry out
+    wire carry_out = sum_ext[4];
+
+    // If carry_out is 1, no borrow, so A >= B
+    // If carry_out is 0, borrow occurred, so A < B
+
+    assign A_less  = ~carry_out;
+    assign A_equal = (diff == 4'b0000) & carry_out;
+    assign A_greater = (diff != 4'b0000) & carry_out;
+
+endmodule
+```

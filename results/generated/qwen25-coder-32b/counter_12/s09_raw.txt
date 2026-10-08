@@ -1,0 +1,37 @@
+Certainly! Below is the Verilog implementation of the `counter_12` module based on the specifications you provided:
+
+```verilog
+module counter_12 (
+    input wire rst_n,    // Reset signal (active low)
+    input wire clk,      // Clock signal
+    input wire valid_count, // Signal to enable counting
+    output reg [3:0] out // 4-bit output representing the current count value
+);
+
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        // Reset the counter to 0 when reset is active (rst_n is 0)
+        out <= 4'b0000;
+    end else if (valid_count) begin
+        // Increment the counter if valid_count is 1
+        if (out == 4'd11) begin
+            // Wrap around if the counter reaches 4'd11
+            out <= 4'b0000;
+        end else begin
+            // Increment the counter
+            out <= out + 1;
+        end
+    end
+    // If valid_count is 0, the counter stays the same
+end
+
+endmodule
+```
+
+### Explanation:
+- **Reset (`rst_n`)**: The counter is reset to `4'b0000` when `rst_n` is low.
+- **Clock (`clk`)**: The counter logic is sensitive to the rising edge of the clock signal.
+- **Valid Count (`valid_count`)**: The counter increments only when `valid_count` is high.
+- **Output (`out`)**: The counter value is a 4-bit register that increments from `4'b0000` to `4'b1011` (which is `4'd11` in decimal). When it reaches `4'd11`, it wraps around to `4'b0000`.
+
+This module ensures that the counter only increments when `valid_count` is high and resets to zero when `rst_n` is low.

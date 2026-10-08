@@ -1,0 +1,7 @@
+# stage=sim rc=0
+# STDOUT
+===========Your Design Passed===========
+/home/cvl/Documents/syn/RTLLM/Miscellaneous/Others/pulse_detect/testbench.v:43: $finish called at 148 (1ns)
+
+# STDERR
+

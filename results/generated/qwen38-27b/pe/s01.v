@@ -1,0 +1,24 @@
+module pe (
+    input        clk,
+    input        rst,
+    input  [31:0] a,
+    input  [31:0] b,
+    output [31:0] c
+);
+
+    reg [31:0] c_reg;
+
+    // Product of a and b, truncated to 32 bits
+    wire [31:0] product = a * b;
+
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            c_reg <= 32'd0;
+        end else begin
+            c_reg <= c_reg + product;
+        end
+    end
+
+    assign c = c_reg;
+
+endmodule

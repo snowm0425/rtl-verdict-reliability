@@ -1,0 +1,38 @@
+Certainly! Below is the complete Verilog code for a 64-bit subtractor with overflow checking:
+
+```verilog
+module sub_64bit (
+    input  [63:0] A,        // First 64-bit input operand
+    input  [63:0] B,        // Second 64-bit input operand
+    output [63:0] result,   // 64-bit output representing the difference
+    output       overflow   // 1-bit output indicating overflow
+);
+
+    // Perform the subtraction
+    assign result = A - B;
+
+    // Detect overflow conditions
+    // Overflow occurs if:
+    // 1. A is positive, B is negative, and result is negative
+    // 2. A is negative, B is positive, and result is positive
+
+    // Sign bits of A, B, and result
+    wire sign_A = A[63];
+    wire sign_B = B[63];
+    wire sign_result = result[63];
+
+    // Overflow detection logic
+    assign overflow = (sign_A & ~sign_B & ~sign_result) | (~sign_A & sign_B & sign_result);
+
+endmodule
+```
+
+### Explanation:
+- **Subtraction**: The subtraction operation is performed using the expression `result = A - B`.
+- **Sign Bit Extraction**: The sign bits of `A`, `B`, and `result` are extracted by accessing the most significant bit (`[63]`).
+- **Overflow Detection**:
+  - **Positive Overflow**: This occurs when `A` is positive (`sign_A = 0`), `B` is negative (`sign_B = 1`), and the result is negative (`sign_result = 1`). This is represented by the term `(~sign_A & sign_B & sign_result)`.
+  - **Negative Overflow**: This occurs when `A` is negative (`sign_A = 1`), `B` is positive (`sign_B = 0`), and the result is positive (`sign_result = 0`). This is represented by the term `(sign_A & ~sign_B & ~sign_result)`.
+- **Overflow Flag**: The `overflow` flag is set to `1` if either of the overflow conditions is met; otherwise, it is set to `0`.
+
+This module can be used in high-precision arithmetic operations where overflow detection is critical.

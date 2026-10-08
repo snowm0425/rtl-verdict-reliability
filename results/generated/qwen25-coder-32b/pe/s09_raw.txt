@@ -1,0 +1,51 @@
+Certainly! Below is the complete Verilog code for the Multiplying Accumulator (MAC) module as per your specifications:
+
+```verilog
+module pe (
+    input wire clk,          // Clock signal used for synchronous operations.
+    input wire rst,          // Reset signal. Defined as 1 for reset and 0 for reset signal inactive.
+    input wire [31:0] a,     // 32-bit input operand A.
+    input wire [31:0] b,     // 32-bit input operand B.
+    output reg [31:0] c      // 32-bit output representing the accumulated result.
+);
+
+    // Internal wire to hold the product of a and b
+    wire [63:0] product;
+
+    // Multiplier to compute the product of a and b
+    assign product = a * b;
+
+    // Accumulator Register
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            // Reset the accumulator register to 0
+            c <= 32'b0;
+        end else begin
+            // Accumulate the product into the register
+            c <= c + product[31:0];
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+- **Inputs:**
+  - `clk`: Clock signal used for synchronous operations.
+  - `rst`: Reset signal. When `rst` is high (1), the accumulator register `c` is reset to 0. When `rst` is low (0), the normal operation occurs.
+  - `a`: 32-bit input operand A.
+  - `b`: 32-bit input operand B.
+
+- **Output:**
+  - `c`: 32-bit output representing the accumulated result.
+
+- **Internal Logic:**
+  - A `wire` named `product` of 64 bits is used to store the product of `a` and `b`. This is because the product of two 32-bit numbers can result in a 64-bit number.
+  - An `assign` statement is used to compute the product of `a` and `b`.
+  - An `always` block is sensitive to the positive edge of `clk` and `rst`.
+    - If `rst` is high, the accumulator register `c` is reset to 0.
+    - If `rst` is low, the lower 32 bits of the product (`product[31:0]`) are added to the current value of `c`.
+
+### Note:
+- The accumulation process uses only the lower 32 bits of the product (`product[31:0]`). If you want to handle the full 64-bit product, you would need to change the data width of `c` to 64 bits and adjust the logic accordingly.
+- This module assumes that the multiplication of `a` and `b` is performed in one clock cycle, which is feasible in modern FPGAs and ASICs. If you are targeting a specific technology or have constraints, you may need to adjust the design.

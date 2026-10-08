@@ -1,0 +1,43 @@
+Certainly! Below is the Verilog code for an 8-bit multiplier using the shift-and-add method. This module takes two 8-bit inputs, `A` and `B`, and produces a 16-bit output, `product`, which is the product of `A` and `B`.
+
+```verilog
+module multi_8bit (
+    input  [7:0] A,        // First 8-bit input operand (multiplicand)
+    input  [7:0] B,        // Second 8-bit input operand (multiplier)
+    output [15:0] product  // 16-bit output representing the product (A * B)
+);
+
+    reg [15:0] acc;  // Accumulator to store the intermediate result
+
+    // Initialize the accumulator to zero
+    initial begin
+        acc = 16'b0;
+    end
+
+    // Process each bit of the multiplier (B)
+    always @(*) begin
+        acc = 16'b0;  // Reset the accumulator to zero at the start of each multiplication
+
+        // Iterate through each bit of B
+        for (int i = 0; i < 8; i = i + 1) begin
+            // If the current bit of B is 1, add the shifted multiplicand (A) to the accumulator
+            if (B[i] == 1'b1) begin
+                acc = acc + (A << i);
+            end
+        end
+
+        // Assign the final accumulated value to the product output
+        product = acc;
+    end
+
+endmodule
+```
+
+### Explanation:
+- **Inputs and Outputs**: The module has two 8-bit inputs `A` and `B` and a 16-bit output `product`.
+- **Accumulator (`acc`)**: A 16-bit register `acc` is used to accumulate the result of the multiplication.
+- **Initialization**: The accumulator is initialized to zero at the beginning of each multiplication.
+- **Shift-and-Add Loop**: The module iterates through each bit of the multiplier `B`. If a bit is set (1), the multiplicand `A` is added to the accumulator at the corresponding shifted position (`A << i`).
+- **Output**: The final accumulated value in `acc` is assigned to the `product` output.
+
+This implementation uses a combinational logic approach where the multiplication is performed in a single clock cycle when the inputs change. If you need a sequential implementation with clock cycles, you can modify the `always @(*)` block to `always @(posedge clk)` and add appropriate reset logic.

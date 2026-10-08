@@ -1,0 +1,54 @@
+Sure! Below is the Verilog code for an 8-bit multiplier using the shift-and-add method. This module takes two 8-bit inputs, `A` and `B`, and produces a 16-bit output, `product`, which is the result of multiplying `A` and `B`.
+
+```verilog
+module multi_8bit (
+    input [7:0] A,
+    input [7:0] B,
+    output [15:0] product
+);
+
+    // Internal signal to store the product
+    reg [15:0] product_reg;
+
+    // Initialize product_reg to 0 at the beginning of multiplication
+    initial begin
+        product_reg = 16'b0;
+    end
+
+    // Generate always block to perform the multiplication
+    always @(*) begin
+        product_reg = 16'b0; // Initialize product to 0 at the start of each multiplication
+
+        // Loop through each bit of the multiplier B
+        for (integer i = 0; i < 8; i = i + 1) begin
+            // Check if the current bit of B is set (1)
+            if (B[i] == 1'b1) begin
+                // Add the shifted multiplicand A to the product
+                product_reg = product_reg + (A << i);
+            end
+        end
+    end
+
+    // Assign the final product to the output port
+    assign product = product_reg;
+
+endmodule
+```
+
+### Explanation:
+1. **Inputs and Outputs:**
+   - `A` and `B` are 8-bit inputs representing the multiplicand and multiplier, respectively.
+   - `product` is a 16-bit output representing the result of multiplying `A` and `B`.
+
+2. **Internal Register:**
+   - `product_reg` is a 16-bit register initialized to 0. It is used to accumulate the result of the multiplication.
+
+3. **Multiplication Process:**
+   - The `always @(*)` block ensures that the multiplication is performed whenever `A` or `B` changes.
+   - The `for` loop iterates over each bit of `B` (from 0 to 7).
+   - If the current bit of `B` is 1, the multiplicand `A` is logically shifted left by `i` bits and added to `product_reg`.
+
+4. **Output:**
+   - The final value of `product_reg` is assigned to the `product` output port.
+
+This implementation correctly simulates the shift-and-add multiplication method using Verilog.

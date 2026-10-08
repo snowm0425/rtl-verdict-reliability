@@ -1,0 +1,53 @@
+Sure, below is the complete Verilog code for a 32-bit Multiplying Accumulator (MAC) module named `pe`. This module includes a register to store the accumulated result and performs multiplication and accumulation on the positive edge of the clock signal. The register is reset to zero when the reset signal is active.
+
+```verilog
+module pe (
+    input clk,              // Clock signal
+    input rst,              // Reset signal (active high)
+    input [31:0] a,         // 32-bit input operand A
+    input [31:0] b,         // 32-bit input operand B
+    output reg [31:0] c     // 32-bit accumulated result
+);
+
+    // Internal wire to hold the product of a and b
+    wire [63:0] product;
+
+    // Multiplication of a and b
+    assign product = a * b;
+
+    // Always block for synchronous operations
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            // Reset condition: set the accumulator to 0
+            c <= 32'b0;
+        end else begin
+            // Accumulate the product into the register c
+            c <= c + product[31:0];
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Inputs and Outputs:**
+   - `clk`: Clock signal used for synchronous operations.
+   - `rst`: Reset signal (active high).
+   - `a`: 32-bit input operand A.
+   - `b`: 32-bit input operand B.
+   - `c`: 32-bit output representing the accumulated result.
+
+2. **Internal Wire:**
+   - `product`: A 64-bit wire to hold the product of `a` and `b`. This is because the product of two 32-bit numbers can be up to 64 bits.
+
+3. **Multiplication:**
+   - The product of `a` and `b` is computed and stored in the `product` wire.
+
+4. **Always Block:**
+   - The always block is triggered on the positive edge of the clock (`posedge clk`) or the positive edge of the reset (`posedge rst`).
+   - If the reset signal (`rst`) is high, the accumulator register `c` is reset to 0.
+   - If the reset signal (`rst`) is low, the product of `a` and `b` (truncated to 32 bits) is added to the current value of `c`.
+
+### Note:
+- The product is truncated to 32 bits before being added to the accumulator `c`. This is because `c` is defined as a 32-bit register. If you need to handle larger sums, you might need to increase the bit-width of `c`.
+- The reset is active high, meaning when `rst` is 1, the accumulator is reset to 0. If you prefer an active-low reset, you can invert the condition in the always block.

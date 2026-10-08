@@ -1,0 +1,47 @@
+Sure! Below is the complete Verilog code for the described Read-Only Memory (ROM) module:
+
+```verilog
+module ROM (
+    input  [7:0] addr,    // 8-bit address input
+    output [15:0] dout    // 16-bit output
+);
+
+    // Define a 256x16 ROM
+    reg [15:0] mem [0:255];
+
+    // Initialize the ROM with fixed data
+    initial begin
+        mem[0] = 16'hA0A0;
+        mem[1] = 16'hB1B1;
+        mem[2] = 16'hC2C2;
+        mem[3] = 16'hD3D3;
+        // Additional initializations can be added here
+        // For example:
+        // mem[4] = 16'hE4E4;
+        // mem[5] = 16'hF5F5;
+        // ...
+    end
+
+    // Continuous assignment to output the data at the specified address
+    always @(*) begin
+        dout = mem[addr];
+    end
+
+endmodule
+```
+
+### Explanation:
+
+1. **Module Declaration**:
+   - The module is named `ROM` with two ports: `addr` (input) and `dout` (output).
+
+2. **Memory Declaration**:
+   - A 256x16 ROM is defined using a 2D array `mem` of 16-bit registers.
+
+3. **Initial Block**:
+   - The `initial` block is used to pre-load the ROM with fixed data. In this example, memory locations 0 through 3 are initialized with specific values. You can add more initializations as needed.
+
+4. **Behavioral Description**:
+   - The `always @(*)` block continuously assigns the data from the ROM memory location specified by the `addr` input to the `dout` output.
+
+This module is a simple and effective way to implement a read-only memory in Verilog, where the data is stored in a fixed manner and can be accessed based on the provided address.

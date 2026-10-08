@@ -1,0 +1,15 @@
+case,kind,model,design,sample,kill_rate
+1,TB_PASS_DIFF_FAIL,qwen38-27b,fsm,s03,73.0769
+2,TB_PASS_DIFF_FAIL,qwen38-27b,adder_bcd,s03,100.0
+3,TB_PASS_DIFF_FAIL,qwen38-27b,fixed_point_adder,s00,5.0
+4,TB_PASS_DIFF_FAIL,qwen38-27b,multi_pipe_4bit,s00,75.0
+5,TB_PASS_DIFF_FAIL,qwen25-coder-32b,RAM,s07,60.0
+6,TB_PASS_DIFF_FAIL,qwen25-coder-32b,square_wave,s07,0.0
+7,TB_PASS_DIFF_FAIL,qwen25-coder-32b,multi_booth_8bit,s07,81.8182
+8,TB_PASS_DIFF_FAIL,qwen38-27b,accu,s01,68.1818
+9,TB_PASS_DIFF_FAIL,qwen25-coder-32b,width_8to16,s02,50.0
+10,TB_PASS_DIFF_FAIL,qwen25-coder-32b,comparator_4bit,s06,83.3333
+11,TB_FAIL_DIFF_PASS,qwen38-27b,LFSR,s02,100.0
+12,TB_FAIL_DIFF_PASS,qwen25-coder-32b,multi_16bit,s04,66.6667
+13,TB_FAIL_DIFF_PASS,qwen25-coder-32b,multi_booth_8bit,s06,81.8182
+14,TB_FAIL_DIFF_PASS,qwen38-27b,barrel_shifter,s03,100.0

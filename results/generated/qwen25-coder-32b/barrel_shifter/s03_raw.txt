@@ -1,0 +1,69 @@
+Sure, I'll provide you with the complete Verilog code for the `barrel_shifter` module. This will include the `mux2X1` submodule, which is used to select between two inputs based on the control signal.
+
+Here's the complete code:
+
+```verilog
+// mux2X1 submodule
+module mux2X1 (
+    input wire sel,          // Select signal
+    input wire [7:0] in0,    // First input
+    input wire [7:0] in1,    // Second input
+    output wire [7:0] out    // Output
+);
+    assign out = sel ? in1 : in0;
+endmodule
+
+// barrel_shifter module
+module barrel_shifter (
+    input wire [7:0] in,    // 8-bit input
+    input wire [2:0] ctrl,  // 3-bit control signal
+    output wire [7:0] out   // 8-bit output
+);
+    wire [7:0] shift_4;     // Intermediate result after 4-bit shift
+    wire [7:0] shift_2;     // Intermediate result after 2-bit shift
+    wire [7:0] shift_1;     // Intermediate result after 1-bit shift
+
+    // Shift by 4 positions
+    mux2X1 mux4 (
+        .sel(ctrl[2]),
+        .in0(in),
+        .in1({in[3:0], in[7:4]}),
+        .out(shift_4)
+    );
+
+    // Shift by 2 positions
+    mux2X1 mux2 (
+        .sel(ctrl[1]),
+        .in0(shift_4),
+        .in1({shift_4[5:0], shift_4[7:6]}),
+        .out(shift_2)
+    );
+
+    // Shift by 1 position
+    mux2X1 mux1 (
+        .sel(ctrl[0]),
+        .in0(shift_2),
+        .in1({shift_2[6:0], shift_2[7]}),
+        .out(shift_1)
+    );
+
+    // Final output
+    assign out = shift_1;
+endmodule
+```
+
+### Explanation:
+1. **mux2X1 Submodule**:
+    - This module takes two 8-bit inputs (`in0` and `in1`) and a 1-bit select signal (`sel`).
+    - The output (`out`) is `in1` if `sel` is high, otherwise it is `in0`.
+
+2. **barrel_shifter Module**:
+    - The module takes an 8-bit input (`in`) and a 3-bit control signal (`ctrl`).
+    - It performs a series of shifts based on the `ctrl` signal using the `mux2X1` submodules.
+    - The shifts are performed in stages:
+        - First, a 4-bit shift is applied if `ctrl[2]` is high.
+        - Then, a 2-bit shift is applied if `ctrl[1]` is high.
+        - Finally, a 1-bit shift is applied if `ctrl[0]` is high.
+    - The final output is assigned to `out`.
+
+This design ensures that the barrel shifter can efficiently perform shifts and rotations on the 8-bit input based on the 3-bit control signal.

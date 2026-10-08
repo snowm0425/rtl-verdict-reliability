@@ -1,0 +1,108 @@
+Certainly! Below is the complete Verilog code for a 32-bit carry-lookahead adder (`adder_32bit`). The design uses two 16-bit carry-lookahead adder blocks (`cla_16bit`) to perform the addition.
+
+First, let's define the 16-bit carry-lookahead adder block (`cla_16bit`):
+
+```verilog
+module cla_16bit (
+    input [15:0] A,
+    input [15:0] B,
+    input Ci,
+    output [15:0] S,
+    output Co
+);
+    // Generate signals
+    wire [15:0] G;
+    wire [15:0] P;
+    wire [16:0] C;
+
+    // Generate and Propagate signals
+    genvar i;
+    generate
+        for (i = 0; i < 16; i = i + 1) begin : gen_gp
+            assign G[i] = A[i] & B[i];
+            assign P[i] = A[i] ^ B[i];
+        end
+    endgenerate
+
+    // Carry lookahead logic
+    assign C[0] = Ci;
+    assign C[1] = G[0] | (P[0] & C[0]);
+    assign C[2] = G[1] | (P[1] & C[1]);
+    assign C[3] = G[2] | (P[2] & C[2]);
+    assign C[4] = G[3] | (P[3] & C[3]);
+    assign C[5] = G[4] | (P[4] & C[4]);
+    assign C[6] = G[5] | (P[5] & C[5]);
+    assign C[7] = G[6] | (P[6] & C[6]);
+    assign C[8] = G[7] | (P[7] & C[7]);
+    assign C[9] = G[8] | (P[8] & C[8]);
+    assign C[10] = G[9] | (P[9] & C[9]);
+    assign C[11] = G[10] | (P[10] & C[10]);
+    assign C[12] = G[11] | (P[11] & C[11]);
+    assign C[13] = G[12] | (P[12] & C[12]);
+    assign C[14] = G[13] | (P[13] & C[13]);
+    assign C[15] = G[14] | (P[14] & C[14]);
+    assign C[16] = G[15] | (P[15] & C[15]);
+
+    // Sum signals
+    generate
+        for (i = 0; i < 16; i = i + 1) begin : gen_sum
+            assign S[i] = P[i] ^ C[i];
+        end
+    endgenerate
+
+    // Carry-out
+    assign Co = C[16];
+endmodule
+```
+
+Next, let's define the 32-bit carry-lookahead adder (`adder_32bit`) which uses two instances of the `cla_16bit` module:
+
+```verilog
+module adder_32bit (
+    input [32:1] A,
+    input [32:1] B,
+    output [32:1] S,
+    output C32
+);
+    // Internal signals
+    wire [15:0] S_low;
+    wire [15:0] S_high;
+    wire C16;
+
+    // Instantiate two 16-bit CLA blocks
+    cla_16bit cla_low (
+        .A(A[16:1]),
+        .B(B[16:1]),
+        .Ci(1'b0),
+        .S(S_low),
+        .Co(C16)
+    );
+
+    cla_16bit cla_high (
+        .A(A[32:17]),
+        .B(B[32:17]),
+        .Ci(C16),
+        .S(S_high),
+        .Co(C32)
+    );
+
+    // Assign the sum outputs
+    assign S[16:1] = S_low;
+    assign S[32:17] = S_high;
+endmodule
+```
+
+### Explanation:
+1. **cla_16bit Module**:
+   - This module takes two 16-bit inputs `A` and `B` and a carry-in `Ci`.
+   - It calculates the sum `S` and carry-out `Co` using generate (`G`) and propagate (`P`) signals.
+   - The carry lookahead logic is implemented using a series of OR and AND operations to determine the carry-out for each bit position.
+
+2. **adder_32bit Module**:
+   - This module takes two 32-bit inputs `A` and `B`.
+   - It splits the inputs into two 16-bit parts.
+   - It uses two instances of the `cla_16bit` module to add the lower and upper 16-bit parts.
+   - The carry-out from the lower 16-bit adder is fed into the carry-in of the upper 16-bit adder.
+   - The final sum and carry-out are assigned to the output ports.
+
+This design efficiently uses the carry-lookahead technique to perform the addition in parallel, significantly reducing the propagation delay compared to a ripple-carry adder.

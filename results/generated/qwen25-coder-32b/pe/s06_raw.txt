@@ -1,0 +1,52 @@
+Certainly! Below is the complete Verilog code for the Multiplying Accumulator (MAC_PE) module as per your specifications:
+
+```verilog
+module pe (
+    input wire clk,          // Clock signal
+    input wire rst,          // Reset signal (active high)
+    input wire [31:0] a,     // 32-bit input operand A
+    input wire [31:0] b,     // 32-bit input operand B
+    output reg [31:0] c      // 32-bit output representing the accumulated result
+);
+
+// Internal register to store the partial sum
+reg [31:0] accumulator;
+
+// Always block to handle the multiplication and accumulation
+always @(posedge clk or posedge rst) begin
+    if (rst) begin
+        // Reset condition: set the accumulator to 0
+        accumulator <= 32'b0;
+    end else begin
+        // Accumulation: add the product of a and b to the accumulator
+        accumulator <= accumulator + (a * b);
+    end
+end
+
+// Assign the accumulator value to the output c
+assign c = accumulator;
+
+endmodule
+```
+
+### Explanation:
+1. **Module Declaration**:
+   - The module is named `pe`.
+   - It has four ports: `clk` (clock), `rst` (reset), `a` (32-bit input), `b` (32-bit input), and `c` (32-bit output).
+
+2. **Internal Register**:
+   - `accumulator` is a 32-bit register used to store the accumulated result.
+
+3. **Always Block**:
+   - The `always` block is sensitive to the positive edge of the clock (`posedge clk`) and the positive edge of the reset (`posedge rst`).
+   - If the reset (`rst`) is high, the `accumulator` is set to 0.
+   - If the reset is low, the product of `a` and `b` is added to the `accumulator`.
+
+4. **Output Assignment**:
+   - The value of the `accumulator` is continuously assigned to the output `c`.
+
+### Usage:
+- This module can be instantiated in a larger design where it will continuously accumulate the product of `a` and `b` on each clock cycle until a reset is triggered.
+- The reset signal (`rst`) is active high, meaning that when `rst` is 1, the accumulator is reset to 0. When `rst` is 0, the module performs the multiplication and accumulation operation.
+
+This code should meet the requirements for a simple 32-bit multiplying accumulator in Verilog.

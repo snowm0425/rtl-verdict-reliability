@@ -1,0 +1,92 @@
+module freq_divbyfrac (
+    input clk,          // Input clock signal
+    input rst_n,        // Active low reset signal
+    output reg clk_div  // Fractionally divided clock output
+);
+
+    // Parameters for 3.5x division
+    localparam MUL2_DIV_CLK = 7;  // Total clock cycles for one period
+    localparam COUNT_MAX_4 = 4;   // First period length in source clock cycles
+    localparam COUNT_MAX_3 = 3;   // Second period length in source clock cycles
+
+    // Internal signals
+    reg [2:0] counter;            // Counter for tracking clock cycles
+    reg clk_div_int_4;            // Intermediate clock signal with 4 source clock cycles period
+    reg clk_div_int_3;            // Intermediate clock signal with 3 source clock cycles period
+    reg clk_div_phase_shifted_4;  // Phase-shifted version of clk_div_int_4
+    reg clk_div_phase_shifted_3;  // Phase-shifted version of clk_div_int_3
+
+    // State machine states
+    typedef enum reg { STATE_4, STATE_3 } state_t;
+    state_t state, next_state;
+
+    // State machine logic
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            state <= STATE_4;
+            counter <= 0;
+        end else begin
+            state <= next_state;
+            case (state)
+                STATE_4: begin
+                    if (counter == COUNT_MAX_4 - 1) begin
+                        counter <= 0;
+                        next_state <= STATE_3;
+                    end else begin
+                        counter <= counter + 1;
+                    end
+                end
+                STATE_3: begin
+                    if (counter == COUNT_MAX_3 - 1) begin
+                        counter <= 0;
+                        next_state <= STATE_4;
+                    end else begin
+                        counter <= counter + 1;
+                    end
+                end
+            endcase
+        end
+    end
+
+    // Intermediate clock generation
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            clk_div_int_4 <= 0;
+            clk_div_int_3 <= 0;
+        end else begin
+            case (state)
+                STATE_4: begin
+                    if (counter == COUNT_MAX_4 - 1) begin
+                        clk_div_int_4 <= 1;
+                    end else if (counter == COUNT_MAX_4 - 2) begin
+                        clk_div_int_4 <= 0;
+                    end
+                end
+                STATE_3: begin
+                    if (counter == COUNT_MAX_3 - 1) begin
+                        clk_div_int_3 <= 1;
+                    end else if (counter == COUNT_MAX_3 - 2) begin
+                        clk_div_int_3 <= 0;
+                    end
+                end
+            endcase
+        end
+    end
+
+    // Phase-shifting the intermediate clocks
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            clk_div_phase_shifted_4 <= 0;
+            clk_div_phase_shifted_3 <= 0;
+        end else begin
+            clk_div_phase_shifted_4 <= clk_div_int_4;
+            clk_div_phase_shifted_3 <= clk_div_int_3;
+        end
+    end
+
+    // Final ORing of phase-shifted clocks to produce the fractional clock output
+    always @(*) begin
+        clk_div = clk_div_phase_shifted_4 | clk_div_phase_shifted_3;
+    end
+
+endmodule

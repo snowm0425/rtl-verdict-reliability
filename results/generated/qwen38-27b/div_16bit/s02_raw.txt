@@ -1,0 +1,56 @@
+```verilog
+module div_16bit (
+    input  wire [15:0] A,
+    input  wire [7:0]  B,
+    output wire [15:0] result,
+    output wire [15:0] odd
+);
+
+    reg [15:0] a_reg;
+    reg [7:0]  b_reg;
+
+    // First combinational block: latch inputs
+    always @* begin
+        a_reg = A;
+        b_reg = B;
+    end
+
+    // Internal signals for the division algorithm
+    reg [7:0]  divisor;      // 8-bit divisor
+    reg [8:0]  remainder;    // 9-bit remainder (to hold up to 8-bit remainder + 1 shifted bit)
+    reg [15:0] quotient;     // 16-bit quotient
+    integer    i;
+
+    // Second combinational block: perform the division
+    always @* begin
+        // Initialize
+        divisor   = b_reg;
+        remainder = 9'd0;
+        quotient  = 16'd0;
+
+        // Handle divisor zero case: set quotient to 0, remainder to 0 (or handle as needed)
+        if (divisor == 8'd0) begin
+            quotient  = 16'd0;
+            remainder = 9'd0;
+        end else begin
+            // Process each bit of the dividend from MSB to LSB
+            for (i = 0; i < 16; i = i + 1) begin
+                // Shift remainder left by 1 and bring in the next MSB of the dividend
+                remainder = {remainder[7:0], a_reg[15-i]};
+
+                // Compare remainder with divisor
+                if (remainder >= {1'b0, divisor}) begin
+                    remainder = remainder - {1'b0, divisor};
+                    quotient[15-i] = 1'b1;
+                end else begin
+                    quotient[15-i] = 1'b0;
+                end
+            end
+        end
+    end
+
+    assign result = quotient;
+    assign odd    = {8'd0, remainder[7:0]};
+
+endmodule
+```

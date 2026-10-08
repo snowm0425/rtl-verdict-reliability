@@ -1,0 +1,116 @@
+module float_multi (
+    input wire clk,
+    input wire rst,
+    input wire [31:0] a,
+    input wire [31:0] b,
+    output reg [31:0] z
+);
+
+    // Internal signals
+    reg [2:0] counter;
+    reg [23:0] a_mantissa, b_mantissa, z_mantissa;
+    reg [9:0] a_exponent, b_exponent, z_exponent;
+    reg a_sign, b_sign, z_sign;
+    reg [49:0] product;
+    reg guard_bit, round_bit, sticky;
+
+    // Special case flags
+    reg is_nan, is_inf, is_zero;
+
+    // Pipeline registers
+    reg [23:0] a_mantissa_reg, b_mantissa_reg;
+    reg [9:0] a_exponent_reg, b_exponent_reg;
+    reg a_sign_reg, b_sign_reg;
+
+    // State machine
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            counter <= 3'b000;
+            z <= 32'b0;
+        end else begin
+            case (counter)
+                3'b000: begin // Extracting and processing inputs
+                    a_sign_reg <= a[31];
+                    b_sign_reg <= b[31];
+                    a_exponent_reg <= a[30:23];
+                    b_exponent_reg <= b[30:23];
+                    a_mantissa_reg <= {1'b1, a[22:0]}; // Add implicit leading 1
+                    b_mantissa_reg <= {1'b1, b[22:0]}; // Add implicit leading 1
+                    counter <= 3'b001;
+                end
+                3'b001: begin // Handle special cases
+                    is_nan <= (a_exponent_reg == 10'b11111111 && a_mantissa_reg != 0) ||
+                             (b_exponent_reg == 10'b11111111 && b_mantissa_reg != 0);
+                    is_inf <= (a_exponent_reg == 10'b11111111 && a_mantissa_reg == 0) ||
+                             (b_exponent_reg == 10'b11111111 && b_mantissa_reg == 0);
+                    is_zero <= (a_exponent_reg == 10'b00000000 && a_mantissa_reg == 0) ||
+                              (b_exponent_reg == 10'b00000000 && b_mantissa_reg == 0);
+
+                    if (is_nan) begin
+                        z <= {1'b0, 10'b11111111, 23'b1}; // NaN result
+                    end else if (is_inf) begin
+                        if (is_zero) begin
+                            z <= {1'b0, 10'b11111111, 23'b0}; // NaN result (inf * 0)
+                        end else begin
+                            z_sign <= a_sign_reg ^ b_sign_reg;
+                            z <= {z_sign, 10'b11111111, 23'b0}; // Infinity result
+                        end
+                    end else if (is_zero) begin
+                        z <= 32'b0; // Zero result
+                    end else begin
+                        counter <= 3'b010;
+                    end
+                end
+                3'b010: begin // Multiplication
+                    a_mantissa <= a_mantissa_reg;
+                    b_mantissa <= b_mantissa_reg;
+                    a_exponent <= a_exponent_reg;
+                    b_exponent <= b_exponent_reg;
+                    a_sign <= a_sign_reg;
+                    b_sign <= b_sign_reg;
+
+                    product <= a_mantissa * b_mantissa;
+                    counter <= 3'b011;
+                end
+                3'b011: begin // Normalization and rounding
+                    z_mantissa <= product[47:24];
+                    guard_bit <= product[23];
+                    round_bit <= product[22];
+                    sticky <= |product[21:0];
+
+                    // Rounding
+                    if (guard_bit && (round_bit | sticky)) begin
+                        z_mantissa <= z_mantissa + 1;
+                    end
+
+                    // Adjust exponent
+                    z_exponent <= a_exponent + b_exponent - 127;
+
+                    // Handle overflow
+                    if (z_mantissa[23]) begin
+                        z_mantissa <= z_mantissa >> 1;
+                        z_exponent <= z_exponent + 1;
+                    end
+
+                    // Handle underflow
+                    if (z_exponent == 0) begin
+                        if (z_mantissa != 0) begin
+                            while (z_mantissa[23] == 0) begin
+                                z_mantissa <= z_mantissa << 1;
+                                z_exponent <= z_exponent - 1;
+                            end
+                        end else begin
+                            z <= 32'b0; // Underflow to zero
+                        end
+                    end
+
+                    // Final formatting
+                    z_sign <= a_sign ^ b_sign;
+                    z <= {z_sign, z_exponent, z_mantissa[22:0]};
+                    counter <= 3'b000; // Reset counter for next operation
+                end
+            endcase
+        end
+    end
+
+endmodule

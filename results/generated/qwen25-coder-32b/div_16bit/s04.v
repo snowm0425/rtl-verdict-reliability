@@ -1,0 +1,52 @@
+module div_16bit (
+    input  [15:0] A,      // 16-bit dividend
+    input  [7:0]  B,      // 8-bit divisor
+    output [15:0] result, // 16-bit quotient
+    output [15:0] odd     // 16-bit remainder
+);
+
+reg [15:0] a_reg; // Register to store the dividend
+reg [7:0]  b_reg; // Register to store the divisor
+
+// First always block to copy inputs to registers
+always @(*) begin
+    a_reg = A;
+    b_reg = B;
+end
+
+// Second always block to perform the division logic
+always @(*) begin
+    reg [15:0] quotient = 0;
+    reg [15:0] remainder = 0;
+    reg [15:0] temp_dividend;
+    reg [7:0]  i;
+
+    // Initialize the temp_dividend with the dividend
+    temp_dividend = a_reg;
+
+    // Perform the division process
+    for (i = 0; i < 16; i = i + 1) begin
+        // Shift the remainder left by 1 bit and add the next bit of the dividend
+        remainder = {remainder[14:0], temp_dividend[15]};
+
+        // Compare the higher bits of the remainder with the divisor
+        if (remainder >= b_reg) begin
+            // If remainder is greater or equal, set the quotient bit to 1
+            quotient = {quotient[14:0], 1'b1};
+            // Subtract the divisor from the remainder
+            remainder = remainder - b_reg;
+        end else begin
+            // If remainder is less, set the quotient bit to 0
+            quotient = {quotient[14:0], 1'b0};
+        end
+
+        // Shift the dividend left by 1 bit
+        temp_dividend = temp_dividend << 1;
+    end
+
+    // Assign the final quotient and remainder
+    result = quotient;
+    odd = remainder;
+end
+
+endmodule

@@ -1,0 +1,126 @@
+Here is the complete Verilog code for the `multi_pipe_4bit` module, implemented as a 2-stage pipelined multiplier according to your specifications.
+
+### Design Explanation
+
+1.  **Stage 1 (Partial Product Generation):**
+    *   Inputs `mul_a` and `mul_b` are captured into registers (`a_reg`, `b_reg`).
+    *   The extended `mul_a` (padded with zeros) is used to generate partial products.
+    *   For each bit `i` of `mul_b`, if `b_reg[i]` is 1, the partial product is `a_reg << i`; otherwise, it is 0.
+    *   These partial products are stored in registers (`pp_reg[i]`) for the next stage.
+
+2.  **Stage 2 (Accumulation/Final Sum):**
+    *   The partial products from Stage 1 are summed up.
+    *   The final sum is stored in `mul_out`.
+
+> **Note on "Two levels of registers to store intermediate values":**  
+> In a standard pipelined multiplier, Stage 1 holds the inputs and computes/stores partial products. Stage 2 sums them. This satisfies the requirement of two register levels controlling the multiplication process.
+
+---
+
+### Verilog Code
+
+```verilog
+module multi_pipe_4bit #(
+    parameter size = 4
+) (
+    input  wire        clk,
+    input  wire        rst_n,
+    input  wire [size-1:0] mul_a,
+    input  wire [size-1:0] mul_b,
+    output reg  [2*size-1:0] mul_out
+);
+
+    // Internal signals for pipeline stages
+    wire [size-1:0] a_reg;
+    wire [size-1:0] b_reg;
+    
+    // Extended multiplicand: pad with 'size' zero bits at MSB
+    // Total width: 2*size bits
+    wire [2*size-1:0] a_extended;
+    
+    // Partial products: one for each bit of mul_b
+    // Each partial product has width 2*size
+    wire [2*size-1:0] partial_products [0:size-1];
+    
+    // Registers to store partial products from Stage 1
+    reg [2*size-1:0] pp_reg [0:size-1];
+    
+    // Intermediate sum for Stage 2
+    wire [2*size-1:0] sum_pp;
+
+    // --- Stage 1: Capture inputs and generate partial products ---
+    
+    // Register inputs for synchronization
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            a_reg <= {size{1'b0}};
+            b_reg <= {size{1'b0}};
+        end else begin
+            a_reg <= mul_a;
+            b_reg <= mul_b;
+        end
+    end
+
+    // Extend mul_a by adding 'size' zero bits at MSB
+    assign a_extended = { {size{1'b0}}, a_reg };
+
+    // Generate partial products using a generate block
+    genvar i;
+    generate
+        for (i = 0; i < size; i = i + 1) begin : gen_pp
+            assign partial_products[i] = b_reg[i] ? (a_extended << i) : {2*size{1'b0}};
+        end
+    endgenerate
+
+    // Store partial products in registers (Stage 1 output / Stage 2 input)
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            for (i = 0; i < size; i = i + 1) begin
+                pp_reg[i] <= {2*size{1'b0}};
+            end
+        end else begin
+            for (i = 0; i < size; i = i + 1) begin
+                pp_reg[i] <= partial_products[i];
+            end
+        end
+    end
+
+    // --- Stage 2: Sum the partial products ---
+    
+    // Calculate the sum of all partial products
+    // We can use a simple reduction adder
+    reg [2*size-1:0] sum_temp;
+    
+    always @(*) begin
+        sum_temp = {2*size{1'b0}};
+        for (i = 0; i < size; i = i + 1) begin
+            sum_temp = sum_temp + pp_reg[i];
+        end
+    end
+    
+    assign sum_pp = sum_temp;
+
+    // Final output register
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            mul_out <= {2*size{1'b0}};
+        end else begin
+            mul_out <= sum_pp;
+        end
+    end
+
+endmodule
+```
+
+### Key Features:
+
+1.  **Parameterized:** Uses `parameter size = 4` as specified.
+2.  **Synchronous Reset:** Active-low asynchronous reset (`rst_n`) is implemented in all `always` blocks.
+3.  **Input Extension:** `a_extended` pads `a_reg` with `size` zeros at the MSB, ensuring the partial products have enough width (`2*size`) to avoid overflow during addition.
+4.  **Generate Block:** Used to create the partial products for each bit of the multiplier (`b_reg`).
+5.  **Two-Stage Pipeline:**
+    *   **Cycle 1:** `mul_a` and `mul_b` are latched. Partial products are computed combinationally and latched into `pp_reg`.
+    *   **Cycle 2:** The partial products in `pp_reg` are summed, and the result is latched into `mul_out`.
+6.  **Output:** `mul_out` is a `2*size` bit wide register, which is the final product.
+
+This design ensures that the multiplication is broken down into two clock cycles, meeting the requirement for a pipelined multiplier with two levels of registers for intermediate values.

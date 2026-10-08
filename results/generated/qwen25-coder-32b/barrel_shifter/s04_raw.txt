@@ -1,0 +1,93 @@
+Certainly! Below is the complete Verilog code for the `barrel_shifter` module, including the `mux2X1` submodule used for selecting between two input values based on the `sel` signal.
+
+### mux2X1 Submodule
+First, let's define the `mux2X1` submodule which is a 2-to-1 multiplexer.
+
+```verilog
+module mux2X1 (
+    input sel,       // 1-bit select signal
+    input a,         // 1-bit first input
+    input b,         // 1-bit second input
+    output reg y     // 1-bit output
+);
+
+always @(*) begin
+    if (sel)
+        y = b;
+    else
+        y = a;
+end
+
+endmodule
+```
+
+### barrel_shifter Module
+Now, let's define the `barrel_shifter` module using the `mux2X1` submodule.
+
+```verilog
+module barrel_shifter (
+    input [7:0] in,  // 8-bit input to be shifted
+    input [2:0] ctrl, // 3-bit control signal
+    output reg [7:0] out // 8-bit shifted output
+);
+
+// Intermediate signals for each stage
+wire [7:0] stage1;
+wire [7:0] stage2;
+wire [7:0] stage3;
+
+// Stage 1: Shift by 4 positions
+generate
+    genvar i;
+    for (i = 0; i < 8; i = i + 1) begin : gen_stage1
+        mux2X1 mux1 (
+            .sel(ctrl[2]),
+            .a(in[i]),
+            .b(in[i-4]), // Shift left by 4 positions
+            .y(stage1[i])
+        );
+    end
+endgenerate
+
+// Stage 2: Shift by 2 positions
+generate
+    for (i = 0; i < 8; i = i + 1) begin : gen_stage2
+        mux2X1 mux2 (
+            .sel(ctrl[1]),
+            .a(stage1[i]),
+            .b(stage1[i-2]), // Shift left by 2 positions
+            .y(stage2[i])
+        );
+    end
+endgenerate
+
+// Stage 3: Shift by 1 position
+generate
+    for (i = 0; i < 8; i = i + 1) begin : gen_stage3
+        mux2X1 mux3 (
+            .sel(ctrl[0]),
+            .a(stage2[i]),
+            .b(stage2[i-1]), // Shift left by 1 position
+            .y(stage3[i])
+        );
+    end
+endgenerate
+
+// Assign the final output
+assign out = stage3;
+
+endmodule
+```
+
+### Explanation
+1. **mux2X1 Submodule**: This is a simple 2-to-1 multiplexer that selects between two inputs based on the `sel` signal.
+2. **barrel_shifter Module**:
+   - **Inputs**: `in` is the 8-bit input vector, and `ctrl` is the 3-bit control signal.
+   - **Outputs**: `out` is the 8-bit output vector after shifting.
+   - **Intermediate Stages**: The module uses three stages of shifting:
+     - **Stage 1**: Shifts the input by 4 positions if `ctrl[2]` is high.
+     - **Stage 2**: Shifts the intermediate result by 2 positions if `ctrl[1]` is high.
+     - **Stage 3**: Shifts the intermediate result by 1 position if `ctrl[0]` is high.
+   - **Circular Shift**: The shifts are implemented in a circular manner, where the bits wrap around. For example, shifting left by 4 positions means that the most significant 4 bits are moved to the least significant positions.
+
+This code provides a basic implementation of an 8-bit barrel shifter using a series of multiplexers controlled by a 3-bit signal.

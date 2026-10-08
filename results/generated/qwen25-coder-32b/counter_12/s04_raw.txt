@@ -1,0 +1,37 @@
+Certainly! Below is the complete Verilog code for the `counter_12` module based on your requirements:
+
+```verilog
+module counter_12 (
+    input rst_n,      // Reset signal (active low)
+    input clk,        // Clock signal
+    input valid_count,// Signal to enable counting
+    output reg [3:0] out // 4-bit output representing the current count value
+);
+
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        // Reset the counter to 0 when reset is active (low)
+        out <= 4'b0000;
+    end else if (valid_count) begin
+        // Increment the counter when valid_count is 1
+        if (out == 4'd11) begin
+            // Wrap around to 0 when the maximum count value is reached
+            out <= 4'b0000;
+        end else begin
+            // Increment the counter
+            out <= out + 1;
+        end
+    end
+end
+
+endmodule
+```
+
+### Explanation:
+- **Module Declaration**: The module `counter_12` is declared with the specified inputs and outputs.
+- **Reset Condition**: The `always` block is triggered on the positive edge of the clock (`posedge clk`) or the negative edge of the reset signal (`negedge rst_n`).
+- **Reset Logic**: When `rst_n` is low, the counter is reset to `4'b0000`.
+- **Counting Logic**: When `valid_count` is high (`1`), the counter checks if the current count (`out`) is equal to `4'd11`. If it is, the counter wraps around to `4'b0000`. Otherwise, it increments by 1.
+- **Hold Logic**: If `valid_count` is low (`0`), the counter remains at its current value.
+
+This code ensures that the counter behaves as specified: it resets on the active-low reset signal, increments on the clock when `valid_count` is high, and wraps around after reaching the maximum count of `4'd11`.

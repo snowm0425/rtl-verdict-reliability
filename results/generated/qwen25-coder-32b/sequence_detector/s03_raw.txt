@@ -1,0 +1,100 @@
+Sure, let's design a Verilog module named `sequence_detector` that implements the specified 4-bit sequence detection using a finite state machine (FSM). The module will have the following inputs and outputs as described:
+
+```verilog
+module sequence_detector (
+    input clk,           // Clock signal
+    input reset_n,       // Active low reset signal
+    input data_in,       // 1-bit binary input signal
+    output reg sequence_detected // Output signal set high when sequence is detected
+);
+
+// Define the states
+typedef enum reg [1:0] {
+    IDLE = 2'b00,
+    S1   = 2'b01,
+    S2   = 2'b10,
+    S3   = 2'b11
+} state_t;
+
+// State register
+reg [1:0] state_reg;
+reg [1:0] next_state;
+
+// State transition logic
+always @(posedge clk or negedge reset_n) begin
+    if (!reset_n) begin
+        state_reg <= IDLE;
+        sequence_detected <= 0;
+    end else begin
+        state_reg <= next_state;
+        if (next_state == S3 && data_in == 1'b1) begin
+            sequence_detected <= 1;
+        end else begin
+            sequence_detected <= 0;
+        end
+    end
+end
+
+// Next state logic
+always @(*) begin
+    case (state_reg)
+        IDLE: begin
+            if (data_in == 1'b1)
+                next_state = S1;
+            else
+                next_state = IDLE;
+        end
+
+        S1: begin
+            if (data_in == 1'b0)
+                next_state = S2;
+            else
+                next_state = IDLE;
+        end
+
+        S2: begin
+            if (data_in == 1'b0)
+                next_state = S3;
+            else
+                next_state = IDLE;
+        end
+
+        S3: begin
+            if (data_in == 1'b1)
+                next_state = S3; // Stay in S3 if sequence is detected
+            else
+                next_state = IDLE;
+        end
+
+        default: begin
+            next_state = IDLE;
+        end
+    endcase
+end
+
+endmodule
+```
+
+### Explanation:
+1. **State Definition**:
+   - `IDLE`: The initial state where the detector waits for the sequence to start.
+   - `S1`: The state entered when the first bit `1` of the sequence is detected.
+   - `S2`: The state entered when the second bit `0` of the sequence is detected.
+   - `S3`: The state entered when the third bit `0` of the sequence is detected. If the fourth bit `1` is detected while in this state, the sequence is detected.
+
+2. **State Register**:
+   - `state_reg` holds the current state of the FSM.
+   - `next_state` is used to determine the next state based on the current state and input data.
+
+3. **State Transition Logic**:
+   - On each clock cycle, the state is updated based on the next state logic.
+   - If the reset signal (`reset_n`) is low, the state machine resets to `IDLE` and `sequence_detected` is set to `0`.
+
+4. **Next State Logic**:
+   - The FSM transitions between states based on the current state and the input `data_in`.
+   - If the sequence `1001` is detected (`state_reg == S3` and `data_in == 1'b1`), `sequence_detected` is set to `1`.
+
+5. **Sequence Detection**:
+   - The `sequence_detected` signal is set high when the sequence `1001` is detected.
+
+This module will correctly detect the specific 4-bit sequence `1001` using a state machine approach.

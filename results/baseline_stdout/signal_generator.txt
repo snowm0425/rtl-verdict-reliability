@@ -1,0 +1,7 @@
+# stage=sim rc=0
+# STDOUT
+===========Your Design Passed===========
+/home/cvl/Documents/syn/RTLLM/Miscellaneous/Signal generation/signal_generator/testbench.v:39: $finish called at 1010 (1s)
+
+# STDERR
+

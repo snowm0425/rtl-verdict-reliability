@@ -1,0 +1,91 @@
+```verilog
+module sequence_detector (
+    input wire clk,
+    input wire reset_n,
+    input wire data_in,
+    output reg sequence_detected
+);
+
+    // State definitions
+    localparam IDLE = 2'd0;
+    localparam S1   = 2'd1;
+    localparam S2   = 2'd2;
+    localparam S3   = 2'd3;
+    localparam S4   = 2'd4;
+
+    reg [1:0] current_state, next_state;
+
+    // State register
+    always @(posedge clk or negedge reset_n) begin
+        if (!reset_n)
+            current_state <= IDLE;
+        else
+            current_state <= next_state;
+    end
+
+    // Next state logic
+    always @(*) begin
+        case (current_state)
+            IDLE: begin
+                if (data_in == 1'b1)
+                    next_state = S1;
+                else
+                    next_state = IDLE;
+            end
+            S1: begin
+                // We have seen '1'. Next expected is '0'
+                if (data_in == 1'b0)
+                    next_state = S2;
+                else
+                    // data_in == 1: still expecting start of sequence, but '1' could be start of new sequence
+                    next_state = S1;
+            end
+            S2: begin
+                // We have seen '10'. Next expected is '0'
+                if (data_in == 1'b0)
+                    next_state = S3;
+                else if (data_in == 1'b1)
+                    // data_in == 1: could be start of new sequence
+                    next_state = S1;
+                else
+                    next_state = IDLE;
+            end
+            S3: begin
+                // We have seen '100'. Next expected is '1'
+                if (data_in == 1'b1)
+                    next_state = S4;
+                else
+                    // data_in == 0: need to check if this '0' could be part of a new sequence
+                    // '100' + '0' = '1000'. No overlap with '1001' prefix except possibly '1' at start? 
+                    // Let's think: the sequence is 1001. If we are in S3 (100) and get 0, we have 1000.
+                    // Does any suffix of 1000 match a prefix of 1001? 
+                    // Prefixes: 1, 10, 100, 1001
+                    // Suffixes of 1000: 0, 00, 000, 1000
+                    // No match, so go to IDLE
+                    next_state = IDLE;
+            end
+            S4: begin
+                // We have seen '1001'. Sequence detected.
+                // After detection, we need to handle overlap. The sequence is 1001.
+                // After detecting 1001, what if the next bit continues? 
+                // The last bit was '1'. Could this '1' be the start of a new sequence?
+                // Yes, '1' is the first bit of '1001'. So we transition to S1.
+                if (data_in == 1'b1)
+                    next_state = S1;
+                else
+                    next_state = IDLE;
+            end
+            default: next_state = IDLE;
+        endcase
+    end
+
+    // Output logic
+    always @(*) begin
+        if (current_state == S4)
+            sequence_detected = 1'b1;
+        else
+            sequence_detected = 1'b0;
+    end
+
+endmodule
+```

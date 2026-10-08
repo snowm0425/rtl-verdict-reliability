@@ -1,0 +1,154 @@
+module div_16bit (
+    input  [15:0] A,
+    input  [7:0]  B,
+    output [15:0] result,
+    output [15:0] odd
+);
+
+    reg [15:0] a_reg;
+    reg [7:0]  b_reg;
+
+    // First always block: combinational, updates a_reg and b_reg
+    always @(*) begin
+        a_reg = A;
+        b_reg = B;
+    end
+
+    // Second always block: combinational, performs the division
+    always @(*) begin
+        reg [15:0] quotient;
+        reg [15:0] remainder;
+        reg [15:0] temp_dividend;
+        reg [7:0]  divisor;
+        reg [8:0]  current_high; // 9 bits to hold high 8 bits of dividend part
+        reg [15:0] result_int;
+        reg [15:0] odd_int;
+        integer i;
+
+        quotient = 16'd0;
+        remainder = 16'd0;
+        temp_dividend = a_reg;
+        divisor = b_reg;
+
+        // Handle edge case: divisor is zero
+        if (divisor == 8'd0) begin
+            result_int = 16'd0;
+            odd_int = temp_dividend;
+        end else begin
+            // Start with high 8 bits of the 16-bit dividend
+            // The dividend is 16 bits. We process from the most significant bit.
+            // The divisor is 8 bits.
+            // We need to extract the high 8 bits of the dividend to compare with divisor.
+            
+            // Initialize remainder with the high 8 bits of the dividend
+            remainder[7:0] = temp_dividend[15:8];
+            remainder[15:8] = 8'd0;
+            
+            quotient = 16'd0;
+            
+            // Process each bit from bit 7 down to bit 0 of the lower part
+            // Actually, we need to process all 16 bits, but the first 8 bits are used to initialize the remainder.
+            // Let's think about the standard long division algorithm for binary.
+            
+            // Standard approach:
+            // We have a 16-bit dividend and an 8-bit divisor.
+            // The quotient will be up to 16 bits (actually up to 16 bits since 16-bit / 8-bit can be up to 16 bits).
+            // Wait, 16-bit max is 65535, 8-bit min non-zero is 1, so quotient can be up to 65535 which fits in 16 bits.
+            
+            // Let's use a shift-and-subtract approach.
+            // We'll iterate 16 times, shifting the dividend left and checking if the current remainder is >= divisor.
+            
+            // Actually, the problem says:
+            // "Extract the higher bits of the dividend, matching the bit width of the divisor."
+            // Divisor is 8-bit, so extract high 8 bits of 16-bit dividend.
+            // Compare these bits with divisor.
+            // If dividend bits > divisor, quotient bit = 1, remainder = dividend_bits - divisor
+            // Else quotient bit = 0, remainder = dividend_bits
+            // Concatenate remainder with next bit of dividend.
+            // Repeat.
+            
+            // So we start with the top 8 bits.
+            // Then for each of the remaining 8 bits, we shift the remainder left by 1, add the next bit, and compare with divisor.
+            
+            // Let me re-read: "Concatenate the remainder with the highest remaining 1-bit of the dividend"
+            // So after processing the first 8 bits (the high 8 bits), we have a remainder (up to 8 bits).
+            // Then we bring down the next bit (bit 7 of the original dividend, i.e., the highest remaining bit).
+            // So we shift the remainder left by 1 and OR in the next bit.
+            
+            // Let's implement this properly.
+            
+            // Initialize: high 8 bits of dividend
+            remainder = {8'd0, temp_dividend[15:8]};
+            
+            // Quotient bits: we'll build them from MSB to LSB.
+            // The first quotient bit corresponds to the high 8 bits comparison.
+            // Actually, when we compare the high 8 bits with the 8-bit divisor, if they are >=, the quotient bit at position 7 (of an 8-bit quotient for the high part) would be set. But the total quotient is 16 bits.
+            
+            // Let me think again. The dividend is 16 bits. The divisor is 8 bits.
+            // The quotient can be up to 16 bits.
+            // The algorithm:
+            // 1. Take the top 8 bits of the 16-bit dividend.
+            // 2. Compare with divisor.
+            //    - If >=, quotient bit (bit 7 of the high part, which is bit 15 of the 16-bit quotient? No...)
+            
+            // Let's use a more standard approach. We'll process 16 iterations.
+            // For each iteration, we shift the current remainder left by 1, bring in the next bit of the dividend, and compare with the divisor.
+            // But the first step is special because we start with 8 bits, not 0.
+            
+            // Actually, let's just do 16 iterations of shift-subtract, starting with remainder = 0.
+            // But that would give a quotient where the top bits might be 0 if the dividend is smaller than the divisor shifted.
+            
+            // Let me re-read the problem statement carefully:
+            // "Extract the higher bits of the dividend, matching the bit width of the divisor."
+            // Divisor is 8-bit, dividend is 16-bit. So extract top 8 bits of the 16-bit dividend.
+            // "Compare these bits with the divisor: if the dividend bits are greater, set the quotient to 1, otherwise set it to 0"
+            // So the first quotient bit (most significant) is determined by comparing the top 8 bits with the divisor.
+            // "and use the difference as the remainder"
+            // So remainder = (top 8 bits) - divisor if top 8 bits >= divisor, else remainder = top 8 bits.
+            // "Concatenate the remainder with the highest remaining 1-bit of the dividend"
+            // So next, we take the remainder (8 bits) and shift left by 1, then OR with bit 7 of the dividend (the next highest bit).
+            // Then compare this 9-bit value? No, the remainder after subtraction is at most 7 bits (since divisor is 8 bits and we subtracted, the result is less than divisor, so at most 7 bits). But we need to keep it as 8 bits for the next comparison.
+            
+            // Let me implement it step by step.
+            
+            // Step 1: Compare top 8 bits with divisor
+            if (temp_dividend[15:8] >= divisor) begin
+                remainder = {8'd0, temp_dividend[15:8]} - {8'd0, divisor};
+                quotient[15] = 1'b1; // The MSB of the quotient
+            end else begin
+                remainder = {8'd0, temp_dividend[15:8]};
+                quotient[15] = 1'b0;
+            end
+            
+            // Steps 2-8: For bits 7 down to 0 of the dividend
+            for (i = 7; i >= 0; i = i - 1) begin
+                // Shift remainder left by 1 and bring in the next bit
+                remainder = (remainder << 1) | {15'd0, temp_dividend[i]};
+                // Wait, remainder is 16 bits. We only care about the lower 8 bits for comparison with the 8-bit divisor.
+                // Actually, after shifting, the value could be up to 15 bits. But since we're comparing with an 8-bit divisor, and the previous remainder was less than the divisor (8 bits), after shifting left by 1 and adding a bit, the value is at most (255 * 2 + 1) = 511, which is 9 bits.
+                // So we need to compare the lower 9 bits? No, we compare with the 8-bit divisor.
+                
+                // Let me think. The remainder from the previous step is less than the divisor (8 bits). So it's at most 7 bits.
+                // After shifting left by 1 and ORing with a bit, it's at most 8 bits.
+                // So we can compare the lower 8 bits of the shifted remainder with the divisor.
+                
+                if (remainder[7:0] >= divisor) begin
+                    remainder = remainder - {8'd0, divisor};
+                    quotient[i] = 1'b1;
+                end else begin
+                    quotient[i] = 1'b0;
+                end
+            end
+            
+            // Bits 14 down to 8 of the quotient should be 0 since we only set bits 15 and 7:0
+            quotient[14:8] = 7'd0;
+            
+            result_int = quotient;
+            odd_int = remainder;
+        end
+        
+        result = result_int;
+        odd = odd_int;
+    end
+
+endmodule

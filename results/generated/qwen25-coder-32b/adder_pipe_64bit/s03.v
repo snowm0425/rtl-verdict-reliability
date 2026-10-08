@@ -1,0 +1,121 @@
+module adder_pipe_64bit (
+    input wire clk,
+    input wire rst_n,
+    input wire i_en,
+    input wire [63:0] adda,
+    input wire [63:0] addb,
+    output wire [64:0] result,
+    output wire o_en
+);
+
+    // Define the number of pipeline stages
+    localparam NUM_STAGES = 4; // You can adjust the number of stages as needed
+
+    // Registers to hold intermediate results
+    reg [15:0] result_stages [NUM_STAGES:0];
+    reg [NUM_STAGES:0] o_en_stages;
+
+    // Internal wires for carry signals
+    wire [15:0] c_out_stages [NUM_STAGES:0];
+
+    // Stage 0: Initial addition (no pipeline register yet)
+    assign c_out_stages[0][0] = 1'b0; // Initial carry in is 0
+    full_adder_16bit fa0 (
+        .a(adda[15:0]),
+        .b(addb[15:0]),
+        .cin(c_out_stages[0][0]),
+        .sum(result_stages[0][15:0]),
+        .cout(c_out_stages[0][15])
+    );
+
+    // Stages 1 to NUM_STAGES-1: Pipeline stages with registers
+    genvar i;
+    generate
+        for (i = 1; i < NUM_STAGES; i = i + 1) begin : gen_pipeline_stages
+            reg [15:0] result_reg;
+            reg cin_reg;
+            reg cout_reg;
+
+            always @(posedge clk or negedge rst_n) begin
+                if (!rst_n) begin
+                    result_reg <= 16'b0;
+                    cin_reg <= 1'b0;
+                end else begin
+                    result_reg <= result_stages[i-1][15:0];
+                    cin_reg <= c_out_stages[i-1][15];
+                end
+            end
+
+            full_adder_16bit fa (
+                .a(adda[i*16 + 15:i*16]),
+                .b(addb[i*16 + 15:i*16]),
+                .cin(cin_reg),
+                .sum(result_stages[i][15:0]),
+                .cout(cout_reg)
+            );
+
+            always @(posedge clk or negedge rst_n) begin
+                if (!rst_n) begin
+                    c_out_stages[i][15] <= 1'b0;
+                end else begin
+                    c_out_stages[i][15] <= cout_reg;
+                end
+            end
+        end
+    endgenerate
+
+    // Final stage: Calculate the final sum and handle the carry out
+    reg [15:0] final_result_reg;
+    reg final_cin_reg;
+    reg final_cout_reg;
+
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            final_result_reg <= 16'b0;
+            final_cin_reg <= 1'b0;
+        end else begin
+            final_result_reg <= result_stages[NUM_STAGES-1][15:0];
+            final_cin_reg <= c_out_stages[NUM_STAGES-1][15];
+        end
+    end
+
+    full_adder_16bit fa_final (
+        .a(adda[63:48]),
+        .b(addb[63:48]),
+        .cin(final_cin_reg),
+        .sum(result_stages[NUM_STAGES][15:0]),
+        .cout(final_cout_reg)
+    );
+
+    // Output the final result and enable signal
+    assign result[15:0] = result_stages[NUM_STAGES][15:0];
+    assign result[64] = final_cout_reg;
+
+    // Pipeline the output enable signal
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            o_en_stages <= {NUM_STAGES{1'b0}};
+        end else begin
+            o_en_stages <= {o_en_stages[NUM_STAGES-1:0], i_en};
+        end
+    end
+
+    assign o_en = o_en_stages[NUM_STAGES];
+
+endmodule
+
+// 16-bit full adder module
+module full_adder_16bit (
+    input wire [15:0] a,
+    input wire [15:0] b,
+    input wire cin,
+    output wire [15:0] sum,
+    output wire cout
+);
+
+    wire [15:0] c_out;
+
+    assign {c_out, sum} = a + b + cin;
+    assign cout = c_out[15];
+
+endmodule

@@ -1,0 +1,102 @@
+Sure, I'll implement the `sequence_detector` module in Verilog as per your requirements. Below is the Verilog code for the module:
+
+```verilog
+module sequence_detector (
+    input wire clk,          // Clock signal to synchronize the detector
+    input wire reset_n,      // Reset signal to initialize the state machine (active low)
+    input wire data_in,      // 1-bit binary input signal
+    output reg sequence_detected // 1-bit output signal set high when the sequence is detected
+);
+
+    // Define the states of the FSM
+    typedef enum reg [1:0] {
+        IDLE = 2'b00,
+        S1 = 2'b01,
+        S2 = 2'b10,
+        S3 = 2'b11
+    } state_t;
+
+    // Internal state register
+    reg [1:0] current_state;
+    reg [1:0] next_state;
+
+    // State register
+    always @(posedge clk or negedge reset_n) begin
+        if (!reset_n) begin
+            current_state <= IDLE;
+        end else begin
+            current_state <= next_state;
+        end
+    end
+
+    // Next state logic
+    always @(*) begin
+        case (current_state)
+            IDLE: begin
+                if (data_in == 1'b1) begin
+                    next_state = S1;
+                end else begin
+                    next_state = IDLE;
+                end
+            end
+
+            S1: begin
+                if (data_in == 1'b0) begin
+                    next_state = S2;
+                end else begin
+                    next_state = IDLE;
+                end
+            end
+
+            S2: begin
+                if (data_in == 1'b0) begin
+                    next_state = S3;
+                end else begin
+                    next_state = IDLE;
+                end
+            end
+
+            S3: begin
+                if (data_in == 1'b1) begin
+                    next_state = IDLE;
+                    sequence_detected = 1'b1; // Sequence detected!
+                end else begin
+                    next_state = IDLE;
+                end
+            end
+
+            default: begin
+                next_state = IDLE;
+            end
+        endcase
+    end
+
+    // Sequence detected output logic
+    always @(posedge clk or negedge reset_n) begin
+        if (!reset_n) begin
+            sequence_detected <= 1'b0;
+        end else if (current_state == S3 && data_in == 1'b1) begin
+            sequence_detected <= 1'b1;
+        end else begin
+            sequence_detected <= 1'b0;
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+
+1. **States Definition**: The FSM has four states: `IDLE`, `S1`, `S2`, and `S3`. The state `S4` is implicit when `sequence_detected` is set high in state `S3`.
+
+2. **State Register**: The `current_state` register holds the current state of the FSM. It is updated on every positive edge of the clock (`posedge clk`) or when the reset signal (`reset_n`) is active low (`negedge reset_n`).
+
+3. **Next State Logic**: The `next_state` logic determines the next state based on the current state and the input `data_in`. The transitions are as follows:
+   - From `IDLE` to `S1` if `data_in` is `1'b1`.
+   - From `S1` to `S2` if `data_in` is `1'b0`.
+   - From `S2` to `S3` if `data_in` is `1'b0`.
+   - From `S3` to `IDLE` if `data_in` is `1'b1`, and `sequence_detected` is set high.
+
+4. **Sequence Detected Output**: The `sequence_detected` signal is set high only when the sequence `1001` is detected, i.e., when the FSM transitions from `S3` to `IDLE` and `data_in` is `1'b1`. It is cleared on the next clock cycle or when reset is active low.
+
+This module should meet the requirements for detecting the specific 4-bit binary sequence `1001`.

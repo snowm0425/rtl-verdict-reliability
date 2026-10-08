@@ -1,0 +1,54 @@
+Certainly! Below is the complete Verilog code for the `serial2parallel` module as per your specifications. This module receives serial data and converts it into parallel data once it accumulates 8 bits. It uses a synchronous design with a rising edge clock and an active-low reset signal.
+
+```verilog
+module serial2parallel (
+    input wire clk,          // Clock signal
+    input wire rst_n,        // Reset signal (active low)
+    input wire din_serial,   // Serial input data
+    input wire din_valid,    // Validity signal for input data
+    output reg [7:0] dout_parallel, // Parallel output data (8 bits wide)
+    output reg dout_valid    // Validity signal for the output data
+);
+
+    reg [2:0] cnt; // 3-bit counter to count 8 serial bits (0 to 7)
+
+    // Synchronous always block
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            // Reset the counter and output registers
+            cnt <= 3'b000;
+            dout_parallel <= 8'b00000000;
+            dout_valid <= 1'b0;
+        end else begin
+            if (din_valid) begin
+                // Shift the serial input into the parallel output register
+                dout_parallel[7:1] <= dout_parallel[6:0];
+                dout_parallel[0] <= din_serial;
+                
+                // Increment the counter
+                cnt <= cnt + 1;
+                
+                // Check if we have received 8 valid serial bits
+                if (cnt == 3'b111) begin
+                    // Set the valid output signal
+                    dout_valid <= 1'b1;
+                    // Reset the counter for the next set of bits
+                    cnt <= 3'b000;
+                end else begin
+                    // Reset the valid output signal
+                    dout_valid <= 1'b0;
+                end
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+- **Counter (`cnt`)**: A 3-bit counter is used to keep track of the number of serial input bits received. It counts from 0 to 7 (binary `000` to `111`).
+- **Shift Register (`dout_parallel`)**: The serial input `din_serial` is shifted into the `dout_parallel` register from the least significant bit (LSB) to the most significant bit (MSB) on every valid input.
+- **Validity Signal (`dout_valid`)**: This signal is set to 1 when 8 valid serial bits have been received and the parallel output is ready. It is reset to 0 otherwise.
+- **Reset (`rst_n`)**: The module is reset on the falling edge of `rst_n`, clearing the counter and output registers.
+
+This module ensures that the parallel output `dout_parallel` is only valid when it contains 8 bits of serial data.

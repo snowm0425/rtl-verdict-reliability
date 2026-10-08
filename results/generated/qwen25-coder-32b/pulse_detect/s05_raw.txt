@@ -1,0 +1,82 @@
+Certainly! Below is the complete Verilog code for the `pulse_detect` module as per your specifications:
+
+```verilog
+module pulse_detect (
+    input clk,      // Clock signal
+    input rst_n,    // Reset signal (active low)
+    input data_in,  // One-bit input signal
+    output reg data_out // Output signal indicating the presence of pulses
+);
+
+    // Define states
+    typedef enum logic [1:0] {
+        IDLE = 2'b00,
+        RISE = 2'b01,
+        FALL = 2'b10
+    } state_t;
+
+    // State register
+    reg [1:0] state;
+
+    // State machine logic
+    always @(posedge clk or negedge rst_n) begin
+        if (~rst_n) begin
+            // Reset condition: Set state to IDLE and data_out to 0
+            state <= IDLE;
+            data_out <= 0;
+        end else begin
+            // State transition logic
+            case (state)
+                IDLE: begin
+                    if (data_in == 1'b1) begin
+                        state <= RISE;
+                    end else begin
+                        state <= IDLE;
+                    end
+                    data_out <= 0;
+                end
+
+                RISE: begin
+                    if (data_in == 1'b0) begin
+                        state <= FALL;
+                    end else begin
+                        state <= RISE;
+                    end
+                    data_out <= 0;
+                end
+
+                FALL: begin
+                    if (data_in == 1'b0) begin
+                        state <= IDLE;
+                        data_out <= 1; // Indicate the end of a pulse
+                    end else begin
+                        state <= RISE; // If data_in goes back to 1, restart the detection
+                    end
+                end
+
+                default: begin
+                    state <= IDLE;
+                    data_out <= 0;
+                end
+            endcase
+        end
+    end
+endmodule
+```
+
+### Explanation:
+1. **State Definition**:
+   - The states are defined using a `typedef enum` for better readability and maintainability.
+   - `IDLE`: The initial state where the module waits for the `data_in` to go high.
+   - `RISE`: The state where `data_in` has transitioned from 0 to 1.
+   - `FALL`: The state where `data_in` has transitioned from 1 to 0.
+
+2. **State Machine Logic**:
+   - The `always` block is sensitive to both the positive edge of `clk` and the negative edge of `rst_n`.
+   - During reset (`~rst_n`), the state is set to `IDLE` and `data_out` is set to 0.
+   - In the `IDLE` state, if `data_in` becomes 1, the state transitions to `RISE`.
+   - In the `RISE` state, if `data_in` becomes 0, the state transitions to `FALL`.
+   - In the `FALL` state, if `data_in` remains 0, `data_out` is set to 1 indicating the end of the pulse, and the state transitions back to `IDLE`.
+   - If `data_in` goes back to 1 while in the `FALL` state, it indicates a new pulse is starting, so the state transitions to `RISE`.
+
+This module should correctly detect the specified pulse pattern in the `data_in` signal and set `data_out` accordingly.

@@ -1,0 +1,98 @@
+Certainly! Below is the complete Verilog code for the `multi_16bit` module implementing an unsigned 16-bit multiplier using shift and accumulate operations:
+
+```verilog
+module multi_16bit (
+    input wire clk,
+    input wire rst_n,
+    input wire start,
+    input wire [15:0] ain,
+    input wire [15:0] bin,
+    output reg [31:0] yout,
+    output reg done
+);
+
+    // Internal registers
+    reg [3:0] i; // Shift count register (4 bits to hold values from 0 to 17)
+    reg [15:0] areg; // Multiplicand register
+    reg [15:0] breg; // Multiplier register
+    reg [31:0] yout_r; // Product register
+
+    // Register to hold the done signal
+    reg done_r;
+
+    // Shift and accumulate process
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            // Reset condition
+            i <= 0;
+            areg <= 16'b0;
+            breg <= 16'b0;
+            yout_r <= 32'b0;
+            done_r <= 0;
+        end else begin
+            if (start && i < 17) begin
+                // Increment shift count register
+                i <= i + 1;
+            end else if (!start) begin
+                // Reset shift count register if start is inactive
+                i <= 0;
+            end
+
+            if (i == 16) begin
+                // Set done flag when multiplication is complete
+                done_r <= 1;
+            end else if (i == 17) begin
+                // Reset done flag after completion
+                done_r <= 0;
+            end
+
+            if (start) begin
+                if (i == 0) begin
+                    // Load multiplicand and multiplier into registers
+                    areg <= ain;
+                    breg <= bin;
+                end else if (i > 0 && i < 17) begin
+                    // Shift and accumulate operation
+                    if (areg[i-1]) begin
+                        yout_r <= yout_r + (breg << (i-1));
+                    end
+                end
+            end
+        end
+    end
+
+    // Output assignment
+    assign yout = yout_r;
+    assign done = done_r;
+
+endmodule
+```
+
+### Explanation:
+- **Registers:**
+  - `i`: Shift count register to keep track of the current iteration (0 to 16).
+  - `areg`: Register to store the multiplicand.
+  - `breg`: Register to store the multiplier.
+  - `yout_r`: Register to accumulate the product.
+  - `done_r`: Register to hold the done signal.
+
+- **Reset Condition:**
+  - On the falling edge of `rst_n`, all registers are reset to their initial values.
+
+- **Shift Count Register (`i`):**
+  - Incremented by 1 when `start` is active and `i` is less than 17.
+  - Reset to 0 when `start` is inactive.
+
+- **Multiplication Completion Flag (`done_r`):**
+  - Set to 1 when `i` reaches 16, indicating completion.
+  - Reset to 0 when `i` reaches 17.
+
+- **Shift and Accumulate Operation:**
+  - On the first clock cycle (`i == 0`), `ain` and `bin` are loaded into `areg` and `breg`.
+  - For subsequent cycles (`i > 0` and `i < 17`), if the bit at position `i-1` in `areg` is high, the shifted value of `breg` is added to `yout_r`.
+
+- **Output Assignment:**
+  - `yout` is assigned the value of `yout_r`.
+  - `done` is assigned the value of `done_r`.
+
+This code should meet the requirements specified for the 16-bit multiplier using shift and accumulate operations.

@@ -1,0 +1,47 @@
+Certainly! Below is the Verilog code for a 4-bit BCD adder module. This module takes two 4-bit BCD inputs (`A` and `B`), a carry-in (`Cin`), and produces a 4-bit BCD output (`Sum`) and a carry-out (`Cout`).
+
+```verilog
+module adder_bcd (
+    input [3:0] A,      // First BCD input
+    input [3:0] B,      // Second BCD input
+    input Cin,          // Carry-in input
+    output [3:0] Sum,   // 4-bit BCD output
+    output Cout         // Carry-out output
+);
+
+    wire [4:0] binary_sum;  // Intermediate binary sum including carry-in
+    wire [3:0] corrected_sum; // Corrected sum after BCD correction
+    wire bcd_correction_needed; // Signal to indicate if BCD correction is needed
+
+    // Perform binary addition of A, B, and Cin
+    assign binary_sum = A + B + Cin;
+
+    // Determine if BCD correction is needed (sum > 9)
+    assign bcd_correction_needed = (binary_sum > 4'd9);
+
+    // Perform BCD correction if needed
+    assign corrected_sum = bcd_correction_needed ? (binary_sum + 4'd6) : binary_sum[3:0];
+
+    // Assign the corrected sum to the output Sum
+    assign Sum = corrected_sum;
+
+    // Generate carry-out if the corrected sum exceeds 9
+    assign Cout = bcd_correction_needed || (binary_sum[4]);
+
+endmodule
+```
+
+### Explanation:
+
+1. **Binary Addition**:
+   - The module first performs a binary addition of the inputs `A`, `B`, and `Cin`. The result is stored in `binary_sum` which is a 5-bit wire to account for any carry-out from the addition.
+
+2. **BCD Correction**:
+   - The `bcd_correction_needed` signal is set to `1` if the `binary_sum` exceeds 9 (i.e., `binary_sum > 4'd9`). This indicates that the result is not a valid BCD digit.
+   - If `bcd_correction_needed` is `1`, the module adds 6 (`4'd6` in Verilog) to the `binary_sum` to correct it to a valid BCD digit. The result is then truncated to 4 bits and stored in `corrected_sum`.
+
+3. **Output Assignment**:
+   - The `corrected_sum` is assigned to the `Sum` output.
+   - The `Cout` output is set to `1` if either the `bcd_correction_needed` signal is `1` or if there is a carry-out from the `binary_sum` (i.e., `binary_sum[4]` is `1`).
+
+This module ensures that the sum of two BCD digits is always within the valid BCD range (0-9) and correctly generates a carry-out when the sum exceeds a single decimal digit.

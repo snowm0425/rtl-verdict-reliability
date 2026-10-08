@@ -1,0 +1,249 @@
+module float_multi (
+    input wire clk,
+    input wire rst,
+    input wire [31:0] a,
+    input wire [31:0] b,
+    output reg [31:0] z
+);
+
+    // Internal signals
+    reg [2:0] counter;
+    reg [23:0] a_mantissa, b_mantissa, z_mantissa;
+    reg [9:0] a_exponent, b_exponent, z_exponent;
+    reg a_sign, b_sign, z_sign;
+    reg [49:0] product;
+    reg guard_bit, round_bit, sticky;
+
+    // Special case detection signals
+    wire a_is_nan;
+    wire b_is_nan;
+    wire a_is_inf;
+    wire b_is_inf;
+    wire a_is_zero;
+    wire b_is_zero;
+    wire a_is_subnormal;
+    wire b_is_subnormal;
+
+    assign a_is_nan = (a[30:23] == 8'hFF) && (a[22:0] != 23'b0);
+    assign b_is_nan = (b[30:23] == 8'hFF) && (b[22:0] != 23'b0);
+    assign a_is_inf = (a[30:23] == 8'hFF) && (a[22:0] == 23'b0);
+    assign b_is_inf = (b[30:23] == 8'hFF) && (b[22:0] == 23'b0);
+    assign a_is_zero = (a[30:23] == 8'h00) && (a[22:0] == 23'b0);
+    assign b_is_zero = (b[30:23] == 8'h00) && (b[22:0] == 23'b0);
+    assign a_is_subnormal = (a[30:23] == 8'h00) && (a[22:0] != 23'b0);
+    assign b_is_subnormal = (b[30:23] == 8'h00) && (b[22:0] != 23'b0);
+
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            counter <= 3'd0;
+            a_mantissa <= 24'b0;
+            b_mantissa <= 24'b0;
+            z_mantissa <= 24'b0;
+            a_exponent <= 10'd0;
+            b_exponent <= 10'd0;
+            z_exponent <= 10'd0;
+            a_sign <= 1'b0;
+            b_sign <= 1'b0;
+            z_sign <= 1'b0;
+            product <= 50'b0;
+            guard_bit <= 1'b0;
+            round_bit <= 1'b0;
+            sticky <= 1'b0;
+            z <= 32'b0;
+        end else begin
+            case (counter)
+                3'd0: begin
+                    // Extract fields from inputs
+                    a_sign <= a[31];
+                    b_sign <= b[31];
+                    a_exponent <= {2'b00, a[30:23]};
+                    b_exponent <= {2'b00, b[30:23]};
+                    a_mantissa <= a[22:0];
+                    b_mantissa <= b[22:0];
+                    
+                    // Default z sign
+                    z_sign <= a_sign ^ b_sign;
+                    
+                    // Handle NaN cases
+                    if (a_is_nan || b_is_nan) begin
+                        z <= 32'h7FC00000; // NaN
+                        counter <= 3'd1;
+                    end else if (a_is_inf && b_is_zero) begin
+                        z <= 32'h7FC00000; // NaN
+                        counter <= 3'd1;
+                    end else if (b_is_inf && a_is_zero) begin
+                        z <= 32'h7FC00000; // NaN
+                        counter <= 3'd1;
+                    end else if (a_is_inf || b_is_inf) begin
+                        // Infinity * finite = Infinity (with sign)
+                        if (a_is_inf) begin
+                            z <= {a_sign, 8'hFF, 23'b0};
+                        end else begin
+                            z <= {b_sign, 8'hFF, 23'b0};
+                        end
+                        counter <= 3'd1;
+                    end else if (a_is_zero || b_is_zero) begin
+                        // Zero * anything = Zero (with sign)
+                        z <= {a_sign ^ b_sign, 8'h00, 23'b0};
+                        counter <= 3'd1;
+                    end else begin
+                        counter <= 3'd1;
+                    end
+                end
+
+                3'd1: begin
+                    // Normalize mantissas and prepare for multiplication
+                    // For normal numbers, mantissa is 1.mantissa (24 bits with implicit 1)
+                    // For subnormal numbers, we need to normalize by shifting left
+            
+                    // Handle subnormal inputs by normalizing them
+                    if (a_is_subnormal) begin
+                        // Count leading zeros to normalize
+                        casez (a_mantissa)
+                            24'b0001???????????????????????: begin
+                                a_mantissa <= {a_mantissa[18:0], 5'b0};
+                                a_exponent <= a_exponent - 10'd1;
+                            end
+                            24'b001????????????????????????: begin
+                                a_mantissa <= {a_mantissa[19:0], 4'b0};
+                                a_exponent <= a_exponent - 10'd1;
+                            end
+                            24'b01????????????????????????: begin
+                                a_mantissa <= {a_mantissa[20:0], 3'b0};
+                                a_exponent <= a_exponent - 10'd1;
+                            end
+                            24'b1????????????????????????: begin
+                                a_mantissa <= {a_mantissa[21:0], 2'b0};
+                                a_exponent <= a_exponent - 10'd1;
+                            end
+                            default: begin
+                                a_mantissa <= a_mantissa;
+                            end
+                        endcase
+                    end else begin
+                        // Normal number: add implicit 1 to mantissa
+                        a_mantissa <= {1'b1, a_mantissa[22:0]};
+                        a_exponent <= a_exponent + 10'd127;
+                    end
+
+                    if (b_is_subnormal) begin
+                        casez (b_mantissa)
+                            24'b0001???????????????????????: begin
+                                b_mantissa <= {b_mantissa[18:0], 5'b0};
+                                b_exponent <= b_exponent - 10'd1;
+                            end
+                            24'b001????????????????????????: begin
+                                b_mantissa <= {b_mantissa[19:0], 4'b0};
+                                b_exponent <= b_exponent - 10'd1;
+                            end
+                            24'b01????????????????????????: begin
+                                b_mantissa <= {b_mantissa[20:0], 3'b0};
+                                b_exponent <= b_exponent - 10'd1;
+                            end
+                            24'b1????????????????????????: begin
+                                b_mantissa <= {b_mantissa[21:0], 2'b0};
+                                b_exponent <= b_exponent - 10'd1;
+                            end
+                            default: begin
+                                b_mantissa <= b_mantissa;
+                            end
+                        endcase
+                    end else begin
+                        b_mantissa <= {1'b1, b_mantissa[22:0]};
+                        b_exponent <= b_exponent + 10'd127;
+                    end
+                    
+                    counter <= 3'd2;
+                end
+
+                3'd2: begin
+                    // Multiply mantissas: 24-bit * 24-bit = 48-bit result
+                    product <= a_mantissa * b_mantissa;
+                    // Combine exponents
+                    z_exponent <= a_exponent + b_exponent - 10'd127;
+                    z_sign <= a_sign ^ b_sign;
+                    counter <= 3'd3;
+                end
+
+                3'd3: begin
+                    // Normalize product
+                    // The product is a 48-bit number. For normal numbers, the product 
+                    // should have the form 1.xxxx or 0.1xxx...
+                    // Since both mantissas are in [1, 2), product is in [1, 4)
+                    // If product >= 2^23, we need to shift right by 1 and increment exponent
+                    if (product[47]) begin
+                        // Product >= 2^23, shift right by 1
+                        product <= {1'b0, product[47:1]};
+                        z_exponent <= z_exponent + 10'd1;
+                    end
+                    counter <= 3'd4;
+                end
+
+                3'd4: begin
+                    // Extract mantissa, guard, round, sticky bits
+                    // The 24-bit mantissa is product[47:24]
+                    // Guard bit is product[23]
+                    // Round bit is product[22]
+                    // Sticky bit is OR of product[21:0]
+                    z_mantissa <= product[47:24];
+                    guard_bit <= product[23];
+                    round_bit <= product[22];
+                    sticky <= |product[21:0];
+                    counter <= 3'd5;
+                end
+
+                3'd5: begin
+                    // Rounding: Round to nearest, ties to even
+                    // Round up if: (guard & (round | sticky)) | (guard & round & (z_mantissa[0]))
+                    reg round_up;
+                    assign round_up = (guard_bit & (round_bit | sticky)) | (guard_bit & round_bit & z_mantissa[0]);
+                    
+                    if (round_up) begin
+                        z_mantissa <= z_mantissa + 24'd1;
+                    end
+                    counter <= 3'd6;
+                end
+
+                3'd6: begin
+                    // Check if rounding caused overflow in mantissa
+                    if (z_mantissa == 24'h100000) begin
+                        // Mantissa overflow, shift right and increment exponent
+                        z_mantissa <= 24'h800000;
+                        z_exponent <= z_exponent + 10'd1;
+                    end
+                    counter <= 3'd7;
+                end
+
+                3'd7: begin
+                    // Final output generation
+                    // Check for overflow and underflow
+                    if (z_exponent > 10'd254) begin
+                        // Overflow: result is Infinity
+                        z <= {z_sign, 8'hFF, 23'b0};
+                    end else if (z_exponent < 10'd1) begin
+                        // Underflow: result is subnormal or zero
+                        // For simplicity, we flush to zero or produce subnormal
+                        // Here we produce a subnormal if possible
+                        if (z_exponent <= 10'd0) begin
+                            // Flush to zero
+                            z <= {z_sign, 8'h00, 23'b0};
+                        end else begin
+                            // Subnormal: shift mantissa right
+                            // This is a simplified approach
+                            z <= {z_sign, 8'h00, z_mantissa[22:0]};
+                        end
+                    end else begin
+                        // Normal result
+                        z <= {z_sign, z_exponent[7:0], z_mantissa[22:0]};
+                    end
+                    counter <= 3'd0;
+                end
+
+                default: begin
+                    counter <= 3'd0;
+                end
+            endcase
+        end
+    end
+
+endmodule

@@ -1,0 +1,7 @@
+# stage=sim rc=0
+# STDOUT
+=========== Your Design Passed ===========
+/home/cvl/Documents/syn/RTLLM/Arithmetic/Other/fixed_point_substractor/testbench.v:73: $finish called at 1000000 (1ps)
+
+# STDERR
+

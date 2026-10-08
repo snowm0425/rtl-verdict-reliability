@@ -1,0 +1,55 @@
+```verilog
+module width_8to16 (
+    input  wire       clk,
+    input  wire       rst_n,
+    input  wire       valid_in,
+    input  wire [7:0] data_in,
+    output reg        valid_out,
+    output reg  [15:0] data_out
+);
+
+    // Internal registers
+    reg [7:0] data_lock;  // Stores the first 8-bit data
+    reg       flag;       // Flag to indicate if we have the first data and are waiting for the second
+
+    // Synchronous reset logic for internal registers
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            data_lock <= 8'b0;
+            flag      <= 1'b0;
+        end else begin
+            if (valid_in) begin
+                if (!flag) begin
+                    // First valid data: store it and set the flag
+                    data_lock <= data_in;
+                    flag      <= 1'b1;
+                end else begin
+                    // Second valid data: flag is high, so we output and reset
+                    flag      <= 1'b0;
+                    // data_lock and data_in will be used in the output register block
+                end
+            end
+            // If valid_in is not asserted, hold current state
+        end
+    end
+
+    // Output registers
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            valid_out <= 1'b0;
+            data_out  <= 16'b0;
+        end else begin
+            if (valid_in && flag) begin
+                // When the second data arrives, generate the 16-bit output
+                // First data (data_lock) goes to upper 8 bits, second data (data_in) goes to lower 8 bits
+                data_out  <= {data_lock, data_in};
+                valid_out <= 1'b1;
+            end else begin
+                // Otherwise, deassert valid_out
+                valid_out <= 1'b0;
+            end
+        end
+    end
+
+endmodule
+```

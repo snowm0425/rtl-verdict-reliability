@@ -1,0 +1,83 @@
+Sure, below is the complete Verilog code for the `synchronizer` module based on your requirements:
+
+```verilog
+module synchronizer (
+    input clk_a,          // Clock signal A
+    input clk_b,          // Clock signal B
+    input arstn,          // Active-low reset signal A
+    input brstn,          // Active-low reset signal B
+    input [3:0] data_in,  // 4-bit input data signal
+    input data_en,        // Input enable signal
+    
+    output reg [3:0] dataout // 4-bit output data signal
+);
+
+    // Registers to store data and enable signals
+    reg [3:0] data_reg;
+    reg en_data_reg;
+    
+    // Registers for enable control (two D flip-flops)
+    reg en_clap_one;
+    reg en_clap_two;
+
+    // Data Register: update on the positive edge of clk_a or falling edge of arstn
+    always @(posedge clk_a or negedge arstn) begin
+        if (!arstn) begin
+            data_reg <= 4'b0;
+        end else begin
+            data_reg <= data_in;
+        end
+    end
+
+    // Enable Data Register: update on the positive edge of clk_a or falling edge of arstn
+    always @(posedge clk_a or negedge arstn) begin
+        if (!arstn) begin
+            en_data_reg <= 1'b0;
+        end else begin
+            en_data_reg <= data_en;
+        end
+    end
+
+    // Enable Control Registers: update on the positive edge of clk_b or falling edge of brstn
+    always @(posedge clk_b or negedge brstn) begin
+        if (!brstn) begin
+            en_clap_one <= 1'b0;
+            en_clap_two <= 1'b0;
+        end else begin
+            en_clap_one <= en_data_reg;
+            en_clap_two <= en_clap_one;
+        end
+    end
+
+    // Output Assignment: update on the positive edge of clk_b or falling edge of brstn
+    always @(posedge clk_b or negedge brstn) begin
+        if (!brstn) begin
+            dataout <= 4'b0;
+        end else if (en_clap_two) begin
+            dataout <= data_reg;
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+
+1. **Data Register (`data_reg`)**:
+   - This register stores the `data_in` value.
+   - It is updated on the rising edge of `clk_a` and reset to 0 on the falling edge of `arstn`.
+
+2. **Enable Data Register (`en_data_reg`)**:
+   - This register stores the `data_en` value.
+   - It is updated on the rising edge of `clk_a` and reset to 0 on the falling edge of `arstn`.
+
+3. **Enable Control Registers (`en_clap_one` and `en_clap_two`)**:
+   - These registers create a 2-cycle delay for the `data_en` signal.
+   - They are updated on the rising edge of `clk_b` and reset to 0 on the falling edge of `brstn`.
+
+4. **Output Assignment (`dataout`)**:
+   - This register is updated on the rising edge of `clk_b`.
+   - It is reset to 0 on the falling edge of `brstn`.
+   - If `en_clap_two` is high, it takes the value from `data_reg`; otherwise, it retains its previous value.
+
+This implementation ensures that the `data_in` is synchronized to `clk_b` with a 2-cycle delay provided by the `data_en` signal, meeting the specified constraints.

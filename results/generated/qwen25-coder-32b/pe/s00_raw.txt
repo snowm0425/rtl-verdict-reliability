@@ -1,0 +1,57 @@
+Certainly! Below is the complete Verilog code for the Multiplying Accumulator (MAC) PE module as per your specifications:
+
+```verilog
+module pe (
+    input wire clk,        // Clock signal
+    input wire rst,        // Reset signal (active high)
+    input wire [31:0] a,   // 32-bit input operand A
+    input wire [31:0] b,   // 32-bit input operand B
+    output reg [31:0] c    // 32-bit output representing the accumulated result
+);
+
+    // Register to store the accumulated result
+    reg [31:0] partial_sum;
+
+    // Always block to handle the multiplication and accumulation
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            // Reset condition: set the accumulator to 0
+            partial_sum <= 32'b0;
+            c <= 32'b0;
+        end else begin
+            // Normal operation: accumulate the product of a and b
+            partial_sum <= partial_sum + (a * b);
+            c <= partial_sum;
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Module Declaration**:
+   - The module is named `pe`.
+   - It has the following inputs:
+     - `clk`: Clock signal used for synchronous operations.
+     - `rst`: Reset signal, active high.
+     - `a`: 32-bit input operand A.
+     - `b`: 32-bit input operand B.
+   - It has one output:
+     - `c`: 32-bit output representing the accumulated result.
+
+2. **Register Declaration**:
+   - `partial_sum`: A 32-bit register to store the partial sum (intermediate accumulation result).
+
+3. **Always Block**:
+   - The `always @(posedge clk or posedge rst)` block ensures that the block executes on the positive edge of either the clock (`clk`) or the reset (`rst`).
+   - **Reset Condition (`if (rst)`)**:
+     - If the reset signal (`rst`) is high, both `partial_sum` and `c` are set to 0.
+   - **Normal Operation (`else`)**:
+     - If the reset signal (`rst`) is low, the product of `a` and `b` is added to `partial_sum`, and the result is stored back in `partial_sum`.
+     - The updated `partial_sum` is then assigned to the output `c`.
+
+### Key Points:
+- The multiplication of `a` and `b` results in a 64-bit product. However, since `partial_sum` and `c` are both 32-bit registers, the result is truncated to the lower 32 bits. This may lead to overflow if the accumulated sum exceeds 32 bits.
+- The reset is synchronous and active high.
+
+This code should work as expected in a typical Verilog simulation environment. If you need to handle overflow or require a 64-bit accumulator, you would need to adjust the register size accordingly.

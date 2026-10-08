@@ -1,0 +1,74 @@
+Sure, I'll provide you with a complete Verilog implementation of the `pulse_detect` module as per your requirements. The module will detect a pulse when `data_in` changes from 0 to 1 to 0 and will output a pulse on `data_out` at the end of the detected pulse.
+
+Here is the complete Verilog code:
+
+```verilog
+module pulse_detect (
+    input wire clk,       // Clock signal
+    input wire rst_n,     // Reset signal (active low)
+    input wire data_in,   // One-bit input signal
+    output reg data_out   // Output signal indicating the presence of pulses
+);
+
+    // State encoding:
+    // 2-bit state register: 00 - idle, 01 - detected 0 to 1, 10 - detected 1 to 0
+    reg [1:0] state;
+    reg [1:0] next_state;
+
+    // State machine logic
+    always @(posedge clk or negedge rst_n) begin
+        if (~rst_n) begin
+            state <= 2'b00;    // Idle state
+            data_out <= 1'b0;  // No pulse detected
+        end else begin
+            state <= next_state;
+            case (state)
+                2'b00: // Idle state
+                    if (data_in == 1'b1)
+                        next_state <= 2'b01;  // Transition to 01 state on detection of 0 to 1
+                    else
+                        next_state <= 2'b00;  // Stay in idle state
+                2'b01: // Detected 0 to 1
+                    if (data_in == 1'b0)
+                        next_state <= 2'b10;  // Transition to 10 state on detection of 1 to 0
+                    else
+                        next_state <= 2'b01;  // Stay in 01 state
+                2'b10: // Detected 1 to 0
+                    next_state <= 2'b00;  // Go back to idle state
+                default:
+                    next_state <= 2'b00;  // Default to idle state
+            endcase
+        end
+    end
+
+    // Output generation
+    always @(posedge clk or negedge rst_n) begin
+        if (~rst_n) begin
+            data_out <= 1'b0;  // No pulse detected
+        end else begin
+            data_out <= (state == 2'b10) ? 1'b1 : 1'b0;  // Set data_out to 1 if in 10 state, else 0
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+
+1. **State Encoding**:
+   - `state[1:0]`: 2-bit state register.
+     - `2'b00` : Idle state.
+     - `2'b01` : Detected a transition from 0 to 1.
+     - `2'b10` : Detected a transition from 1 to 0.
+
+2. **State Machine Logic**:
+   - The `always @(posedge clk or negedge rst_n)` block handles the state transitions based on the `data_in` signal.
+   - When `rst_n` is active low (`~rst_n`), the state is reset to `2'b00` and `data_out` is set to `0`.
+   - Depending on the current state and the value of `data_in`, the next state is determined.
+   - If `state` is `2'b10`, it means a pulse has been detected, and the next state will be `2'b00`.
+
+3. **Output Generation**:
+   - The `data_out` is set to `1` when the state is `2'b10`, indicating the end of a pulse.
+   - Otherwise, `data_out` is set to `0`.
+
+This implementation ensures that `data_out` is `1` only at the end of a detected pulse and returns to `0` thereafter.

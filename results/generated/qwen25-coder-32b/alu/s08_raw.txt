@@ -1,0 +1,123 @@
+Certainly! Below is the complete Verilog code for a 32-bit ALU designed for a MIPS-ISA CPU based on your specifications. The code includes the necessary logic to handle all the specified operations and set the appropriate flags.
+
+```verilog
+module alu (
+    input  [31:0] a,        // First operand
+    input  [31:0] b,        // Second operand
+    input  [5:0]  aluc,       // ALU control signal
+    output [31:0] r,        // Result
+    output        zero,     // Zero flag
+    output        carry,    // Carry flag
+    output        negative, // Negative flag
+    output        overflow, // Overflow flag
+    output        flag      // SLT/SLTU flag
+);
+
+    // Parameters for ALU operations
+    parameter ADD  = 6'b100000;
+    parameter ADDU = 6'b100001;
+    parameter SUB  = 6'b100010;
+    parameter SUBU = 6'b100011;
+    parameter AND  = 6'b100100;
+    parameter OR   = 6'b100101;
+    parameter XOR  = 6'b100110;
+    parameter NOR  = 6'b100111;
+    parameter SLT  = 6'b101010;
+    parameter SLTU = 6'b101011;
+    parameter SLL  = 6'b000000;
+    parameter SRL  = 6'b000010;
+    parameter SRA  = 6'b000011;
+    parameter SLLV = 6'b000100;
+    parameter SRLV = 6'b000110;
+    parameter SRAV = 6'b000111;
+    parameter LUI  = 6'b001111;
+
+    // Internal signals
+    wire [32:0] res; // 33-bit result to capture carry
+    wire [31:0] res32; // 32-bit result
+
+    // Assign outputs
+    assign r        = res32;
+    assign zero     = (res32 == 32'b0);
+    assign negative = res32[31];
+    assign carry    = res[32];
+    assign overflow = (aluc == ADD || aluc == ADDU) && a[31] == b[31] && a[31] != res32[31] ||
+                     (aluc == SUB || aluc == SUBU) && a[31] != b[31] && a[31] != res32[31];
+    assign flag     = (aluc == SLT) ? ($signed(a) < $signed(b)) :
+                     (aluc == SLTU) ? (a < b) :
+                     1'bz; // High-impedance for other operations
+
+    // ALU operations
+    always @(*) begin
+        case (aluc)
+            ADD: begin
+                res = $signed(a) + $signed(b);
+            end
+            ADDU: begin
+                res = a + b;
+            end
+            SUB: begin
+                res = $signed(a) - $signed(b);
+            end
+            SUBU: begin
+                res = a - b;
+            end
+            AND: begin
+                res = a & b;
+            end
+            OR: begin
+                res = a | b;
+            end
+            XOR: begin
+                res = a ^ b;
+            end
+            NOR: begin
+                res = ~(a | b);
+            end
+            SLT: begin
+                res = ($signed(a) < $signed(b)) ? 32'b1 : 32'b0;
+            end
+            SLTU: begin
+                res = (a < b) ? 32'b1 : 32'b0;
+            end
+            SLL: begin
+                res = {32'b0, a[31:5]} << b[4:0];
+            end
+            SRL: begin
+                res = {32'b0, a} >> b[4:0];
+            end
+            SRA: begin
+                res = {{32{a[31]}}, a} >>> b[4:0];
+            end
+            SLLV: begin
+                res = {32'b0, a[31:5]} << a[4:0];
+            end
+            SRLV: begin
+                res = {32'b0, a} >> a[4:0];
+            end
+            SRAV: begin
+                res = {{32{a[31]}}, a} >>> a[4:0];
+            end
+            LUI: begin
+                res = {a[15:0], 16'b0};
+            end
+            default: begin
+                res = 33'bz;
+            end
+        endcase
+    end
+
+    // Assign the lower 32 bits of res to res32
+    assign res32 = res[31:0];
+
+endmodule
+```
+
+### Explanation:
+- **Parameters**: Define the control signals for each ALU operation.
+- **Inputs/Outputs**: The module takes two 32-bit inputs (`a` and `b`), a 6-bit control signal (`aluc`), and outputs a 32-bit result (`r`), and several 1-bit status flags (`zero`, `carry`, `negative`, `overflow`, `flag`).
+- **Internal Signals**: `res` is a 33-bit wire to capture the carry for overflow detection, while `res32` holds the final 32-bit result.
+- **Flag Assignments**: The `zero`, `negative`, `carry`, and `overflow` flags are derived from the result. The `flag` is set based on the `SLT` or `SLTU` operations.
+- **ALU Operations**: The `always @(*)` block uses a `case` statement to perform the operation specified by `aluc`. The result is stored in `res`, and the lower 32 bits are assigned to `res32`.
+
+This code should meet the requirements for a 32-bit ALU as specified for the MIPS-ISA CPU.

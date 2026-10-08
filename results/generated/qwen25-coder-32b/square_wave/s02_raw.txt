@@ -1,0 +1,48 @@
+Certainly! Below is the complete Verilog code for the `square_wave` module as per your specifications. The module generates a square wave based on the input frequency control signal. Note that the higher the `freq` value, the slower the square wave toggles, which seems counterintuitive based on your description. Typically, a higher frequency value would mean a higher output frequency. I'll assume your description is correct and implement it as specified.
+
+```verilog
+module square_wave (
+    input clk,
+    input [7:0] freq,
+    output reg wave_out
+);
+
+    // Internal register to keep track of the count
+    reg [7:0] count;
+
+    // Always block to handle the counting and toggling logic
+    always @(posedge clk) begin
+        if (count == (freq - 1)) begin
+            // Reset the counter
+            count <= 0;
+            // Toggle the wave_out signal
+            wave_out <= ~wave_out;
+        end else begin
+            // Increment the counter
+            count <= count + 1;
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+- **Inputs:**
+  - `clk`: The clock signal that drives the module.
+  - `freq`: An 8-bit frequency control signal. The higher the value, the slower the square wave toggles.
+
+- **Outputs:**
+  - `wave_out`: The square wave output signal that toggles based on the `freq` value.
+
+- **Internal Register:**
+  - `count`: An 8-bit register used to count the number of clock cycles until the next toggle of `wave_out`.
+
+- **Logic:**
+  - On each rising edge of `clk`, the `count` register is checked.
+  - If `count` reaches `freq - 1`, it is reset to 0, and `wave_out` is toggled.
+  - If `count` has not reached `freq - 1`, it is incremented by 1.
+
+### Important Notes:
+- The behavior described in your requirements seems to have the frequency and the toggle rate inversely related. If you intended for a higher `freq` value to mean a higher output frequency, the condition `count == (freq - 1)` should be adjusted to `count == (clk_div / freq - 1)` where `clk_div` is a constant representing the clock frequency or a scaling factor. However, based on your description, the current implementation is provided.
+
+If you need further adjustments or additional features, feel free to ask!

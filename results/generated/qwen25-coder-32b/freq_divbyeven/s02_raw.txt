@@ -1,0 +1,58 @@
+Certainly! Below is the complete Verilog code for the `freq_diveven` module, which divides the input clock frequency by an even number specified by the `NUM_DIV` parameter.
+
+```verilog
+module freq_diveven #(
+    parameter NUM_DIV = 8  // NUM_DIV must be an even number
+) (
+    input wire clk,       // Input clock signal
+    input wire rst_n,     // Active-low reset signal
+    output reg clk_div    // Divided clock output signal
+);
+
+    // Ensure NUM_DIV is even
+    initial begin
+        if (NUM_DIV % 2 != 0) begin
+            $fatal("NUM_DIV must be an even number");
+        end
+    end
+
+    // Define a counter to track the number of clock cycles
+    reg [3:0] cnt;  // Assuming NUM_DIV <= 16, so 4 bits are sufficient
+
+    // Synchronous logic
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            // Initialize counter and clk_div on reset
+            cnt <= 0;
+            clk_div <= 0;
+        end else begin
+            if (cnt < (NUM_DIV / 2 - 1)) begin
+                // Increment counter without changing clk_div
+                cnt <= cnt + 1;
+            end else if (cnt == (NUM_DIV / 2 - 1)) begin
+                // Toggle clk_div and reset counter
+                cnt <= 0;
+                clk_div <= ~clk_div;
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+
+1. **Parameter `NUM_DIV`**: This parameter specifies the division factor. It must be an even number.
+2. **Input Ports**:
+   - `clk`: The input clock signal that will be divided.
+   - `rst_n`: An active-low reset signal to initialize the module.
+3. **Output Port**:
+   - `clk_div`: The divided clock output signal.
+4. **Counter `cnt`**: A 4-bit register that tracks the number of clock cycles. The size of the counter is chosen based on the maximum value of `NUM_DIV` you expect to use. Here, a 4-bit counter is used assuming `NUM_DIV` is less than or equal to 16.
+5. **Synchronous Logic**:
+   - On the rising edge of `clk` or the falling edge of `rst_n`, the logic checks if `rst_n` is low. If it is, it resets the counter and `clk_div` to zero.
+   - If `rst_n` is high, it checks the value of `cnt`:
+     - If `cnt` is less than `(NUM_DIV / 2 - 1)`, it increments `cnt`.
+     - If `cnt` equals `(NUM_DIV / 2 - 1)`, it resets `cnt` to zero and toggles `clk_div`.
+
+This module effectively divides the input clock frequency by the even number specified by `NUM_DIV` by toggling the `clk_div` signal every half of the specified number of clock cycles.

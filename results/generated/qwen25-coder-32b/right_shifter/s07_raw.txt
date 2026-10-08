@@ -1,0 +1,45 @@
+Certainly! Below is the complete Verilog code for the `right_shifter` module as per your specifications:
+
+```verilog
+module right_shifter (
+    input clk,  // Clock signal
+    input d,    // Input signal to be right-shifted
+    output reg [7:0] q  // Output signal representing the result of the right shift operation
+);
+
+// Initialize the register q to 0
+initial begin
+    q = 8'b0;  // 8-bit register initialized to 0
+end
+
+// On each rising edge of the clock
+always @(posedge clk) begin
+    // Right shift the contents of q by 1 bit
+    q <= (q >> 1);
+    // Insert the new input bit d into the most significant position of the register
+    q[7] <= d;
+end
+
+endmodule
+```
+
+### Explanation:
+1. **Module Declaration**: The module `right_shifter` has three ports: `clk`, `d`, and `q`.
+    - `clk`: Clock signal for synchronous operations.
+    - `d`: 1-bit input signal that will be inserted into the most significant bit of the register on each clock edge.
+    - `q`: 8-bit output register that holds the result of the right shift operation.
+
+2. **Initialization**:
+    - The `initial` block sets the initial value of the register `q` to 0 (`8'b0`).
+
+3. **Synchronous Logic**:
+    - The `always @(posedge clk)` block defines the behavior of the module on the rising edge of the clock.
+    - `q <= (q >> 1);` right shifts the current contents of the register `q` by 1 bit.
+    - `q[7] <= d;` assigns the value of the input `d` to the most significant bit (MSB) of the register `q`.
+
+### Simulation Notes:
+- This module operates synchronously with the clock signal `clk`.
+- On each clock edge, the register `q` is right-shifted, and the input `d` is inserted into the MSB of `q`.
+- This effectively performs a circular right shift where the new input `d` is placed in the MSB position after the shift.
+
+This code should work as expected in a Verilog simulation environment.

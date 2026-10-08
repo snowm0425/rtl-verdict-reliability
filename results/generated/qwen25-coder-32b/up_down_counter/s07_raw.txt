@@ -1,0 +1,48 @@
+Certainly! Below is the complete Verilog code for the `up_down_counter` module as per your specifications:
+
+```verilog
+module up_down_counter (
+    input wire clk,        // Clock signal
+    input wire reset,      // Reset signal
+    input wire up_down,    // Control signal for direction
+    output reg [15:0] count // 16-bit counter output
+);
+
+always @(posedge clk or posedge reset) begin
+    if (reset) begin
+        // Reset the counter to zero
+        count <= 16'b0000000000000000;
+    end else begin
+        // Increment or decrement the counter based on the up_down signal
+        if (up_down) begin
+            // Increment the counter
+            count <= count + 1;
+        end else begin
+            // Decrement the counter
+            count <= count - 1;
+        end
+    end
+end
+
+endmodule
+```
+
+### Explanation:
+1. **Module Declaration:**
+   - The module is named `up_down_counter` and includes the specified input and output ports.
+
+2. **Synchronous Process:**
+   - The `always @(posedge clk or posedge reset)` block ensures that the logic inside it is executed on the rising edge of the clock (`clk`) or reset (`reset`).
+
+3. **Reset Condition:**
+   - When the `reset` signal is active (high), the counter is reset to `16'b0000000000000000` (which is `0` in decimal).
+
+4. **Counting Logic:**
+   - If the `reset` is not active, the counter either increments or decrements based on the `up_down` signal.
+   - If `up_down` is high (`1`), the counter increments by `1`.
+   - If `up_down` is low (`0`), the counter decrements by `1`.
+
+5. **Output:**
+   - The `count` output reflects the current value of the counter, which can range from `0` to `65535` (since it is a 16-bit counter).
+
+This code ensures that the counter behaves correctly according to the specified requirements.

@@ -1,0 +1,52 @@
+Certainly! Below is the Verilog code for a 4-bit comparator module named `comparator_4bit`. This module performs the comparison by simulating a subtraction operation between two 4-bit binary numbers, `A` and `B`, and determines whether `A` is greater than, equal to, or less than `B`.
+
+```verilog
+module comparator_4bit (
+    input [3:0] A,          // First 4-bit input operand
+    input [3:0] B,          // Second 4-bit input operand
+    output A_greater,       // Output: A is greater than B
+    output A_equal,         // Output: A is equal to B
+    output A_less           // Output: A is less than B
+);
+
+    // Intermediate signals
+    wire [3:0] diff;        // Result of A - B
+    wire [3:0] borrow;      // Borrow signal for each bit
+
+    // Full Subtractors for each bit position
+    // Full Subtractor for the least significant bit (LSB)
+    assign diff[0] = A[0] ^ B[0] ^ borrow[0];
+    assign borrow[0] = (~A[0] & B[0]) | (B[0] & borrow[0]) | (~A[0] & borrow[0]);
+
+    // Full Subtractors for the remaining bits
+    genvar i;
+    generate
+        for (i = 1; i < 4; i = i + 1) begin : gen_full_subtractors
+            assign diff[i] = A[i] ^ B[i] ^ borrow[i];
+            assign borrow[i] = (~A[i] & B[i]) | (B[i] & borrow[i-1]) | (~A[i] & borrow[i-1]);
+        end
+    endgenerate
+
+    // Output assignments
+    // A is greater than B if there is no borrow out and the result is non-zero
+    assign A_greater = ~borrow[3] & |diff;
+
+    // A is equal to B if there is no borrow out and the result is zero
+    assign A_equal = ~borrow[3] & ~|diff;
+
+    // A is less than B if there is a borrow out
+    assign A_less = borrow[3];
+
+endmodule
+```
+
+### Explanation:
+- **Full Subtractors**: The module uses full subtractors for each bit position to perform the subtraction `A - B`. The borrow signal is used to propagate the borrow through each bit position.
+- **Borrow Signal**: The borrow signal is used to determine if a borrow occurs at each bit position. If a borrow occurs at the most significant bit (MSB), it indicates that `A` is less than `B`.
+- **Difference Signal**: The difference signal (`diff`) is the result of the subtraction operation.
+- **Output Logic**:
+  - `A_greater` is high if there is no borrow out (`~borrow[3]`) and the difference is non-zero (`|diff`).
+  - `A_equal` is high if there is no borrow out (`~borrow[3]`) and the difference is zero (`~|diff`).
+  - `A_less` is high if there is a borrow out (`borrow[3]`).
+
+This module ensures that the outputs `A_greater`, `A_equal`, and `A_less` are mutually exclusive, meaning only one of them can be high at any given time.

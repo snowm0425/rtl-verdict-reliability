@@ -1,0 +1,8 @@
+# stage=sim rc=0
+# STDOUT
+WARNING: /home/cvl/Documents/syn/RTLLM/Miscellaneous/Others/calendar/testbench.v:31: $readmemh(reference.txt): Not enough words in the file for the requested range [0:4000].
+===========Your Design Passed===========
+/home/cvl/Documents/syn/RTLLM/Miscellaneous/Others/calendar/testbench.v:48: $finish called at 40035000 (1ps)
+
+# STDERR
+

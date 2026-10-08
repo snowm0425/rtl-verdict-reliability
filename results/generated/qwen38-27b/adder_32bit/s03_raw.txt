@@ -1,0 +1,169 @@
+```verilog
+// 1-bit Full Adder with carry lookahead signals
+module full_adder_1bit (
+    input wire A,
+    input wire B,
+    input wire Cin,
+    output wire S,
+    output wire Cout,
+    output wire G, // Generate
+    output wire P  // Propagate
+);
+    assign G = A & B;
+    assign P = A ^ B;
+    assign S = P ^ Cin;
+    assign Cout = G | (P & Cin);
+endmodule
+
+// 4-bit Carry Lookahead Adder
+module cla_4bit (
+    input wire [3:0] A,
+    input wire [3:0] B,
+    input wire Cin,
+    output wire [3:0] S,
+    output wire Cout,
+    output wire [3:0] G,
+    output wire [3:0] P
+);
+    wire [3:0] G1, P1;
+    wire [2:0] Cout_inner;
+    
+    // Instantiate 4 1-bit full adders
+    full_adder_1bit fa0 (
+        .A(A[0]),
+        .B(B[0]),
+        .Cin(Cin),
+        .S(S[0]),
+        .Cout(Cout_inner[0]),
+        .G(G1[0]),
+        .P(P1[0])
+    );
+    
+    full_adder_1bit fa1 (
+        .A(A[1]),
+        .B(B[1]),
+        .Cin(Cout_inner[0]),
+        .S(S[1]),
+        .Cout(Cout_inner[1]),
+        .G(G1[1]),
+        .P(P1[1])
+    );
+    
+    full_adder_1bit fa2 (
+        .A(A[2]),
+        .B(B[2]),
+        .Cin(Cout_inner[1]),
+        .S(S[2]),
+        .Cout(Cout_inner[2]),
+        .G(G1[2]),
+        .P(P1[2])
+    );
+    
+    full_adder_1bit fa3 (
+        .A(A[3]),
+        .B(B[3]),
+        .Cin(Cout_inner[2]),
+        .S(S[3]),
+        .Cout(Cout),
+        .G(G1[3]),
+        .P(P1[3])
+    );
+    
+    // Group generate and propagate for the 4-bit block
+    assign G = G1[3] | (P1[3] & G1[2]) | (P1[3] & P1[2] & G1[1]) | (P1[3] & P1[2] & P1[1] & G1[0]);
+    assign P = P1[3] & P1[2] & P1[1] & P1[0];
+endmodule
+
+// 16-bit Carry Lookahead Adder
+module cla_16bit (
+    input wire [15:0] A,
+    input wire [15:0] B,
+    input wire Cin,
+    output wire [15:0] S,
+    output wire Cout,
+    output wire [15:0] G,
+    output wire [15:0] P
+);
+    wire [3:0] G4[3:0];
+    wire [3:0] P4[3:0];
+    wire [3:0] Cout4;
+    
+    // Instantiate 4 4-bit CLA blocks
+    cla_4bit cla4_0 (
+        .A(A[3:0]),
+        .B(B[3:0]),
+        .Cin(Cin),
+        .S(S[3:0]),
+        .Cout(Cout4[0]),
+        .G(G4[0]),
+        .P(P4[0])
+    );
+    
+    cla_4bit cla4_1 (
+        .A(A[7:4]),
+        .B(B[7:4]),
+        .Cin(Cout4[0]),
+        .S(S[7:4]),
+        .Cout(Cout4[1]),
+        .G(G4[1]),
+        .P(P4[1])
+    );
+    
+    cla_4bit cla4_2 (
+        .A(A[11:8]),
+        .B(B[11:8]),
+        .Cin(Cout4[1]),
+        .S(S[11:8]),
+        .Cout(Cout4[2]),
+        .G(G4[2]),
+        .P(P4[2])
+    );
+    
+    cla_4bit cla4_3 (
+        .A(A[15:12]),
+        .B(B[15:12]),
+        .Cin(Cout4[2]),
+        .S(S[15:12]),
+        .Cout(Cout),
+        .G(G4[3]),
+        .P(P4[3])
+    );
+    
+    // Group generate and propagate for the 16-bit block
+    assign G = G4[3] | (P4[3] & G4[2]) | (P4[3] & P4[2] & G4[1]) | (P4[3] & P4[2] & P4[1] & G4[0]);
+    assign P = P4[3] & P4[2] & P4[1] & P4[0];
+endmodule
+
+// 32-bit Carry Lookahead Adder
+module adder_32bit (
+    input wire [31:0] A,
+    input wire [31:0] B,
+    output wire [31:0] S,
+    output wire C32
+);
+    wire [15:0] G16[1:0];
+    wire [15:0] P16[1:0];
+    wire Cout16;
+    
+    // Instantiate 2 16-bit CLA blocks
+    cla_16bit cla16_0 (
+        .A(A[15:0]),
+        .B(B[15:0]),
+        .Cin(1'b0),
+        .S(S[15:0]),
+        .Cout(Cout16),
+        .G(G16[0]),
+        .P(P16[0])
+    );
+    
+    cla_16bit cla16_1 (
+        .A(A[31:16]),
+        .B(B[31:16]),
+        .Cin(Cout16),
+        .S(S[31:16]),
+        .Cout(C32),
+        .G(G16[1]),
+        .P(P16[1])
+    );
+endmodule
+```

@@ -1,0 +1,54 @@
+Sure, below is the complete Verilog code for the `parallel2serial` module based on your specifications:
+
+```verilog
+module parallel2serial (
+    input wire clk,          // Clock signal
+    input wire rst_n,        // Active-low reset signal
+    input wire [3:0] d,      // 4-bit parallel data input
+    
+    output reg valid_out,    // Valid signal indicating availability of serial output
+    output reg dout          // Serial output
+);
+
+    reg [3:0] data;          // Data register to hold the parallel data
+    reg [1:0] cnt;           // Counter to keep track of the bit position
+
+    // Sequential logic to handle the conversion
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            // Reset state
+            data <= 4'b0000;
+            cnt <= 2'b00;
+            valid_out <= 0;
+            dout <= 0;
+        end else begin
+            // Normal operation
+            if (cnt == 2'b11) begin  // When the counter reaches 3 (binary 11)
+                data <= d;          // Load new parallel data
+                cnt <= 2'b00;       // Reset counter
+                valid_out <= 1;     // Set valid output to 1
+                dout <= d[3];       // Output the most significant bit
+            end else begin
+                // Shift the data register and output the next bit
+                cnt <= cnt + 1;     // Increment counter
+                valid_out <= 0;     // Set valid output to 0
+                dout <= data[3];    // Output the current most significant bit
+                data <= {data[2:0], 1'b0}; // Shift data register to the left
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Data Register (`data`)**: This register holds the 4-bit parallel data.
+2. **Counter (`cnt`)**: This 2-bit counter keeps track of which bit is currently being output. It ranges from 0 to 3.
+3. **Sequential Logic**:
+   - On the positive edge of the clock (`posedge clk`), the module checks the reset signal (`rst_n`).
+   - If the reset signal is active (`rst_n = 0`), it resets all registers to their initial states.
+   - If the reset signal is inactive (`rst_n = 1`), it checks the value of the counter.
+     - If the counter is 3 (`cnt == 2'b11`), it loads the new parallel data into the `data` register, resets the counter, sets `valid_out` to 1, and outputs the most significant bit of the new data.
+     - Otherwise, it increments the counter, sets `valid_out` to 0, shifts the `data` register to the left (most significant bit to least significant bit), and outputs the current most significant bit of the `data` register.
+
+This implementation ensures that the parallel-to-serial conversion happens correctly and that the `valid_out` signal indicates when the serial output is valid.

@@ -1,0 +1,67 @@
+Certainly! Below is the complete Verilog code for a dual-port RAM with the specified parameters and functionality:
+
+```verilog
+module RAM (
+    input clk,          // Clock signal
+    input rst_n,        // Active-low reset signal
+    input write_en,     // Write enable signal
+    input [2:0] write_addr, // Write address (3 bits for depth of 8)
+    input [5:0] write_data, // Write data (6 bits)
+    input read_en,      // Read enable signal
+    input [2:0] read_addr,  // Read address (3 bits for depth of 8)
+    output reg [5:0] read_data // Read data (6 bits)
+);
+
+    // Parameters
+    parameter WIDTH = 6;
+    parameter DEPTH = 8;
+
+    // RAM array declaration
+    reg [WIDTH-1:0] RAM [DEPTH-1:0];
+
+    // Initialization of RAM array to all zeros
+    initial begin
+        for (integer i = 0; i < DEPTH; i = i + 1) begin
+            RAM[i] <= {WIDTH{1'b0}};
+        end
+    end
+
+    // Write operation
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            // Clear all memory locations on reset
+            for (integer i = 0; i < DEPTH; i = i + 1) begin
+                RAM[i] <= {WIDTH{1'b0}};
+            end
+        end else if (write_en) begin
+            // Write data to the specified address
+            RAM[write_addr] <= write_data;
+        end
+    end
+
+    // Read operation
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            // Clear read_data on reset
+            read_data <= {WIDTH{1'b0}};
+        end else if (read_en) begin
+            // Read data from the specified address
+            read_data <= RAM[read_addr];
+        end else begin
+            // Clear read_data if read_en is not active
+            read_data <= {WIDTH{1'b0}};
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Module Declaration**: The module `RAM` is declared with the necessary input and output ports.
+2. **Parameters**: `WIDTH` and `DEPTH` are defined as parameters.
+3. **RAM Array**: The RAM is defined as a 2D register array with a depth of 8 and a width of 6 bits.
+4. **Initialization**: The `initial` block sets all memory locations to 0.
+5. **Write Operation**: The first `always` block handles the write operation. It clears the RAM on reset and writes data to the specified address when `write_en` is active.
+6. **Read Operation**: The second `always` block handles the read operation. It clears `read_data` on reset and reads data from the specified address when `read_en` is active. If `read_en` is not active, `read_data` is cleared to 0.
+
+This code ensures that both read and write operations can occur simultaneously, and the RAM is properly initialized and managed during reset.

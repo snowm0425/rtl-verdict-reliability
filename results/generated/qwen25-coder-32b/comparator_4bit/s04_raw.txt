@@ -1,0 +1,79 @@
+Certainly! Below is the complete Verilog code for a 4-bit comparator module using the subtraction method as described. The module calculates the subtraction of `A` and `B` and determines if `A` is greater than, equal to, or less than `B` based on the result and borrow signals.
+
+```verilog
+module comparator_4bit (
+    input [3:0] A,        // First 4-bit input operand
+    input [3:0] B,        // Second 4-bit input operand
+    output A_greater,     // A is greater than B
+    output A_equal,       // A is equal to B
+    output A_less         // A is less than B
+);
+
+    // Intermediate signals for subtraction
+    wire [3:0] result;    // Result of A - B
+    wire borrow;           // Borrow signal from the subtraction
+
+    // Full subtractor module declaration
+    module full_subtractor (
+        input a,
+        input b,
+        input borrow_in,
+        output diff,
+        output borrow_out
+    );
+        assign diff = a ^ b ^ borrow_in;
+        assign borrow_out = (~a & (b | borrow_in)) | (b & borrow_in);
+    endmodule
+
+    // Instantiate full subtractors for each bit position
+    wire [3:0] borrow_signals;
+
+    // LSB (Least Significant Bit) subtraction
+    full_subtractor fs0 (
+        .a(A[0]),
+        .b(B[0]),
+        .borrow_in(1'b1),  // No borrow-in for the LSB
+        .diff(result[0]),
+        .borrow_out(borrow_signals[0])
+    );
+
+    // Middle bit subtractions
+    full_subtractor fs1 (
+        .a(A[1]),
+        .b(B[1]),
+        .borrow_in(borrow_signals[0]),
+        .diff(result[1]),
+        .borrow_out(borrow_signals[1])
+    );
+
+    full_subtractor fs2 (
+        .a(A[2]),
+        .b(B[2]),
+        .borrow_in(borrow_signals[1]),
+        .diff(result[2]),
+        .borrow_out(borrow_signals[2])
+    );
+
+    full_subtractor fs3 (
+        .a(A[3]),
+        .b(B[3]),
+        .borrow_in(borrow_signals[2]),
+        .diff(result[3]),
+        .borrow_out(borrow)
+    );
+
+    // Assign outputs based on the subtraction result and borrow signal
+    assign A_equal = ~(|result);  // A is equal to B if all bits of result are 0
+    assign A_less = borrow;       // A is less than B if a borrow occurs
+    assign A_greater = ~(A_equal | A_less);  // A is greater if neither equal nor less
+
+endmodule
+```
+
+### Explanation:
+- **Full Subtractor Module**: This module takes two bits and a borrow-in signal, and produces a difference (`diff`) and a borrow-out signal. It is used to perform bit-level subtraction.
+- **Subtraction Logic**: Four instances of the full subtractor module are instantiated to perform bit-level subtraction for each of the four bits of `A` and `B`.
+- **Borrow Signal**: The borrow signal from the most significant bit (MSB) indicates if `A` is less than `B`.
+- **Result Analysis**: The result of the subtraction is analyzed to determine if `A` is equal to `B` (all result bits are zero), if `A` is less than `B` (borrow signal is set), or if `A` is greater than `B` (neither equal nor less).
+
+This module ensures that the outputs `A_greater`, `A_equal`, and `A_less` are mutually exclusive.

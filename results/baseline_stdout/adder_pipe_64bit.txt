@@ -1,0 +1,7 @@
+# stage=sim rc=0
+# STDOUT
+=========== Your Design Passed ===========
+/home/cvl/Documents/syn/RTLLM/Arithmetic/Adder/adder_pipe_64bit/testbench.v:47: $finish called at 2800 (1s)
+
+# STDERR
+

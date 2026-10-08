@@ -1,0 +1,65 @@
+Sure, below is the complete Verilog code for an 8-bit Radix-4 Booth multiplier module named `multi_booth_8bit`. This module uses a clock (`clk`) and a reset (`reset`) signal to perform the multiplication of two 8-bit inputs (`a` and `b`), and outputs the 16-bit product (`p`) along with a ready signal (`rdy`).
+
+```verilog
+module multi_booth_8bit (
+    input clk,
+    input reset,
+    input [7:0] a,
+    input [7:0] b,
+    output reg [15:0] p,
+    output reg rdy
+);
+
+    // Internal registers
+    reg [15:0] multiplier;
+    reg [15:0] multiplicand;
+    reg [4:0] ctr;  // 5-bit counter for 8-bit * 8-bit multiplication (16 iterations)
+
+    // Initialize multiplier and multiplicand on reset
+    always @(posedge clk or posedge reset) begin
+        if (reset) begin
+            multiplier <= {{8{a[7]}}, a};  // Sign-extend the multiplicand
+            multiplicand <= {{8{b[7]}}, b}; // Sign-extend the multiplier
+            p <= 16'b0;
+            ctr <= 5'b0;
+            rdy <= 1'b0;
+        end else begin
+            if (ctr < 16) begin
+                // Booth's algorithm implementation
+                // Check the current bit of the multiplier (multiplier[ctr])
+                if (multiplier[ctr] == 1'b1) begin
+                    p <= p + multiplicand;
+                end
+
+                // Shift the multiplicand left by 1 for the next iteration
+                multiplicand <= {multiplicand[14:0], 1'b0};
+
+                // Increment the counter
+                ctr <= ctr + 1;
+            end else begin
+                // Set the ready signal when multiplication is complete
+                rdy <= 1'b1;
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+
+1. **Initialization:**
+   - On the positive edge of `clk` or `reset`, the registers `multiplier` and `multiplicand` are initialized. The inputs `a` and `b` are sign-extended to 16 bits to handle negative numbers correctly.
+   - The product `p` is initialized to 0, and the counter `ctr` is set to 0.
+   - The ready signal `rdy` is set to 0 initially.
+
+2. **Multiplication Process:**
+   - If `reset` is high, the module is reset, and all registers are re-initialized.
+   - If `reset` is low, the module performs the multiplication process:
+     - If the counter `ctr` is less than 16, the module checks the current bit of the `multiplier` register.
+     - If the current bit is 1, the `multiplicand` is added to the product `p`.
+     - The `multiplicand` register is left-shifted by 1 bit.
+     - The counter `ctr` is incremented by 1.
+   - Once `ctr` reaches 16, indicating the completion of the multiplication process, the ready signal `rdy` is set to 1.
+
+This implementation follows the Booth's algorithm to perform the multiplication efficiently. The use of a counter ensures that the multiplication process is performed over 16 clock cycles, corresponding to the 8-bit multiplication.

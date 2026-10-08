@@ -1,0 +1,71 @@
+Certainly! Below is the complete Verilog code for the `LIFObuffer` module as per your specifications:
+
+```verilog
+module LIFObuffer (
+    input [3:0] dataIn,    // 4-bit input data to be pushed onto the buffer
+    input RW,              // Read/Write control signal (1 for read, 0 for write)
+    input EN,              // Enable signal to activate buffer operations
+    input Rst,             // Active high reset signal to initialize the buffer
+    input Clk,             // Clock signal for synchronous operations
+    output reg EMPTY,      // Flag indicating whether the buffer is empty
+    output reg FULL,       // Flag indicating whether the buffer is full
+    output reg [3:0] dataOut // 4-bit output data retrieved from the buffer
+);
+
+    // Stack memory array to store data
+    reg [3:0] stack_mem [0:3];
+
+    // Stack pointer to track the current position in the stack
+    reg [2:0] SP;
+
+    // Initialize the stack memory and stack pointer
+    integer i;
+    initial begin
+        for (i = 0; i < 4; i = i + 1) begin
+            stack_mem[i] <= 0;
+        end
+        SP <= 4; // Indicates an empty buffer
+    end
+
+    // Main logic for buffer operations
+    always @(posedge Clk) begin
+        if (EN) begin
+            if (Rst) begin
+                // Reset the stack memory and stack pointer
+                for (i = 0; i < 4; i = i + 1) begin
+                    stack_mem[i] <= 0;
+                end
+                SP <= 4; // Indicates an empty buffer
+                EMPTY <= 1;
+                FULL <= 0;
+            end else begin
+                // Check if the buffer is full or empty
+                FULL <= (SP == 0);
+                EMPTY <= (SP == 4);
+
+                if (!RW && !FULL) begin
+                    // Write operation: Push data onto the stack
+                    SP <= SP - 1;
+                    stack_mem[SP] <= dataIn;
+                end else if (RW && !EMPTY) begin
+                    // Read operation: Pop data from the stack
+                    dataOut <= stack_mem[SP];
+                    stack_mem[SP] <= 0; // Clear the memory location
+                    SP <= SP + 1;
+                end
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+- **Stack Memory (`stack_mem`)**: A 4x4-bit array to store the data. Each entry can hold a 4-bit value.
+- **Stack Pointer (`SP`)**: A 3-bit counter that keeps track of the current top position of the stack. It ranges from 0 to 3. When `SP` is 4, the stack is considered empty.
+- **Flags (`EMPTY` and `FULL`)**: These flags are set based on the value of `SP`. The `EMPTY` flag is high when `SP` is 4, and the `FULL` flag is high when `SP` is 0.
+- **Reset (`Rst`)**: When the reset signal is high, the stack is cleared, and `SP` is set to 4.
+- **Enable (`EN`)**: The buffer operations are only performed when `EN` is high.
+- **Read/Write (`RW`)**: When `RW` is low, a write operation is performed (push), and when `RW` is high, a read operation is performed (pop).
+
+This code ensures that the buffer operates correctly according to the specified conditions.

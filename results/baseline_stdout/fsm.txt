@@ -1,0 +1,7 @@
+# stage=sim rc=0
+# STDOUT
+===========Your Design Passed===========
+/home/cvl/Documents/syn/RTLLM/Control/Finite State Machine/fsm/testbench.v:65: $finish called at 158 (1ns)
+
+# STDERR
+

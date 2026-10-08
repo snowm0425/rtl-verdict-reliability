@@ -1,0 +1,83 @@
+Sure! Below is the complete Verilog code for the `LIFObuffer` module based on your specifications:
+
+```verilog
+module LIFObuffer (
+    input wire [3:0] dataIn,  // 4-bit input data to be pushed onto the buffer
+    input wire RW,            // Read/Write control signal (1 for read, 0 for write)
+    input wire EN,            // Enable signal to activate buffer operations
+    input wire Rst,           // Active high reset signal to initialize the buffer
+    input wire Clk,           // Clock signal for synchronous operations
+
+    output reg EMPTY,         // Flag indicating whether the buffer is empty
+    output reg FULL,          // Flag indicating whether the buffer is full
+    output reg [3:0] dataOut  // 4-bit output data retrieved from the buffer
+);
+
+    // Stack memory array (4 entries, 4-bit wide)
+    reg [3:0] stack_mem [0:3];
+
+    // Stack pointer (4-bit wide)
+    reg [1:0] SP;  // Since we have 4 entries, 2 bits are sufficient to track the stack pointer
+
+    // Initialize the stack memory and stack pointer on reset
+    always @(posedge Clk or posedge Rst) begin
+        if (Rst) begin
+            SP <= 2'b10;  // Set stack pointer to 2 (indicating an empty buffer)
+            EMPTY <= 1;
+            FULL <= 0;
+            for (int i = 0; i < 4; i = i + 1) begin
+                stack_mem[i] <= 4'b0000;  // Clear all memory locations
+            end
+        end else if (EN) begin
+            if (!RW && !FULL) begin  // Write operation and not full
+                stack_mem[SP - 1] <= dataIn;  // Push data onto the stack
+                SP <= SP - 1;  // Decrement stack pointer
+                if (SP == 1) begin
+                    FULL <= 1;
+                end
+                EMPTY <= 0;
+            end else if (RW && !EMPTY) begin  // Read operation and not empty
+                dataOut <= stack_mem[SP];  // Pop data from the stack
+                stack_mem[SP] <= 4'b0000;  // Clear the memory location
+                SP <= SP + 1;  // Increment stack pointer
+                if (SP == 2) begin
+                    EMPTY <= 1;
+                end
+                FULL <= 0;
+            end
+        end
+
+        // Update EMPTY and FULL flags based on stack pointer status
+        if (SP == 2) begin
+            EMPTY <= 1;
+            FULL <= 0;
+        end else if (SP == 0) begin
+            EMPTY <= 0;
+            FULL <= 1;
+        end else begin
+            EMPTY <= 0;
+            FULL <= 0;
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Stack Memory and Pointer**:
+   - `stack_mem` is a 4x4-bit memory array used to store the data.
+   - `SP` is a 2-bit stack pointer that tracks the current position in the stack. It starts at 2 (indicating an empty buffer) and ranges from 0 to 3.
+
+2. **Reset Condition**:
+   - When `Rst` is high, the stack is cleared, `SP` is set to 2, and all memory locations are initialized to 0. `EMPTY` is set to 1, and `FULL` is set to 0.
+
+3. **Write Operation**:
+   - When `RW` is low and `EN` is high, and the buffer is not full, data from `dataIn` is pushed onto the stack, and `SP` is decremented. If `SP` reaches 1, the buffer is marked as full.
+
+4. **Read Operation**:
+   - When `RW` is high and `EN` is high, and the buffer is not empty, data is popped from the stack into `dataOut`, the corresponding stack memory is cleared, and `SP` is incremented. If `SP` reaches 2, the buffer is marked as empty.
+
+5. **Flags**:
+   - `EMPTY` and `FULL` flags are updated based on the value of `SP`. If `SP` is 2, the buffer is empty. If `SP` is 0, the buffer is full.
+
+This module should meet the requirements you specified for a 4-bit LIFO buffer.

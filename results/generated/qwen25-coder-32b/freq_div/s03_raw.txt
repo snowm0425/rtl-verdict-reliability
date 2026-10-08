@@ -1,0 +1,66 @@
+Certainly! Below is the complete Verilog code for the `freq_div` module as per your specifications:
+
+```verilog
+module freq_div (
+    input wire CLK_in,  // Input clock signal of 100MHz
+    input wire RST,     // Reset signal (active high)
+    output reg CLK_50,  // Output clock signal of 50MHz
+    output reg CLK_10,  // Output clock signal of 10MHz
+    output reg CLK_1    // Output clock signal of 1MHz
+);
+
+    // Counters for generating CLK_10 and CLK_1
+    reg [3:0] cnt_10;   // 4-bit counter for dividing by 10
+    reg [5:0] cnt_100;  // 6-bit counter for dividing by 100
+
+    // CLK_50 generation
+    always @(posedge CLK_in or posedge RST) begin
+        if (RST) begin
+            CLK_50 <= 0;
+        end else begin
+            CLK_50 <= ~CLK_50;  // Toggle CLK_50 on every rising edge of CLK_in
+        end
+    end
+
+    // CLK_10 generation
+    always @(posedge CLK_in or posedge RST) begin
+        if (RST) begin
+            CLK_10 <= 0;
+            cnt_10 <= 0;
+        end else begin
+            if (cnt_10 == 4) begin  // Divide by 10 (5 cycles to toggle)
+                CLK_10 <= ~CLK_10;
+                cnt_10 <= 0;
+            end else begin
+                cnt_10 <= cnt_10 + 1;
+            end
+        end
+    end
+
+    // CLK_1 generation
+    always @(posedge CLK_in or posedge RST) begin
+        if (RST) begin
+            CLK_1 <= 0;
+            cnt_100 <= 0;
+        end else begin
+            if (cnt_100 == 49) begin  // Divide by 100 (50 cycles to toggle)
+                CLK_1 <= ~CLK_1;
+                cnt_100 <= 0;
+            end else begin
+                cnt_100 <= cnt_100 + 1;
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **CLK_50 Generation**: This is a simple toggle on every rising edge of `CLK_in`. When `RST` is active, `CLK_50` is set to 0.
+2. **CLK_10 Generation**: A 4-bit counter (`cnt_10`) is used to count up to 4, which corresponds to a division factor of 10. On reaching 4, `CLK_10` is toggled, and the counter is reset.
+3. **CLK_1 Generation**: A 6-bit counter (`cnt_100`) is used to count up to 49, which corresponds to a division factor of 100. On reaching 49, `CLK_1` is toggled, and the counter is reset.
+
+### Notes:
+- The counters are reset to 0 and the corresponding clock signals are set to 0 when the reset signal (`RST`) is active.
+- The counters are incremented on every rising edge of `CLK_in`.
+- The counters and clock signals are updated using `always @(posedge CLK_in or posedge RST)` blocks to ensure proper handling of the reset condition.

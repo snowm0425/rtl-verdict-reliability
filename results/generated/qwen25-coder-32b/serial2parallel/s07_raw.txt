@@ -1,0 +1,58 @@
+Certainly! Below is the complete Verilog code for the `serial2parallel` module that you described. This module receives serial data and converts it to parallel data once 8 bits have been received. It also includes a validity signal to indicate when the parallel data is valid.
+
+```verilog
+module serial2parallel (
+    input wire clk,          // Clock signal
+    input wire rst_n,        // Reset signal (active low)
+    input wire din_serial,   // Serial input data
+    input wire din_valid,    // Validity signal for input data
+    output reg [7:0] dout_parallel, // Parallel output data (8 bits wide)
+    output reg dout_valid    // Validity signal for the output data
+);
+
+    reg [2:0] cnt; // 3-bit counter to keep track of the number of serial bits received
+
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            cnt <= 3'b000; // Reset counter
+            dout_parallel <= 8'b00000000; // Clear parallel output
+            dout_valid <= 1'b0; // Output data is invalid
+        end else if (din_valid) begin
+            dout_parallel[7 - cnt] <= din_serial; // Shift serial data into parallel output
+
+            if (cnt == 3'b111) begin // If 8 bits have been received
+                cnt <= 3'b000; // Reset counter
+                dout_valid <= 1'b1; // Output data is valid
+            end else begin
+                cnt <= cnt + 1; // Increment counter
+                dout_valid <= 1'b0; // Output data is still invalid
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Inputs and Outputs:**
+   - `clk`: Clock signal used for synchronization.
+   - `rst_n`: Reset signal that is active low.
+   - `din_serial`: Single-bit serial input data.
+   - `din_valid`: Indicates whether the incoming serial data is valid.
+   - `dout_parallel`: 8-bit parallel output data.
+   - `dout_valid`: Indicates whether the parallel output data is valid.
+
+2. **Registers:**
+   - `cnt`: A 3-bit counter to keep track of the number of serial bits received (0 to 7).
+   - `dout_parallel`: 8-bit register to hold the parallel output data.
+   - `dout_valid`: Register to indicate the validity of the parallel output data.
+
+3. **Behavior:**
+   - On the rising edge of the clock signal (`posedge clk`), the module checks if the reset signal (`rst_n`) is active. If not, it resets all registers.
+   - If the reset signal is active and `din_valid` is high, the module processes the incoming serial data.
+   - The serial data (`din_serial`) is shifted into the `dout_parallel` register from the most significant bit (MSB) to the least significant bit (LSB).
+   - The counter (`cnt`) is incremented with each valid serial data bit.
+   - Once the counter reaches 7 (indicating 8 bits have been received), the `dout_valid` signal is set to 1, and the counter is reset.
+   - If the counter has not reached 7, `dout_valid` remains 0, indicating the parallel data is not yet valid.
+
+This implementation ensures that the module correctly converts serial data to parallel data and provides a validity signal to indicate when the output is ready.

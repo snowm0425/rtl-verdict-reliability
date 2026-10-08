@@ -1,0 +1,54 @@
+Certainly! Below is the complete Verilog code for a 3-bit comparator module named `comparator_3bit`. This module takes two 3-bit binary numbers as inputs and outputs whether the first number is greater than, equal to, or less than the second number.
+
+```verilog
+module comparator_3bit (
+    input wire [2:0] A,        // First 3-bit input operand
+    input wire [2:0] B,        // Second 3-bit input operand
+    output wire A_greater,     // Output indicating if A > B
+    output wire A_equal,       // Output indicating if A == B
+    output wire A_less         // Output indicating if A < B
+);
+
+// Internal wires for comparison
+wire [2:0] diff;
+wire greater, equal, less;
+
+// Calculate the difference between A and B
+assign diff = A - B;
+
+// Determine if A is greater than B
+assign greater = (A[2] & ~B[2]) | (~B[2] & (A[1] & ~B[1] | ~B[1] & A[0] & ~B[0])) |
+                (B[2] & ~A[2] & (A[1] & ~B[1] | ~B[1] & A[0] & ~B[0]));
+
+// Determine if A is equal to B
+assign equal = (A[2] == B[2]) & (A[1] == B[1]) & (A[0] == B[0]);
+
+// Determine if A is less than B
+assign less = (B[2] & ~A[2]) | (~A[2] & (B[1] & ~A[1] | ~A[1] & B[0] & ~A[0])) |
+              (A[2] & ~B[2] & (B[1] & ~A[1] | ~A[1] & B[0] & ~A[0]));
+
+// Assign the final outputs
+assign A_greater = greater;
+assign A_equal = equal;
+assign A_less = less;
+
+endmodule
+```
+
+### Explanation:
+1. **Inputs and Outputs:**
+   - `A [2:0]` and `B [2:0]` are the 3-bit inputs.
+   - `A_greater`, `A_equal`, and `A_less` are the 1-bit outputs indicating the result of the comparison.
+
+2. **Difference Calculation:**
+   - `diff` is calculated as `A - B`, which is used internally to help determine the comparison results.
+
+3. **Comparison Logic:**
+   - `greater` is set to 1 if `A` is greater than `B`.
+   - `equal` is set to 1 if `A` is equal to `B`.
+   - `less` is set to 1 if `A` is less than `B`.
+
+4. **Output Assignment:**
+   - The outputs `A_greater`, `A_equal`, and `A_less` are assigned based on the comparison logic.
+
+This module uses basic logic operations to determine the relationship between the two 3-bit numbers. The outputs are mutually exclusive, meaning only one of them will be high at any given time.

@@ -1,0 +1,96 @@
+Here is the complete Verilog implementation for the `pulse_detect` module.
+
+### Design Analysis
+
+1.  **Requirement Interpretation**:
+    *   A "pulse" is defined as the pattern `0 -> 1 -> 0` over 3 clock cycles.
+    *   The output `data_out` should be `1` specifically at the **end** cycle of this pattern (the third cycle where `data_in` is `0` after having been `1` in the previous cycle and `0` in the one before that).
+    *   Example: `data_in` = `... 0 1 0 ...`
+        *   Cycle N-2: `data_in` = 0
+        *   Cycle N-1: `data_in` = 1
+        *   Cycle N:   `data_in` = 0  -> **`data_out` = 1**
+
+2.  **State Machine Design**:
+    To detect this specific sequence, we can use a simple state machine or just register the previous two states of `data_in`. Using a state machine is often clearer for pulse detection.
+
+    Let's define states:
+    *   `IDLE`: Waiting for a rising edge (0 -> 1).
+    *   `HIGH`: `data_in` is currently 1. Waiting for it to go low.
+    *   `LOW_AFTER_HIGH`: `data_in` just went from 1 to 0. This is the completion of the pulse. Output 1 here.
+
+    However, a simpler and more robust way to implement "0-1-0" detection is to track the history of the input. We need to know if the current input is `0`, the previous input was `1`, and the input before that was `0`.
+
+    Let's use a 2-bit register `prev_data` to store the last two values of `data_in`.
+    *   `prev_data[0]`: `data_in` from the previous cycle ($t-1$)
+    *   `prev_data[1]`: `data_in` from two cycles ago ($t-2$)
+
+    At the current cycle $t$:
+    *   If `data_in` (current) == `0`
+    *   AND `prev_data[0]` (previous) == `1`
+    *   AND `prev_data[1]` (prev-1) == `0`
+    *   Then, `data_out` = 1.
+
+    This logic perfectly matches the "0-1-0" pattern ending at the current cycle.
+
+### Verilog Code
+
+```verilog
+module pulse_detect (
+    input wire clk,
+    input wire rst_n,
+    input wire data_in,
+    output reg data_out
+);
+
+    // Register to store the previous two states of data_in
+    // prev_data[0] holds data_in from the previous clock cycle
+    // prev_data[1] holds data_in from the clock cycle before that
+    reg [1:0] prev_data;
+
+    // Synchronous reset, active low
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            data_out <= 1'b0;
+            prev_data <= 2'b00;
+        end
+        else begin
+            // Update the history register
+            // Shift in the current data_in
+            prev_data[1] <= prev_data[0];
+            prev_data[0] <= data_in;
+
+            // Check for the pattern: 0 -> 1 -> 0
+            // Current data_in is 0
+            // Previous data_in (prev_data[0]) was 1
+            // Previous-1 data_in (prev_data[1]) was 0
+            if (data_in == 1'b0 && prev_data[0] == 1'b1 && prev_data[1] == 1'b0) begin
+                data_out <= 1'b1;
+            end
+            else begin
+                data_out <= 1'b0;
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation
+
+1.  **`prev_data` Register**:
+    *   This 2-bit register shifts the input signal through it.
+    *   On every clock edge, `prev_data[1]` gets the old value of `prev_data[0]`, and `prev_data[0]` gets the current `data_in`.
+    *   This effectively gives us access to `data_in` at $t$, $t-1$, and $t-2$ within the same clock cycle logic.
+
+2.  **Pulse Detection Logic**:
+    *   The condition `data_in == 0 && prev_data[0] == 1 && prev_data[1] == 0` checks for the exact sequence:
+        *   $t-2$: `0`
+        *   $t-1$: `1`
+        *   $t$:   `0`
+    *   When this condition is true, `data_out` is set to `1` for that cycle.
+    *   In all other cases, `data_out` is `0`.
+
+3.  **Reset**:
+    *   On active-low reset (`!rst_n`), both `data_out` and `prev_data` are initialized to `0`. This ensures no false pulses are detected during power-up or reset.
+
+This implementation is synchronous, handles the reset correctly, and accurately detects the specified 3-cycle pulse pattern.

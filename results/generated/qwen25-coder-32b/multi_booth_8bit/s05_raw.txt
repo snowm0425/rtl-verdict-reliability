@@ -1,0 +1,74 @@
+Sure, below is the complete Verilog code for an 8-bit Radix-4 Booth multiplier. The design follows the requirements you specified:
+
+```verilog
+module multi_booth_8bit (
+    input clk,          // Clock signal
+    input reset,        // Reset signal
+    input [7:0] a,      // 8-bit multiplicand
+    input [7:0] b,      // 8-bit multiplier
+    output reg [15:0] p, // 16-bit product
+    output reg rdy      // Ready signal
+);
+
+    // Internal registers
+    reg [15:0] multiplier; // Extended multiplicand
+    reg [15:0] multiplicand; // Extended multiplier
+    reg [4:0] ctr;           // Counter for Booth algorithm
+
+    always @(posedge clk or posedge reset) begin
+        if (reset) begin
+            // Initialize the multiplier and multiplicand with sign extension
+            multiplier <= {{8{a[7]}}, a};
+            multiplicand <= {{8{b[7]}}, b};
+            p <= 16'b0; // Clear product
+            ctr <= 5'b0; // Clear counter
+            rdy <= 1'b0; // Clear ready signal
+        end else begin
+            if (ctr < 5'd16) begin
+                // Booth algorithm implementation
+                case ({multiplier[ctr+1], multiplier[ctr]})
+                    2'b01: begin
+                        // Add multiplicand to product (positive Booth encoding)
+                        p <= p + multiplicand;
+                    end
+                    2'b10: begin
+                        // Subtract multiplicand from product (negative Booth encoding)
+                        p <= p - multiplicand;
+                    end
+                    2'b11, 2'b00: begin
+                        // No operation for these cases
+                    end
+                endcase
+
+                // Left shift the multiplicand by 1
+                multiplicand <= {multiplicand[14:0], 1'b0};
+
+                // Increment the counter
+                ctr <= ctr + 1;
+
+                // Clear ready signal
+                rdy <= 1'b0;
+            end else begin
+                // Set the ready signal once the multiplication is complete
+                rdy <= 1'b1;
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Reset State:**
+   - On the positive edge of the reset signal, the multiplier and multiplicand are initialized with sign extension to handle negative numbers.
+   - The product (`p`) and counter (`ctr`) are reset to zero.
+   - The ready signal (`rdy`) is set to zero.
+
+2. **Normal Operation:**
+   - On the positive edge of the clock signal, the Booth algorithm is executed.
+   - The Booth algorithm considers pairs of bits of the multiplier to determine whether to add, subtract, or do nothing to the product.
+   - The multiplicand is left-shifted by one bit after each iteration.
+   - The counter is incremented until it reaches 16, indicating that the multiplication is complete.
+   - Once the counter reaches 16, the ready signal is set to one.
+
+This design ensures that the multiplication process is performed synchronously with the clock signal and can be reset to its initial state using the reset signal.

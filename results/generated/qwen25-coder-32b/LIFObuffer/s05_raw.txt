@@ -1,0 +1,92 @@
+Sure, below is the complete Verilog code for the `LIFObuffer` module as per your requirements:
+
+```verilog
+module LIFObuffer (
+    input [3:0] dataIn,      // 4-bit input data to be pushed onto the buffer
+    input RW,                // Read/Write control signal (1 for read, 0 for write)
+    input EN,                // Enable signal to activate buffer operations
+    input Rst,               // Active high reset signal to initialize the buffer
+    input Clk,               // Clock signal for synchronous operations
+    
+    output reg EMPTY,        // Flag indicating whether the buffer is empty
+    output reg FULL,         // Flag indicating whether the buffer is full
+    output reg [3:0] dataOut // 4-bit output data retrieved from the buffer
+);
+
+    // Stack memory array to hold up to 4 entries
+    reg [3:0] stack_mem [3:0];
+    
+    // Stack pointer to track the current position in the stack
+    reg [2:0] SP;
+    
+    // Internal signals
+    reg [3:0] temp_data;
+    
+    // Initialize the buffer on reset
+    always @(posedge Clk) begin
+        if (Rst) begin
+            SP <= 3'b100;  // Set stack pointer to 4 (indicating an empty buffer)
+            FULL <= 1'b0;  // Buffer is not full
+            EMPTY <= 1'b1; // Buffer is empty
+            for (int i = 0; i < 4; i = i + 1) begin
+                stack_mem[i] <= 4'b0000; // Initialize all memory locations to 0
+            end
+        end else if (EN) begin
+            // Handle write operation
+            if (~RW && ~FULL) begin
+                SP <= SP - 1;  // Decrement stack pointer for write
+                stack_mem[SP] <= dataIn; // Write data to stack memory
+                if (SP == 3'b000) begin
+                    FULL <= 1'b1;  // Buffer is now full
+                end
+                EMPTY <= 1'b0; // Buffer is not empty
+            end
+            
+            // Handle read operation
+            else if (RW && ~EMPTY) begin
+                temp_data <= stack_mem[SP];  // Read data from stack memory
+                stack_mem[SP] <= 4'b0000;    // Clear the memory location
+                SP <= SP + 1;                // Increment stack pointer for read
+                if (SP == 3'b100) begin
+                    EMPTY <= 1'b1;  // Buffer is now empty
+                end
+                FULL <= 1'b0; // Buffer is not full
+            end
+            
+            // Update output data
+            dataOut <= temp_data;
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Inputs and Outputs:**
+   - `dataIn`: 4-bit input data to be pushed onto the buffer.
+   - `RW`: Read/Write control signal (1 for read, 0 for write).
+   - `EN`: Enable signal to activate buffer operations.
+   - `Rst`: Active high reset signal to initialize the buffer.
+   - `Clk`: Clock signal for synchronous operations.
+   - `EMPTY`: Flag indicating whether the buffer is empty.
+   - `FULL`: Flag indicating whether the buffer is full.
+   - `dataOut`: 4-bit output data retrieved from the buffer.
+
+2. **Internal Signals:**
+   - `stack_mem`: A 4x4-bit memory array to store the data.
+   - `SP`: A 3-bit stack pointer to track the current position in the stack.
+   - `temp_data`: A temporary register to hold the data during read operations.
+
+3. **Reset Condition:**
+   - On the rising edge of the clock (`posedge Clk`), if the reset signal (`Rst`) is high, the stack pointer is set to 4 (indicating an empty buffer), all memory locations are initialized to 0, and the `FULL` and `EMPTY` flags are updated.
+
+4. **Write Operation:**
+   - If `RW` is low and the buffer is not full, data from `dataIn` is pushed onto the stack, the stack pointer is decremented, and the `FULL` and `EMPTY` flags are updated.
+
+5. **Read Operation:**
+   - If `RW` is high and the buffer is not empty, data is popped from the stack into `dataOut`, the corresponding stack memory location is cleared, the stack pointer is incremented, and the `FULL` and `EMPTY` flags are updated.
+
+6. **Data Output:**
+   - The `dataOut` is updated with the value read from the stack memory during the read operation.
+
+This Verilog code should meet the requirements for the LIFO buffer as described.

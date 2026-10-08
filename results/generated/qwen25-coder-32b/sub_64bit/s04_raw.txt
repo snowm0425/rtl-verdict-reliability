@@ -1,0 +1,40 @@
+Certainly! Below is the complete Verilog code for a 64-bit subtractor with overflow checking:
+
+```verilog
+module sub_64bit (
+    input  wire [63:0] A,       // First 64-bit input operand
+    input  wire [63:0] B,       // Second 64-bit input operand
+    output wire [63:0] result,  // 64-bit output representing the difference (A - B)
+    output wire        overflow  // 1-bit output indicating overflow
+);
+
+    // Perform the subtraction
+    assign result = A - B;
+
+    // Overflow detection logic
+    // Overflow occurs if:
+    // 1. A and B have different signs and the result has a sign different from A
+    wire a_sign = A[63];  // Sign bit of A (1 for negative, 0 for positive)
+    wire b_sign = B[63];  // Sign bit of B (1 for negative, 0 for positive)
+    wire res_sign = result[63];  // Sign bit of the result (1 for negative, 0 for positive)
+
+    // Overflow condition: (a_sign != b_sign) && (a_sign != res_sign)
+    assign overflow = (a_sign ^ b_sign) & (a_sign ^ res_sign);
+
+endmodule
+```
+
+### Explanation:
+1. **Subtraction**:
+   - The subtraction operation is performed using the expression `A - B`. In Verilog, this operation is straightforward and handles signed integers correctly when the inputs are signed.
+
+2. **Overflow Detection**:
+   - The overflow is detected by examining the sign bits of `A`, `B`, and the `result`.
+   - `a_sign` and `b_sign` represent the most significant bits (MSBs) of `A` and `B`, respectively, which are the sign bits.
+   - `res_sign` is the MSB of the `result`, which is the sign of the subtraction result.
+   - The overflow condition is detected using the expression `(a_sign ^ b_sign) & (a_sign ^ res_sign)`. This expression evaluates to `1` if:
+     - `A` and `B` have different signs (`a_sign ^ b_sign` is `1`), and
+     - The result has a sign different from `A` (`a_sign ^ res_sign` is `1`).
+   - If both conditions are true, it indicates an overflow, and the `overflow` output is set to `1`. Otherwise, it is set to `0`.
+
+This module should work correctly for 64-bit signed integer subtraction with overflow detection.

@@ -1,0 +1,96 @@
+```verilog
+module pe (
+    input wire clk,
+    input wire rst,
+    input wire [31:0] a,
+    input wire [31:0] b,
+    output reg [31:0] c
+);
+
+    // Compute the product of a and b
+    // Since a and b are 32-bit signed integers, the product can be up to 64 bits.
+    // However, the specification says c is 32-bit output representing the accumulated result.
+    // We need to decide on the behavior: typically for a 32-bit MAC, we either:
+    // 1. Use a 64-bit accumulator internally and output the lower 32 bits.
+    // 2. Or assume the product fits in 32 bits (which it doesn't for general case).
+    // Given the context of a "32bit integer" MAC and the output being 32-bit, 
+    // the most common interpretation in such simple PE designs is that the 
+    // multiplication is performed and the result is accumulated, with overflow
+    // being wrapped around (modular arithmetic) or the design assumes the 
+    // product is taken modulo 2^32.
+    
+    // Let's re-read carefully: "32bit integer" and "c: 32-bit output representing the accumulated result."
+    // In many simple MAC implementations for fixed-point or integer DSP, the multiplication
+    // is done, and the accumulation happens in a wider register, but if the output is specified
+    // as 32-bit, we likely just take the lower 32 bits of the accumulated value.
+    
+    // However, a simpler and very common interpretation for such textbook problems is that
+    // the multiplication result (which is 64 bits for two 32-bit numbers) is added to the 32-bit
+    // register, and the result is truncated to 32 bits. But this can lead to incorrect accumulation
+    // if the high bits of the product are significant.
+    
+    // Let's consider the standard approach: 
+    // The product of two 32-bit signed integers is 64 bits. If we only keep 32 bits of the 
+    // accumulator, we are effectively doing modular arithmetic modulo 2^32.
+    
+    // Alternative interpretation: Perhaps the inputs are unsigned? The problem says "32bit integer"
+    // which usually implies signed, but in Verilog, if we use signed multiplication, we need 
+    // to declare signals as signed.
+    
+    // Given the simplicity requested and the fact that the output is 32-bit, I will assume
+    // that the multiplication is performed as signed, and the lower 32 bits of the 64-bit 
+    // product are used for accumulation into a 32-bit register. This is equivalent to 
+    // computing (a * b) mod 2^32 and adding it to c mod 2^32.
+    
+    // Actually, let's think again. If we have a 32-bit accumulator and we add a 64-bit product,
+    // we would lose information. A more practical design would use a wider accumulator.
+    // But the spec says c is 32-bit.
+    
+    // Let's go with the straightforward interpretation: 
+    // c <= c + (a * b); where all operations are in 32-bit signed arithmetic, 
+    // and overflow wraps around. This is what would happen if you simply write 
+    // c <= c + a * b; in Verilog with 32-bit signals.
+    
+    // In Verilog, if a, b, and c are 32-bit, then a * b is computed as a 64-bit result 
+    // internally if the context demands it, but when assigned to a 32-bit variable, 
+    // it truncates to the lower 32 bits.
+    
+    // To be explicit and correct for signed arithmetic, let's use signed signals.
+    
+    // Let's redefine with signed types for correctness.
+    
+endmodule
+
+// Let me rewrite with proper signed handling.
+
+module pe (
+    input wire clk,
+    input wire rst,
+    input wire signed [31:0] a,
+    input wire signed [31:0] b,
+    output reg signed [31:0] c
+);
+
+    // The product of two 32-bit signed numbers is 64 bits.
+    // We will compute the full 64-bit product, then add to the 32-bit accumulator.
+    // Since the accumulator is 32-bit, we will take the lower 32 bits of the sum.
+    // This is equivalent to: c = (c + a*b) mod 2^32
+    
+    // Alternatively, we can just let Verilog handle the truncation naturally.
+    // If we write: c <= c + a * b;
+    // Verilog will compute a*b as 64 bits (since both are 32-bit signed, the result 
+    // is 64-bit signed), then add to c (which is 32-bit, so it gets extended to 64-bit 
+    // signed), and then the result is truncated to 32 bits for assignment to c.
+    
+    // This is the standard behavior and is likely what is expected.
+    
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            c <= 32'sd0;
+        end else begin
+            c <= c + a * b;
+        end
+    end
+
+endmodule
+```

@@ -1,0 +1,7 @@
+# stage=sim rc=0
+# STDOUT
+===========Your Design Passed===========
+/home/cvl/Documents/syn/RTLLM/Miscellaneous/Others/serial2parallel/testbench.v:60: $finish called at 237 (1s)
+
+# STDERR
+

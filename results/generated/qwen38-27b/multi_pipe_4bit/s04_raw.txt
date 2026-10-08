@@ -1,0 +1,69 @@
+Here is the complete Verilog code for the `multi_pipe_4bit` module based on your specifications.
+
+```verilog
+module multi_pipe_4bit #(
+    parameter size = 4
+) (
+    input  wire             clk,
+    input  wire             rst_n,
+    input  wire [size-1:0]  mul_a,
+    input  wire [size-1:0]  mul_b,
+    output reg  [2*size-1:0] mul_out
+);
+
+    // Extended input signals: Add 'size' zero bits at MSB positions
+    // Width becomes 2*size
+    wire [2*size-1:0] ext_mul_a = { {size{1'b0}}, mul_a };
+    wire [2*size-1:0] ext_mul_b = { {size{1'b0}}, mul_b };
+
+    // Partial products generation
+    // pp[i] is the partial product corresponding to bit i of mul_b
+    // If mul_b[i] is 1, pp[i] = mul_a << i
+    // If mul_b[i] is 0, pp[i] = 0
+    wire [2*size-1:0] pp [0:size-1];
+    
+    genvar i;
+    generate
+        for (i = 0; i < size; i = i + 1) begin : gen_pp
+            // Left shift by i positions. 
+            // Since ext_mul_a is 2*size bits, shifting left by i (max size-1) 
+            // keeps the result within 2*size bits for unsigned numbers.
+            assign pp[i] = (ext_mul_b[i]) ? (ext_mul_a << i) : 2'size'd0;
+        end
+    endgenerate
+
+    // Intermediate registers to store partial sums
+    // We need to sum 'size' partial products.
+    // A common pipelined approach is to use a tree of adders, but the prompt specifies
+    // "two levels of registers to store intermediate values".
+    // Let's interpret "two levels" as two pipeline stages for the addition tree.
+    // 
+    // For 4 partial products (size=4):
+    // Stage 1: Sum pairs: (pp0+pp1), (pp2+pp3) -> 2 sums
+    // Stage 2: Sum the results: (sum0+sum1) -> final result
+    // 
+    // Registers:
+    // reg_sum0: stores pp0 + pp1
+    // reg_sum1: stores pp2 + pp3
+    // reg_final: stores reg_sum0 + reg_sum1 (which is mul_out)
+    
+    reg [2*size-1:0] reg_sum0;
+    reg [2*size-1:0] reg_sum1;
+
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            reg_sum0 <= {2*size{1'b0}};
+            reg_sum1 <= {2*size{1'b0}};
+            mul_out  <= {2*size{1'b0}};
+        end else begin
+            // First pipeline stage: Add first pair and second pair
+            reg_sum0 <= pp[0] + pp[1];
+            reg_sum1 <= pp[2] + pp[3];
+            
+            // Second pipeline stage: Add the two intermediate sums
+            mul_out <= reg_sum0 + reg_sum1;
+        end
+    end
+
+endmodule
+```

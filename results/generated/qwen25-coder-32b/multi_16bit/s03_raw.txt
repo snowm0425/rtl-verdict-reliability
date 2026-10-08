@@ -1,0 +1,96 @@
+Certainly! Below is the complete Verilog code for a 16-bit unsigned multiplier using shift and accumulate operations:
+
+```verilog
+module multi_16bit (
+    input clk,          // Chip clock signal.
+    input rst_n,        // Active-low reset signal.
+    input start,        // Chip enable signal to initiate the multiplication operation.
+    input [15:0] ain,   // Input signal representing the multiplicand (a) with a data width of 16 bits.
+    input [15:0] bin,   // Input signal representing the multiplier (b) with a data width of 16 bits.
+    output reg [31:0] yout, // Product output signal with a data width of 32 bits.
+    output reg done     // Chip output flag signal indicating the completion of the multiplication operation.
+);
+
+    // Internal registers
+    reg [4:0] i;          // Shift count register (5 bits to count up to 16)
+    reg [15:0] areg;      // Multiplicand register
+    reg [15:0] breg;      // Multiplier register
+    reg [31:0] yout_r;    // Product register
+    reg done_r;           // Internal multiplication completion flag
+
+    // Sequential logic
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            i <= 0;
+            areg <= 16'b0;
+            breg <= 16'b0;
+            yout_r <= 32'b0;
+            done_r <= 0;
+        end else begin
+            if (start) begin
+                if (i < 17) begin
+                    i <= i + 1;
+                end else begin
+                    i <= 0;
+                end
+            end else begin
+                i <= 0;
+            end
+
+            // Multiplication completion flag
+            if (i == 16) begin
+                done_r <= 1;
+            end else if (i == 17) begin
+                done_r <= 0;
+            end
+
+            // Shift and accumulate operation
+            if (i == 0) begin
+                areg <= ain;
+                breg <= bin;
+                yout_r <= 32'b0;
+            end else if (i > 0 && i < 17) begin
+                if (areg[i-1] == 1) begin
+                    yout_r <= yout_r + (breg << (i-1));
+                end
+            end
+        end
+    end
+
+    // Output assignment
+    assign yout = yout_r;
+    assign done = done_r;
+
+endmodule
+```
+
+### Explanation:
+1. **Inputs and Outputs**:
+   - `clk`: Clock signal.
+   - `rst_n`: Active-low reset signal.
+   - `start`: Start signal to initiate multiplication.
+   - `ain`: 16-bit multiplicand.
+   - `bin`: 16-bit multiplier.
+   - `yout`: 32-bit product output.
+   - `done`: Completion flag indicating the end of multiplication.
+
+2. **Internal Registers**:
+   - `i`: 5-bit shift count register to count from 0 to 16.
+   - `areg`: 16-bit register to store the multiplicand.
+   - `breg`: 16-bit register to store the multiplier.
+   - `yout_r`: 32-bit register to accumulate the product.
+   - `done_r`: Internal register for the completion flag.
+
+3. **Sequential Logic**:
+   - On the positive edge of `clk` or the falling edge of `rst_n`, the registers are updated.
+   - If `rst_n` is low, all registers are reset to 0.
+   - If `start` is high, the shift count register `i` increments until it reaches 17, then resets to 0.
+   - The `done_r` flag is set to 1 when `i` reaches 16, indicating the multiplication is complete, and reset to 0 when `i` reaches 17.
+   - When `i` is 0, `areg` and `breg` are loaded with `ain` and `bin`, respectively, and `yout_r` is reset to 0.
+   - For `i` from 1 to 16, if the (i-1)th bit of `areg` is 1, the product is accumulated by adding the left-shifted `breg` to `yout_r`.
+
+4. **Output Assignment**:
+   - `yout` is assigned the value of `yout_r`.
+   - `done` is assigned the value of `done_r`.
+
+This design ensures that the multiplication operation is performed using shift and accumulate techniques, and the `done` signal indicates when the operation is complete.

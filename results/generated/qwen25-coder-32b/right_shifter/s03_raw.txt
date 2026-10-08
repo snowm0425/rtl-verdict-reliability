@@ -1,0 +1,39 @@
+Certainly! Below is the complete Verilog code for the `right_shifter` module as per your specifications:
+
+```verilog
+module right_shifter (
+    input clk,  // Clock signal used for synchronous operation
+    input d,    // Input signal to be right-shifted
+    output reg [7:0] q  // Output signal representing the result of the right shift operation
+);
+
+// Initialize the register q to 0
+initial begin
+    q = 8'b00000000;  // 8-bit register initialized to 0
+end
+
+// Synchronous process on the rising edge of the clock
+always @(posedge clk) begin
+    // Right shift the contents of q by 1 bit and insert the new input bit d into the most significant position
+    q <= {d, q[7:1]};
+end
+
+endmodule
+```
+
+### Explanation:
+1. **Module Declaration**:
+   - The module is named `right_shifter` and has three ports: `clk`, `d`, and `q`.
+   - `clk` is the clock signal.
+   - `d` is the input signal.
+   - `q` is the 8-bit output signal.
+
+2. **Initialization**:
+   - The `initial` block sets the register `q` to `8'b00000000` (all zeros) at the start of the simulation.
+
+3. **Synchronous Process**:
+   - The `always @(posedge clk)` block ensures that the operations inside it are executed on the rising edge of the clock.
+   - Inside this block, the register `q` is right-shifted by one bit, and the new input bit `d` is inserted into the most significant bit (MSB) position.
+   - The expression `{d, q[7:1]}` concatenates `d` with the lower 7 bits of `q`, effectively performing the right shift operation while inserting `d` at the MSB.
+
+This code will correctly perform an 8-bit right shift on the input signal `d` with the specified behavior.

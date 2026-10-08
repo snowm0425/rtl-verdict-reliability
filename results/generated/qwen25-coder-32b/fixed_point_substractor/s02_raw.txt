@@ -1,0 +1,81 @@
+Certainly! Below is the Verilog code for the `fixed_point_subtractor` module, which performs fixed-point subtraction based on the given specifications:
+
+```verilog
+module fixed_point_subtractor #(
+    parameter Q = 4,  // Number of fractional bits
+    parameter N = 8   // Total number of bits (integer + fractional)
+)(
+    input  [N-1:0] a,  // First N-bit fixed-point input operand
+    input  [N-1:0] b,  // Second N-bit fixed-point input operand
+    output [N-1:0] c   // N-bit output representing the result of the fixed-point subtraction
+);
+
+    // Internal register to store the result
+    reg [N-1:0] res;
+
+    // Calculate the absolute values of a and b
+    wire [N-1:0] abs_a = (a[N-1]) ? (~a + 1) : a;
+    wire [N-1:0] abs_b = (b[N-1]) ? (~b + 1) : b;
+
+    // Determine the sign of the result
+    reg sign_res;
+
+    // Perform the subtraction based on the signs of a and b
+    always @(*) begin
+        if (a[N-1] == b[N-1]) begin
+            // Same sign subtraction
+            res = a - b;
+            sign_res = a[N-1];
+        end else begin
+            // Different sign subtraction
+            if (a[N-1] == 1'b0) begin
+                // a is positive, b is negative
+                res = abs_a + abs_b;
+                sign_res = (abs_a >= abs_b) ? 1'b0 : 1'b1;
+            end else begin
+                // a is negative, b is positive
+                res = abs_a + abs_b;
+                sign_res = (abs_a >= abs_b) ? 1'b1 : 1'b0;
+            end
+        end
+
+        // Handle the case when the result is zero
+        if (res == 0) begin
+            sign_res = 1'b0;
+        end
+    end
+
+    // Assign the result to the output port
+    assign c = {sign_res, res[N-2:0]};
+
+endmodule
+```
+
+### Explanation:
+1. **Parameters**:
+   - `Q`: Number of fractional bits.
+   - `N`: Total number of bits (integer + fractional).
+
+2. **Inputs**:
+   - `a[N-1:0]`: First N-bit fixed-point input operand.
+   - `b[N-1:0]`: Second N-bit fixed-point input operand.
+
+3. **Outputs**:
+   - `c[N-1:0]`: N-bit output representing the result of the fixed-point subtraction.
+
+4. **Internal Register**:
+   - `res[N-1:0]`: Register to store the intermediate result of the subtraction.
+
+5. **Logic**:
+   - **Same Sign Subtraction**: When the signs of `a` and `b` are the same, their fractional and integer parts are subtracted. The sign of the result will be the same as the inputs.
+   - **Different Sign Subtraction**: If `a` is positive and `b` is negative, the absolute values of `a` and `b` are added. The result will have a positive sign if `a` is greater than `b`, and a negative sign otherwise. The same logic applies if `a` is negative and `b` is positive.
+   - **Handling Zero**: When the result is zero, the sign bit is explicitly set to `0` to handle this edge case.
+
+6. **Sign Calculation**:
+   - The sign of the result (`sign_res`) is determined based on the comparison of the absolute values of `a` and `b` when they have different signs.
+   - If the result is zero, the sign bit is set to `0`.
+
+7. **Output Assignment**:
+   - The final result `c` is assigned by combining the `sign_res` with the remaining bits of `res`.
+
+This module should handle fixed-point subtraction accurately while maintaining the specified precision.

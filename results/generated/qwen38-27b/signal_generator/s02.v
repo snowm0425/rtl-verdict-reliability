@@ -1,0 +1,135 @@
+module signal_generator (
+    input wire clk,
+    input wire rst_n,
+    output reg [4:0] wave
+);
+
+    reg state;
+
+    always @(posedge clk or negedge rst_n) begin
+        if (~rst_n) begin
+            state <= 0;
+            wave <= 0;
+        end else begin
+            case (state)
+                0: begin
+                    if (wave == 31) begin
+                        state <= 1;
+                        wave <= wave; // hold at 31 for one cycle before decrementing? 
+                        // Actually, per spec: "If the state is 0, the waveform (wave) is incremented by 1."
+                        // And "If the waveform reaches 31 (wave == 31), the state is transitioned to 1."
+                        // So when wave == 31 and state == 0, we should transition state to 1.
+                        // But what about wave? The spec says in state 0, wave is incremented by 1.
+                        // But if wave is already 31, incrementing would overflow. 
+                        // Let me re-read: "If the state is 0, the waveform (wave) is incremented by 1."
+                        // "If the waveform reaches 31 (wave == 31), the state is transitioned to 1."
+                        // This implies that when wave becomes 31, the next cycle state changes to 1.
+                        // So in state 0, we increment wave. If after increment wave would be 31, 
+                        // actually we need to check: when wave == 31, transition state to 1.
+                        // But if we increment when wave == 31, it wraps to 0. That's not desired.
+                        // Let me think carefully.
+                        // 
+                        // Interpretation 1: 
+                        //   In state 0: wave = wave + 1. If wave (current) == 31, then next state = 1.
+                        //   But if current wave == 31, incrementing gives 0 (since 5-bit). That's wrong.
+                        //
+                        // Interpretation 2:
+                        //   In state 0: if wave == 31, then state <= 1, and wave stays or decrements?
+                        //   The spec says "If the state is 0, the waveform (wave) is incremented by 1."
+                        //   And separately "If the waveform reaches 31 (wave == 31), the state is transitioned to 1."
+                        //   
+                        // Perhaps the logic is:
+                        //   In state 0: 
+                        //     If wave < 31, wave = wave + 1, state stays 0.
+                        //     If wave == 31, state = 1, and wave = wave - 1 (start decrementing)? 
+                        //     But the spec says "If the state is 1, the waveform is decremented by 1."
+                        //
+                        // Let me re-read more carefully:
+                        // "If the state is 0, the waveform (wave) is incremented by 1."
+                        // "If the waveform reaches 31 (wave == 31), the state is transitioned to 1."
+                        // "If the state is 1, the waveform is decremented by 1."
+                        // "If the waveform reaches 0 (wave == 0), the state is transitioned back to 0."
+                        //
+                        // This suggests:
+                        // State 0: wave increments. When wave hits 31, next cycle state becomes 1.
+                        // But what happens to wave in that transition cycle? 
+                        // If we increment when wave==31, it wraps to 0. That's not a triangle wave.
+                        // 
+                        // More sensible interpretation:
+                        // In state 0: 
+                        //   If wave != 31, wave = wave + 1, state = 0
+                        //   If wave == 31, state = 1, wave = wave - 1 (or wave stays and next cycle decrements)
+                        //
+                        // Actually, the cleanest triangle wave from 0 to 31 and back:
+                        // State 0 (up): wave goes 0,1,2,...,31. When wave==31, next state=1, and wave starts going down.
+                        // So when wave==31 and state==0, we should set state=1 and wave=30 (decrement by 1).
+                        // Or: state=1, and in state 1 we decrement. So if we set state=1 when wave==31, 
+                        // and in state 1 we decrement, then next cycle wave=30.
+                        // 
+                        // So:
+                        // State 0: 
+                        //   if wave == 31: state <= 1; wave <= wave; // or wave <= wave - 1?
+                        //   else: wave <= wave + 1; state <= 0;
+                        //
+                        // But the spec says "If the state is 0, the waveform (wave) is incremented by 1." unconditionally.
+                        // And "If the waveform reaches 31 (wave == 31), the state is transitioned to 1."
+                        //
+                        // Perhaps:
+                        // State 0: wave <= wave + 1. If wave (current) == 31, then state <= 1.
+                        // But wave + 1 when wave==31 gives 0. That's a wrap, not a triangle.
+                        //
+                        // I think the intended behavior is:
+                        // - When in state 0, increment wave. If the new wave value is 31, then on the next cycle, switch to state 1.
+                        // - But that means wave would be 31 for one cycle, then in state 1, decrement to 30, etc.
+                        //
+                        // Let's go with:
+                        // State 0:
+                        //   if wave == 31: state <= 1; wave <= wave; // hold at 31
+                        //   else: wave <= wave + 1; state <= 0;
+                        //
+                        // State 1:
+                        //   if wave == 0: state <= 0; wave <= wave; // hold at 0
+                        //   else: wave <= wave - 1; state <= 1;
+                        //
+                        // This gives: 0,1,2,...,30,31,31,30,29,...,1,0,0,1,2,...
+                        // Hmm, that has duplicate 31 and 0.
+                        //
+                        // Alternative:
+                        // State 0:
+                        //   wave <= wave + 1;
+                        //   if (wave == 31) state <= 1; else state <= 0;
+                        // But wave+1 when wave=31 is 0. So wave becomes 0, state becomes 1. Then in state 1, wave decrements from 0, which wraps to 31. That's wrong.
+                        //
+                        // I think the correct interpretation is:
+                        // In state 0:
+                        //   If wave < 31: wave = wave + 1, state stays 0.
+                        //   If wave == 31: state = 1, wave = wave - 1 (i.e., 30).
+                        // In state 1:
+                        //   If wave > 0: wave = wave - 1, state stays 1.
+                        //   If wave == 0: state = 0, wave = wave + 1 (i.e., 1).
+                        //
+                        // This gives: 0,1,2,...,30,31,30,29,...,1,0,1,2,...
+                        // That's a proper triangle wave!
+                        
+                        if (wave == 31) begin
+                            state <= 1;
+                            wave <= wave - 1;
+                        end else begin
+                            wave <= wave + 1;
+                            state <= 0;
+                        end
+                    end
+                1: begin
+                    if (wave == 0) begin
+                        state <= 0;
+                        wave <= wave + 1;
+                    end else begin
+                        wave <= wave - 1;
+                        state <= 1;
+                    end
+                end
+            endcase
+        end
+    end
+
+endmodule

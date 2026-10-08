@@ -1,0 +1,74 @@
+```verilog
+module multi_pipe_4bit #(
+    parameter size = 4
+) (
+    input  wire clk,
+    input  wire rst_n,
+    input  wire [size-1:0] mul_a,
+    input  wire [size-1:0] mul_b,
+    output reg  [2*size-1:0] mul_out
+);
+
+    // Extend input signals by adding "size" number of zero bits at the MSB positions
+    // So the extended width is 2*size bits
+    wire [2*size-1:0] mul_a_ext = { {size{1'b0}}, mul_a };
+    wire [2*size-1:0] mul_b_ext = { {size{1'b0}}, mul_b };
+
+    // Generate block to compute partial products for each bit of the multiplier
+    // Partial product i = (mul_b[i] ? (mul_a_ext << i) : 0)
+    wire [2*size-1:0] partial_products [size-1:0];
+
+    genvar i;
+    generate
+        for (i = 0; i < size; i = i + 1) begin : gen_partial
+            assign partial_products[i] = (mul_b[i]) ? (mul_a_ext << i) : {2*size{1'b0}};
+        end
+    endgenerate
+
+    // Two levels of registers to store intermediate values
+    // Level 1: Store sums of pairs of partial products
+    // Level 2: Store final sum or further intermediate sums
+
+    // We need to add size partial products. With size=4, we have 4 partial products.
+    // A two-stage pipeline for addition:
+    // Stage 1: Add PP0+PP1 -> sum01, PP2+PP3 -> sum23
+    // Stage 2: Add sum01+sum23 -> final product
+
+    // Registers for level 1 (first addition stage)
+    reg [2*size-1:0] sum01;
+    reg [2*size-1:0] sum23;
+
+    // Registers for level 2 (second addition stage)
+    reg [2*size-1:0] sum_final;
+
+    // Level 1: First set of additions
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            sum01 <= {2*size{1'b0}};
+            sum23 <= {2*size{1'b0}};
+        end else begin
+            sum01 <= partial_products[0] + partial_products[1];
+            sum23 <= partial_products[2] + partial_products[3];
+        end
+    end
+
+    // Level 2: Second set of additions
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            sum_final <= {2*size{1'b0}};
+        end else begin
+            sum_final <= sum01 + sum23;
+        end
+    end
+
+    // Final product output
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            mul_out <= {2*size{1'b0}};
+        end else begin
+            mul_out <= sum_final;
+        end
+    end
+
+endmodule
+```

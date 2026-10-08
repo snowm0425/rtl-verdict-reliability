@@ -1,0 +1,148 @@
+Certainly! Below is a complete Verilog implementation of a 32-bit carry-lookahead adder using the Carry-Lookahead Adder (CLA) architecture. The top-level module `adder_32bit` consists of two 16-bit CLA blocks.
+
+First, let's define a 1-bit CLA cell. Then, we'll create a 16-bit CLA block using these cells, and finally, we'll implement the 32-bit adder using two 16-bit CLA blocks.
+
+### 1-bit CLA Cell
+
+```verilog
+module cla_cell (
+    input A,
+    input B,
+    input G_in,
+    input P_in,
+    input cin,
+    output G_out,
+    output P_out,
+    output s
+);
+    assign s = G_in | (P_in & cin);
+    assign G_out = G_in | (P_in & A);
+    assign P_out = P_in & B;
+endmodule
+```
+
+### 16-bit CLA Block
+
+```verilog
+module cla_block_16bit (
+    input [15:0] A,
+    input [15:0] B,
+    input cin,
+    output [15:0] S,
+    output cout
+);
+    wire [16:0] G;
+    wire [16:0] P;
+    wire [15:0] s;
+
+    // Generate G and P signals for each bit
+    genvar i;
+    generate
+        for (i = 0; i < 16; i = i + 1) begin : cla_gen
+            cla_cell cla (
+                .A(A[i]),
+                .B(B[i]),
+                .G_in(G[i]),
+                .P_in(P[i]),
+                .cin(cin),
+                .G_out(G[i+1]),
+                .P_out(P[i+1]),
+                .s(s[i])
+            );
+        end
+    endgenerate
+
+    // Generate the final carry-out
+    assign cout = G[16];
+
+    // Assign sum
+    assign S = s;
+endmodule
+```
+
+### 32-bit CLA Adder
+
+```verilog
+module adder_32bit (
+    input [31:0] A,
+    input [31:0] B,
+    input cin,
+    output [31:0] S,
+    output cout
+);
+    wire [15:0] S1, S2;
+    wire cout1;
+
+    // First 16-bit CLA block
+    cla_block_16bit cla1 (
+        .A(A[15:0]),
+        .B(B[15:0]),
+        .cin(cin),
+        .S(S1),
+        .cout(cout1)
+    );
+
+    // Second 16-bit CLA block
+    cla_block_16bit cla2 (
+        .A(A[31:16]),
+        .B(B[31:16]),
+        .cin(cout1),
+        .S(S2),
+        .cout(cout)
+    );
+
+    // Assign the final sum
+    assign S[15:0] = S1;
+    assign S[31:16] = S2;
+endmodule
+```
+
+### Top Module for Testing
+
+To test the `adder_32bit` module, you can create a simple testbench like the following:
+
+```verilog
+module testbench;
+    reg [31:0] A;
+    reg [31:0] B;
+    reg cin;
+    wire [31:0] S;
+    wire cout;
+
+    adder_32bit adder (
+        .A(A),
+        .B(B),
+        .cin(cin),
+        .S(S),
+        .cout(cout)
+    );
+
+    initial begin
+        // Test case 1
+        A = 32'd4294967295; // 0xFFFFFFFF
+        B = 32'd1;          // 0x00000001
+        cin = 1'b0;
+        #10;
+
+        // Test case 2
+        A = 32'd123456789;
+        B = 32'd987654321;
+        cin = 1'b0;
+        #10;
+
+        // Test case 3
+        A = 32'd0;
+        B = 32'd0;
+        cin = 1'b1;
+        #10;
+
+        $finish;
+    end
+
+    initial begin
+        $monitor("A = %h, B = %h, cin = %b, S = %h, cout = %b", A, B, cin, S, cout);
+    end
+endmodule
+```
+
+This code defines a 32-bit carry-lookahead adder using two 16-bit CLA blocks. The testbench demonstrates how to use the `adder_32bit` module and verifies its functionality with a few test cases.

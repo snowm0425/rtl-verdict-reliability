@@ -1,0 +1,7 @@
+# stage=sim rc=0
+# STDOUT
+=========== Your Design Passed ===========
+/home/cvl/Documents/syn/RTLLM/Arithmetic/Adder/adder_bcd/testbench.v:56: $finish called at 1000000 (1ps)
+
+# STDERR
+

@@ -1,0 +1,79 @@
+Sure, below is the Verilog code for the `pulse_detect` module as per your requirements. The module detects a pulse defined as a transition from `0` to `1` to `0` over three clock cycles and outputs a `1` at the end of the pulse.
+
+```verilog
+module pulse_detect (
+    input wire clk,        // Clock signal
+    input wire rst_n,      // Reset signal (active low)
+    input wire data_in,    // One-bit input signal
+    output reg data_out    // Output signal indicating the presence of pulses
+);
+
+    // Define states for the state machine
+    typedef enum reg [1:0] {
+        IDLE = 2'b00,      // Initial state, waiting for pulse start
+        RISE = 2'b01,      // Detected rising edge of pulse
+        FALL = 2'b10       // Detected falling edge of pulse
+    } state_t;
+
+    // State register
+    reg [1:0] state;
+
+    // State transition logic
+    always @(posedge clk or negedge rst_n) begin
+        if (~rst_n) begin
+            // Reset condition
+            state <= IDLE;
+            data_out <= 0;
+        end else begin
+            // State transition logic
+            case (state)
+                IDLE: begin
+                    if (data_in == 1'b1) begin
+                        state <= RISE;
+                        data_out <= 0;
+                    end else begin
+                        state <= IDLE;
+                        data_out <= 0;
+                    end
+                end
+
+                RISE: begin
+                    if (data_in == 1'b0) begin
+                        state <= FALL;
+                        data_out <= 1;  // Pulse detected, set data_out to 1
+                    end else begin
+                        state <= RISE;
+                        data_out <= 0;
+                    end
+                end
+
+                FALL: begin
+                    // After detecting a pulse, go back to idle state
+                    state <= IDLE;
+                    data_out <= 0;
+                end
+
+                default: begin
+                    state <= IDLE;
+                    data_out <= 0;
+                end
+            endcase
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **States**:
+   - `IDLE`: Waiting for the input signal to transition from `0` to `1`.
+   - `RISE`: Detected the rising edge (`0` to `1` transition).
+   - `FALL`: Detected the falling edge (`1` to `0` transition).
+
+2. **State Machine**:
+   - **Reset**: When `rst_n` is low, the state is set to `IDLE` and `data_out` is set to `0`.
+   - **IDLE**: If `data_in` goes high, the state transitions to `RISE`.
+   - **RISE**: If `data_in` goes low, the state transitions to `FALL` and `data_out` is set to `1` to indicate the end of a pulse.
+   - **FALL**: The state transitions back to `IDLE` and `data_out` is set to `0`.
+
+This module ensures that `data_out` is `1` only at the end of a valid pulse and `0` otherwise.

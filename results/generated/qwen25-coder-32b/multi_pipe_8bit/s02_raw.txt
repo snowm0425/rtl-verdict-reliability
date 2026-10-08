@@ -1,0 +1,93 @@
+Certainly! Below is a Verilog implementation of an 8-bit unsigned multiplier using a pipelined architecture. The design includes the necessary control signals, registers, and logic to perform the multiplication in a pipelined fashion.
+
+```verilog
+module multi_pipe_8bit (
+    input clk,          // Clock signal
+    input rst_n,        // Active-low reset signal
+    input mul_en_in,    // Input enable signal
+    input [7:0] mul_a,  // 8-bit multiplicand
+    input [7:0] mul_b,  // 8-bit multiplier
+    output mul_en_out,  // Output enable signal
+    output [15:0] mul_out // 16-bit product output
+);
+
+    // Internal registers
+    reg mul_en_out_reg;
+    reg [7:0] mul_a_reg;
+    reg [7:0] mul_b_reg;
+    reg [15:0] mul_out_reg;
+    
+    // Partial product generation
+    wire [7:0] temp [0:7];
+    
+    // Partial sum calculation
+    reg [15:0] sum [0:7];
+    
+    // Generate partial products
+    genvar i;
+    generate
+        for (i = 0; i < 8; i = i + 1) begin : gen_partial_products
+            assign temp[i] = (mul_b_reg[i] == 1'b1) ? mul_a_reg : 8'b0;
+        end
+    endgenerate
+    
+    // Pipeline stages for partial sum calculation
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            for (int j = 0; j < 8; j = j + 1) begin
+                sum[j] <= 16'b0;
+            end
+            mul_a_reg <= 8'b0;
+            mul_b_reg <= 8'b0;
+            mul_en_out_reg <= 1'b0;
+        end else begin
+            if (mul_en_in) begin
+                mul_a_reg <= mul_a;
+                mul_b_reg <= mul_b;
+            end
+            
+            // First stage: sum[0] = temp[0]
+            if (mul_en_in)
+                sum[0] <= {8'b0, temp[0]};
+            
+            // Subsequent stages: sum[i] = sum[i-1] + temp[i]
+            for (int j = 1; j < 8; j = j + 1) begin
+                sum[j] <= sum[j-1] + {8'b0, temp[j]};
+            end
+            
+            // Output enable signal pipeline
+            mul_en_out_reg <= mul_en_in;
+        end
+    end
+    
+    // Final product calculation and output assignment
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            mul_out_reg <= 16'b0;
+        end else begin
+            // Store the final sum in mul_out_reg
+            mul_out_reg <= sum[7];
+        end
+    end
+    
+    // Output enable signal
+    assign mul_en_out = mul_en_out_reg;
+    
+    // Output product value
+    assign mul_out = mul_en_out_reg ? mul_out_reg : 16'b0;
+
+endmodule
+```
+
+### Explanation:
+1. **Input and Output Signals**: The module has the specified inputs and outputs as described.
+2. **Registers**: 
+   - `mul_en_out_reg`: Stores the output enable signal.
+   - `mul_a_reg` and `mul_b_reg`: Store the multiplicand and multiplier, respectively.
+   - `mul_out_reg`: Stores the final product.
+3. **Partial Product Generation**: Uses bitwise operations to generate partial products based on the bits of `mul_b`.
+4. **Partial Sum Calculation**: Uses a series of registers to accumulate the partial sums.
+5. **Final Product Calculation**: The final sum is stored in `mul_out_reg`.
+6. **Output Assignment**: The output product is assigned based on the output enable signal.
+
+This design ensures that the multiplication process is pipelined, improving performance by overlapping the computation of different partial sums.

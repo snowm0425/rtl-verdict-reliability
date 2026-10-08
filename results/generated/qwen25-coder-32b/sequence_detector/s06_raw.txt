@@ -1,0 +1,103 @@
+Certainly! Below is the Verilog implementation of the `sequence_detector` module as per the provided specifications:
+
+```verilog
+module sequence_detector (
+    input wire clk,
+    input wire reset_n,
+    input wire data_in,
+    output reg sequence_detected
+);
+
+    // Define the states for the FSM
+    typedef enum reg [1:0] {
+        IDLE,
+        S1,
+        S2,
+        S3,
+        S4
+    } state_t;
+
+    // Declare current and next state signals
+    state_t current_state, next_state;
+
+    // State machine logic
+    always @(posedge clk or negedge reset_n) begin
+        if (!reset_n) begin
+            // Asynchronous reset to IDLE state
+            current_state <= IDLE;
+            sequence_detected <= 0;
+        end else begin
+            // Synchronous state transition
+            current_state <= next_state;
+            sequence_detected <= (current_state == S4) ? 1 : 0;
+        end
+    end
+
+    // Next state logic based on current state and data_in
+    always @(*) begin
+        case (current_state)
+            IDLE: begin
+                if (data_in == 1'b1)
+                    next_state = S1;
+                else
+                    next_state = IDLE;
+            end
+
+            S1: begin
+                if (data_in == 1'b0)
+                    next_state = S2;
+                else
+                    next_state = IDLE;
+            end
+
+            S2: begin
+                if (data_in == 1'b0)
+                    next_state = S3;
+                else
+                    next_state = IDLE;
+            end
+
+            S3: begin
+                if (data_in == 1'b1)
+                    next_state = S4;
+                else
+                    next_state = IDLE;
+            end
+
+            S4: begin
+                // Once sequence is detected, stay in S4 until reset or new sequence starts
+                next_state = IDLE;
+            end
+
+            default: begin
+                // Default case to handle unexpected states (should not occur)
+                next_state = IDLE;
+            end
+        endcase
+    end
+
+endmodule
+```
+
+### Explanation:
+
+1. **State Enum Definition**:
+   - We define an enumeration `state_t` for the states `IDLE`, `S1`, `S2`, `S3`, and `S4`.
+
+2. **State Signals**:
+   - `current_state`: Stores the current state of the FSM.
+   - `next_state`: Stores the next state of the FSM based on the current state and input.
+
+3. **State Machine Logic**:
+   - The `always @(posedge clk or negedge reset_n)` block handles state transitions.
+   - On a negative edge of `reset_n`, the FSM resets to `IDLE` and `sequence_detected` is set to `0`.
+   - On a positive edge of `clk`, the `current_state` is updated to `next_state`.
+   - If the `current_state` is `S4`, `sequence_detected` is set to `1`.
+
+4. **Next State Logic**:
+   - The `always @(*)` block determines the `next_state` based on the `current_state` and `data_in`.
+   - Each state transitions to the next state if the expected bit is detected (`data_in` matches the expected value).
+   - If the expected bit is not detected, the state transitions back to `IDLE`.
+   - Once the sequence `1001` is detected (reaching state `S4`), the FSM remains in `S4` until reset.
+
+This module efficiently detects the sequence `1001` using a simple state machine and handles asynchronous reset behavior.

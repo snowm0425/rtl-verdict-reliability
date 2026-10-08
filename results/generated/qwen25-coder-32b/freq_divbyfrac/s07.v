@@ -1,0 +1,94 @@
+module freq_divbyfrac (
+    input wire clk,
+    input wire rst_n,
+    output reg clk_div
+);
+
+    // Constants for the frequency division
+    localparam MUL2_DIV_CLK = 7; // 3.5x division means 7 cycles in total
+
+    // State machine states
+    typedef enum reg [2:0] {
+        S0, S1, S2, S3, S4, S5, S6
+    } state_t;
+
+    // State registers
+    reg [2:0] current_state, next_state;
+    reg [2:0] count;
+
+    // Intermediate clocks
+    reg clk_div_early, clk_div_late;
+
+    // State machine logic
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            current_state <= S0;
+            count <= 0;
+        end else begin
+            current_state <= next_state;
+            if (current_state == S6) begin
+                count <= 0;
+            end else begin
+                count <= count + 1;
+            end
+        end
+    end
+
+    // Next state logic
+    always @(*) begin
+        case (current_state)
+            S0: next_state = S1;
+            S1: next_state = S2;
+            S2: next_state = S3;
+            S3: next_state = S4;
+            S4: next_state = S5;
+            S5: next_state = S6;
+            S6: next_state = S0;
+            default: next_state = S0;
+        endcase
+    end
+
+    // Intermediate clock generation
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            clk_div_early <= 0;
+            clk_div_late <= 0;
+        end else begin
+            case (count)
+                0, 1, 2, 3: // First 4 cycles
+                    clk_div_early <= 1;
+                    clk_div_late <= 0;
+                4, 5, 6: // Next 3 cycles
+                    clk_div_early <= 0;
+                    clk_div_late <= 1;
+                default: begin
+                    clk_div_early <= 0;
+                    clk_div_late <= 0;
+                end
+            endcase
+        end
+    end
+
+    // Phase-shifting the clocks
+    reg clk_div_early_shifted, clk_div_late_shifted;
+
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            clk_div_early_shifted <= 0;
+            clk_div_late_shifted <= 0;
+        end else begin
+            clk_div_early_shifted <= clk_div_early;
+            clk_div_late_shifted <= clk_div_late;
+        end
+    end
+
+    // Final clock generation
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            clk_div <= 0;
+        end else begin
+            clk_div <= clk_div_early_shifted | clk_div_late_shifted;
+        end
+    end
+
+endmodule

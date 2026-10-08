@@ -1,0 +1,19 @@
+# 工具鏈與建置產物
+iv12/
+iverilog/
+oss-cad-suite/
+oss-cad-suite-*.tgz
+
+# 第三方 repo（以 commit hash 引用，不夾帶）
+RTLLM/
+GateTruth/
+
+# 模擬暫存
+scratch/
+**/*.vvp
+**/a.out
+
+# Python
+__pycache__/
+*.pyc
+.venv/

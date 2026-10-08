@@ -1,0 +1,98 @@
+Certainly! Below is a Verilog implementation of a 64-bit ripple carry adder with pipeline stages. The module uses registers to pipeline the addition process and ensures that the output is synchronized with the clock and reset signals.
+
+```verilog
+module adder_pipe_64bit (
+    input wire clk,
+    input wire rst_n,
+    input wire i_en,
+    input wire [63:0] adda,
+    input wire [63:0] addb,
+    output reg [64:0] result,
+    output reg o_en
+);
+
+    // Intermediate sum and carry signals
+    reg [63:0] sum_stage1;
+    reg [63:0] carry_stage1;
+    reg [63:0] sum_stage2;
+    reg [63:0] carry_stage2;
+    reg [63:0] sum_stage3;
+    reg [63:0] carry_stage3;
+    reg [63:0] sum_stage4;
+
+    // Pipeline registers
+    reg i_en_reg1;
+    reg i_en_reg2;
+    reg i_en_reg3;
+
+    // Initial stage calculation
+    always @(*) begin
+        {carry_stage1[0], sum_stage1[0]} = adda[0] + addb[0];
+        carry_stage1[1] = carry_stage1[0] & (adda[1] | addb[1]) | (adda[1] & addb[1]);
+        for (int i = 2; i < 64; i = i + 1) begin
+            {carry_stage1[i], sum_stage1[i]} = adda[i] + addb[i] + carry_stage1[i-1];
+        end
+    end
+
+    // Pipeline stage 1 to 2
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            i_en_reg1 <= 0;
+            sum_stage2 <= 0;
+            carry_stage2 <= 0;
+        end else begin
+            i_en_reg1 <= i_en;
+            sum_stage2 <= sum_stage1;
+            carry_stage2 <= carry_stage1;
+        end
+    end
+
+    // Pipeline stage 2 to 3
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            i_en_reg2 <= 0;
+            sum_stage3 <= 0;
+            carry_stage3 <= 0;
+        end else begin
+            i_en_reg2 <= i_en_reg1;
+            sum_stage3 <= sum_stage2;
+            carry_stage3 <= carry_stage2;
+        end
+    end
+
+    // Pipeline stage 3 to 4
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            i_en_reg3 <= 0;
+            sum_stage4 <= 0;
+        end else begin
+            i_en_reg3 <= i_en_reg2;
+            sum_stage4 <= sum_stage3;
+        end
+    end
+
+    // Final addition in pipeline stage 4
+    always @(*) begin
+        result[64] = carry_stage3[63];
+        {result[63:0]} = sum_stage4 + carry_stage3[63];
+    end
+
+    // Output enable signal
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            o_en <= 0;
+        end else begin
+            o_en <= i_en_reg3;
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Intermediate Calculations**: The initial stage calculates the sum and carry for each bit position using a ripple carry adder logic.
+2. **Pipeline Stages**: The module uses three pipeline stages (from stage 1 to stage 4) to break down the addition process into manageable parts. Each stage is registered to allow for pipelining.
+3. **Output Enable**: The output enable signal (`o_en`) is synchronized with the clock and reset signals. It is set to `1` when the final result from the pipeline is ready.
+4. **Final Addition**: The final sum and carry are combined in the last stage to produce the 65-bit result.
+
+This implementation ensures that the addition process is pipelined and the output is synchronized with the clock and reset signals.

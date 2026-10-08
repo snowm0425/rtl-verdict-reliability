@@ -1,0 +1,138 @@
+module alu (
+    input [31:0] a,    // First 32-bit input operand
+    input [31:0] b,    // Second 32-bit input operand
+    input [5:0] aluc,  // 6-bit control signal for selecting the operation
+    output reg [31:0] r, // 32-bit output result
+    output reg zero,     // Zero flag
+    output reg carry,    // Carry flag
+    output reg negative, // Negative flag
+    output reg overflow, // Overflow flag
+    output reg flag      // General flag for SLT and SLTU
+);
+
+    // Parameter definitions for ALU operations
+    parameter ADD = 6'b100000;
+    parameter ADDU = 6'b100001;
+    parameter SUB = 6'b100010;
+    parameter SUBU = 6'b100011;
+    parameter AND = 6'b100100;
+    parameter OR = 6'b100101;
+    parameter XOR = 6'b100110;
+    parameter NOR = 6'b100111;
+    parameter SLT = 6'b101010;
+    parameter SLTU = 6'b101011;
+    parameter SLL = 6'b000000;
+    parameter SRL = 6'b000010;
+    parameter SRA = 6'b000011;
+    parameter SLLV = 6'b000100;
+    parameter SRLV = 6'b000110;
+    parameter SRAV = 6'b000111;
+    parameter LUI = 6'b001111;
+
+    // Signed operands for arithmetic operations
+    reg signed [31:0] a_signed, b_signed;
+    reg signed [32:0] res; // 33-bit result to detect overflow
+
+    // Assign signed operands
+    assign a_signed = a;
+    assign b_signed = b;
+
+    // Default assignments
+    always @(*) begin
+        res = 33'b0;
+        carry = 0;
+        overflow = 0;
+        flag = 1'bz; // High-impedance by default
+
+        case (aluc)
+            ADD: begin
+                res = a_signed + b_signed;
+                carry = res[32];
+                overflow = (a_signed[31] == b_signed[31]) && (a_signed[31] != res[31]);
+            end
+
+            ADDU: begin
+                res = a + b;
+                carry = res[32];
+            end
+
+            SUB: begin
+                res = a_signed - b_signed;
+                carry = ~res[32];
+                overflow = (a_signed[31] != b_signed[31]) && (a_signed[31] != res[31]);
+            end
+
+            SUBU: begin
+                res = a - b;
+                carry = ~res[32];
+            end
+
+            AND: begin
+                res = a & b;
+            end
+
+            OR: begin
+                res = a | b;
+            end
+
+            XOR: begin
+                res = a ^ b;
+            end
+
+            NOR: begin
+                res = ~(a | b);
+            end
+
+            SLT: begin
+                res = a_signed < b_signed;
+                flag = res[0]; // Set flag based on SLT result
+            end
+
+            SLTU: begin
+                res = a < b;
+                flag = res[0]; // Set flag based on SLTU result
+            end
+
+            SLL: begin
+                res = b << a[4:0];
+            end
+
+            SRL: begin
+                res = b >> a[4:0];
+            end
+
+            SRA: begin
+                res = b_signed >>> a[4:0]; // Arithmetic right shift
+            end
+
+            SLLV: begin
+                res = b << a[5:0];
+            end
+
+            SRLV: begin
+                res = b >> a[5:0];
+            end
+
+            SRAV: begin
+                res = b_signed >>> a[5:0]; // Arithmetic right shift
+            end
+
+            LUI: begin
+                res = {a[15:0], 16'b0};
+            end
+
+            default: begin
+                res = 33'bz;
+            end
+        endcase
+
+        // Assign the lower 32 bits of res to r
+        r = res[31:0];
+
+        // Determine zero flag
+        zero = (r == 32'b0);
+
+        // Determine negative flag
+        negative = r[31];
+    end
+endmodule

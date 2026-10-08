@@ -1,0 +1,48 @@
+Certainly! Below is the complete Verilog code for a 4-bit BCD adder module as per your requirements:
+
+```verilog
+module adder_bcd (
+    input [3:0] A,    // First BCD input (4-bit, representing a decimal digit from 0 to 9)
+    input [3:0] B,    // Second BCD input (4-bit, representing a decimal digit from 0 to 9)
+    input Cin,        // Carry-in input (1-bit)
+    output [3:0] Sum, // 4-bit output representing the sum of the two BCD inputs, corrected to be a valid BCD digit (0–9)
+    output Cout       // Carry-out output (1-bit), used when the sum exceeds the decimal value of 9
+);
+
+    // Intermediate signals
+    wire [3:0] bin_sum;   // Result of binary addition
+    wire [3:0] corr_sum;  // Result after BCD correction
+    wire bcd_corr;        // BCD correction flag
+
+    // Binary addition
+    assign bin_sum = A + B + Cin;
+
+    // BCD correction flag: Set if bin_sum > 9
+    assign bcd_corr = (bin_sum > 4'd9);
+
+    // BCD correction: Add 6 if bin_sum > 9
+    assign corr_sum = bin_sum + (bcd_corr ? 4'd6 : 4'd0);
+
+    // Final sum and carry-out
+    assign Sum = corr_sum;
+    assign Cout = (bcd_corr || (corr_sum > 4'd9));
+
+endmodule
+```
+
+### Explanation:
+
+1. **Binary Addition**:
+   - The `bin_sum` wire holds the result of adding the inputs `A`, `B`, and `Cin` using binary addition.
+
+2. **BCD Correction Flag**:
+   - The `bcd_corr` wire is a flag that indicates whether the binary sum exceeds 9. It is set to 1 if `bin_sum` is greater than 9.
+
+3. **BCD Correction**:
+   - The `corr_sum` wire holds the corrected sum. If `bcd_corr` is 1, 6 is added to `bin_sum` to correct it to a valid BCD digit.
+
+4. **Final Sum and Carry-out**:
+   - The `Sum` output is assigned the value of `corr_sum`.
+   - The `Cout` output is set to 1 if either `bcd_corr` is 1 or if `corr_sum` exceeds 9 after correction.
+
+This module ensures that the sum of two BCD digits, along with an optional carry-in, is correctly adjusted to remain within the valid BCD range (0–9), and it properly generates a carry-out when necessary.

@@ -1,0 +1,35 @@
+module multi_8bit (
+    input  [7:0] A,
+    input  [7:0] B,
+    output [15:0] product
+);
+
+    // Shift-and-add multiplication
+    // For each bit i of B, if B[i] is 1, add A << i to the product
+    // We can compute this using a loop in Verilog continuous assignment style
+    // or using combinational logic.
+
+    // Since this is a combinational circuit, we can use a for loop in an
+    // always block or use a reduce-like approach. In Verilog, we can use
+    // a generate-like loop in an always @(*) block.
+
+    reg [15:0] prod;
+    reg [15:0] shifted_A;
+    reg [7:0]  temp_A;
+
+    always @(*) begin
+        prod = 16'b0;
+        temp_A = A;
+        for (integer i = 0; i < 8; i = i + 1) begin
+            // If B[i] is 1, add the current temp_A (which is A << i) to prod
+            if (B[i]) begin
+                prod = prod + {8'b0, temp_A};
+            end
+            // Shift temp_A left by 1 for the next iteration
+            temp_A = temp_A << 1;
+        end
+    end
+
+    assign product = prod;
+
+endmodule

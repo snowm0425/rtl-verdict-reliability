@@ -1,0 +1,7 @@
+# stage=sim rc=0
+# STDOUT
+=========== Your Design Passed ===========
+/home/cvl/Documents/syn/RTLLM/Memory/LIFO/LIFObuffer/testbench.v:70: $finish called at 265000 (1ps)
+
+# STDERR
+

@@ -1,0 +1,52 @@
+Certainly! Below is the complete Verilog code for the `signal_generator` module that generates a triangle wave signal as described:
+
+```verilog
+module signal_generator (
+    input wire clk,      // Clock signal
+    input wire rst_n,    // Active-low reset signal
+    output reg [4:0] wave // 5-bit output waveform signal
+);
+
+    reg state; // State register to control waveform generation
+
+    // Initialize wave and state on reset
+    always @(posedge clk or negedge rst_n) begin
+        if (~rst_n) begin
+            wave <= 5'b00000; // Clear wave to 0
+            state <= 1'b0;     // Clear state to 0
+        end else begin
+            case (state)
+                1'b0: begin
+                    if (wave == 5'b11111) begin // If wave reaches 31
+                        state <= 1'b1;          // Transition to state 1
+                    end else begin
+                        wave <= wave + 1;       // Increment wave
+                    end
+                end
+                1'b1: begin
+                    if (wave == 5'b00000) begin // If wave reaches 0
+                        state <= 1'b0;          // Transition to state 0
+                    end else begin
+                        wave <= wave - 1;       // Decrement wave
+                    end
+                end
+            endcase
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+- **Module Definition**: The module `signal_generator` is defined with the specified inputs and outputs.
+- **State and Wave Registers**: 
+  - `state` is a 1-bit register that controls whether the waveform is incrementing or decrementing.
+  - `wave` is a 5-bit register that holds the current value of the waveform.
+- **Reset and Clock Triggering**: The `always` block is triggered on the positive edge of the clock (`posedge clk`) or the negative edge of the reset signal (`negedge rst_n`).
+- **Reset Logic**: When `rst_n` is low (`~rst_n` is true), both `wave` and `state` are reset to 0.
+- **State Machine**:
+  - **State 0**: If `wave` is less than 31, it increments `wave`. If `wave` reaches 31, it transitions to state 1.
+  - **State 1**: If `wave` is greater than 0, it decrements `wave`. If `wave` reaches 0, it transitions back to state 0.
+- **Waveform Generation**: The waveform continuously cycles between 0 and 31 based on the state transitions.
+
+This module should meet the requirements for generating a triangle wave signal using a 5-bit register and state machine logic.

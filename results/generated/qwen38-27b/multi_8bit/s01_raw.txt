@@ -1,0 +1,34 @@
+```verilog
+module multi_8bit (
+    input  [7:0] A,
+    input  [7:0] B,
+    output [15:0] product
+);
+
+    // 16-bit accumulator for the partial sum
+    reg [15:0] acc;
+    // 16-bit shifted version of A
+    reg [15:0] shifted_A;
+
+    // Combinational logic to compute the product using shift-and-add
+    // We iterate through each bit of B. If B[i] is 1, we add A << i to the accumulator.
+    // This can be done in a single combinational block.
+
+    always @* begin
+        acc = 16'b0;
+        shifted_A = 16'b0;
+        
+        for (integer i = 0; i < 8; i = i + 1) begin
+            // Check if bit i of B is set
+            if (B[i]) begin
+                // Add A shifted left by i positions to the accumulator
+                // A is 8 bits, so A << i fits in 16 bits for i up to 7
+                acc = acc + ({{8{1'b0}}, A} << i);
+            end
+        end
+    end
+
+    assign product = acc;
+
+endmodule
+```

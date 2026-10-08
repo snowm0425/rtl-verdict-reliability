@@ -1,0 +1,50 @@
+Sure, below is the Verilog implementation of the `parallel2serial` module as per your specifications:
+
+```verilog
+module parallel2serial (
+    input wire clk,          // Clock signal
+    input wire rst_n,        // Active low reset signal
+    input wire [3:0] d,      // 4-bit parallel input data
+    output reg valid_out,    // Valid signal indicating availability of serial output
+    output reg dout          // Serial output
+);
+
+    reg [3:0] data;          // Data register to hold the parallel input
+    reg [1:0] cnt;           // Counter to track the bit position
+
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            // Reset state
+            data <= 4'b0000;  // Clear data register
+            cnt <= 2'b00;     // Reset counter
+            valid_out <= 0;   // Clear valid signal
+        end else begin
+            // Normal operation
+            if (cnt == 2'b11) begin  // If counter is 3 (0b11 in 2-bit representation)
+                data <= d;           // Load new parallel data
+                cnt <= 2'b00;        // Reset counter
+                valid_out <= 1;      // Set valid signal
+            end else begin
+                cnt <= cnt + 1;      // Increment counter
+                valid_out <= 0;      // Clear valid signal
+            end
+            dout <= data[3];         // Output the most significant bit of data
+            data <= {data[2:0], 1'b0}; // Shift data left by 1 bit
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Data Register (`data`)**: This 4-bit register holds the parallel input data. It gets updated with the new input `d` when the counter reaches 3 (indicating the last bit has been output).
+2. **Counter (`cnt`)**: This 2-bit counter keeps track of the current bit position being output. It is incremented on each clock cycle until it reaches 3, at which point it resets.
+3. **Valid Signal (`valid_out`)**: This signal is set to 1 when the counter is 3, indicating that the MSB of the new data is being output. It is cleared otherwise.
+4. **Serial Output (`dout`)**: This output is always the MSB of the `data` register.
+5. **Shift Operation**: The `data` register is shifted left by one bit in each clock cycle, with the MSB being output as `dout`.
+
+### Reset Handling:
+- When the reset signal `rst_n` is active (low), all registers are reset to their initial states.
+- When `rst_n` is inactive (high), the module performs its normal operations as described.
+
+This module will correctly convert a 4-bit parallel input to a serial output, outputting the most significant bit first and then shifting the remaining bits over the next three clock cycles.

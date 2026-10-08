@@ -1,0 +1,75 @@
+Sure! Below is the complete Verilog code for the `freq_div` module that generates three different clock frequencies from a 100 MHz input clock signal: 50 MHz, 10 MHz, and 1 MHz. The module uses three counters as described in your requirements.
+
+```verilog
+module freq_div (
+    input wire CLK_in,    // Input clock signal (100 MHz)
+    input wire RST,       // Reset signal (active high)
+    output reg CLK_50,    // Output clock signal (50 MHz)
+    output reg CLK_10,    // Output clock signal (10 MHz)
+    output reg CLK_1      // Output clock signal (1 MHz)
+);
+
+    // Counter for 10 MHz clock generation
+    reg [2:0] cnt_10;  // 3-bit counter (0 to 4)
+
+    // Counter for 1 MHz clock generation
+    reg [5:0] cnt_100; // 6-bit counter (0 to 49)
+
+    // Process for generating CLK_50
+    always @(posedge CLK_in or posedge RST) begin
+        if (RST) begin
+            CLK_50 <= 0;
+        end else begin
+            CLK_50 <= ~CLK_50;  // Toggle CLK_50 on each clock edge
+        end
+    end
+
+    // Process for generating CLK_10
+    always @(posedge CLK_in or posedge RST) begin
+        if (RST) begin
+            CLK_10 <= 0;
+            cnt_10 <= 0;
+        end else begin
+            if (cnt_10 == 4) begin
+                CLK_10 <= ~CLK_10;  // Toggle CLK_10 every 5 clock cycles
+                cnt_10 <= 0;
+            end else begin
+                cnt_10 <= cnt_10 + 1;
+            end
+        end
+    end
+
+    // Process for generating CLK_1
+    always @(posedge CLK_in or posedge RST) begin
+        if (RST) begin
+            CLK_1 <= 0;
+            cnt_100 <= 0;
+        end else begin
+            if (cnt_100 == 49) begin
+                CLK_1 <= ~CLK_1;  // Toggle CLK_1 every 50 clock cycles
+                cnt_100 <= 0;
+            end else begin
+                cnt_100 <= cnt_100 + 1;
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **CLK_50 Generation**:
+   - The `CLK_50` is toggled on every positive edge of `CLK_in` using a simple register inversion (`CLK_50 <= ~CLK_50`).
+   - When `RST` is active, `CLK_50` is set to 0.
+
+2. **CLK_10 Generation**:
+   - A 3-bit counter (`cnt_10`) is used to count up to 4.
+   - When `cnt_10` reaches 4, `CLK_10` is toggled, and `cnt_10` is reset to 0.
+   - When `RST` is active, `CLK_10` is set to 0, and `cnt_10` is reset to 0.
+
+3. **CLK_1 Generation**:
+   - A 6-bit counter (`cnt_100`) is used to count up to 49.
+   - When `cnt_100` reaches 49, `CLK_1` is toggled, and `cnt_100` is reset to 0.
+   - When `RST` is active, `CLK_1` is set to 0, and `cnt_100` is reset to 0.
+
+This code ensures that the output clocks are generated with the correct frequencies based on the input clock and reset signal.

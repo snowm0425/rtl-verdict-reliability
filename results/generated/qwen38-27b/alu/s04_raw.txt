@@ -1,0 +1,213 @@
+```verilog
+module alu (
+    input  [31:0] a,
+    input  [31:0] b,
+    input  [5:0]  aluc,
+    output [31:0] r,
+    output zero,
+    output carry,
+    output negative,
+    output overflow,
+    output flag
+);
+
+    parameter ADD  = 6'b100000;
+    parameter ADDU = 6'b100001;
+    parameter SUB  = 6'b100010;
+    parameter SUBU = 6'b100011;
+    parameter AND  = 6'b100100;
+    parameter OR   = 6'b100101;
+    parameter XOR  = 6'b100110;
+    parameter NOR  = 6'b100111;
+    parameter SLT  = 6'b101010;
+    parameter SLTU = 6'b101011;
+    parameter SLL  = 6'b000000;
+    parameter SRL  = 6'b000010;
+    parameter SRA  = 6'b000011;
+    parameter SLLV = 6'b000100;
+    parameter SRLV = 6'b000110;
+    parameter SRAV = 6'b000111;
+    parameter LUI  = 6'b001111;
+
+    // Internal signals
+    wire [31:0] result;
+    wire        zero_internal;
+    wire        carry_internal;
+    wire        negative_internal;
+    wire        overflow_internal;
+    wire        flag_internal;
+
+    // Compute result, zero, carry, negative, overflow, flag
+    assign r = result;
+    assign zero = zero_internal;
+    assign carry = carry_internal;
+    assign negative = negative_internal;
+    assign overflow = overflow_internal;
+    assign flag = flag_internal;
+
+    // Signed versions of inputs for SLT
+    signed [31:0] a_signed;
+    signed [31:0] b_signed;
+    assign a_signed = $signed(a);
+    assign b_signed = $signed(b);
+
+    // For ADD/SUB overflow detection:
+    // ADD overflow: if both operands have same sign, but result has different sign
+    // SUB overflow: if operands have different signs, and result has sign different from a
+    // We compute these in a combinational block.
+
+    // We'll use a combinational always block to compute all outputs based on aluc
+
+    always @* begin
+        result = {32{1'z}};
+        zero_internal = 1'b0;
+        carry_internal = 1'b0;
+        negative_internal = 1'b0;
+        overflow_internal = 1'b0;
+        flag_internal = 1'b0;
+
+        case (aluc)
+            ADD: begin
+                result = a + b;
+                zero_internal = (result == 32'b0);
+                negative_internal = result[31];
+                // Overflow for ADD: if a[31] == b[31] and a[31] != result[31]
+                overflow_internal = (a[31] == b[31]) && (a[31] != result[31]);
+                // Carry: unsigned overflow, i.e., if the addition produced a carry out
+                // For 32-bit, carry = (~(a[31] & b[31]) & result[31]) | (a[31] & b[31]) | (a[31] & result[31])
+                // Simpler: carry = !(a + b == a) when using 33-bit, but we can compute:
+                // Actually, for unsigned add, carry = ((a[31] & ~b[31] & result[31]) | (~a[31] & b[31] & result[31]) | (a[31] & b[31]))
+                // Let's use a cleaner method: compute 33-bit sum
+                wire [32:0] sum_33 = {1'b0, a} + {1'b0, b};
+                carry_internal = sum_33[32];
+            end
+            ADDU: begin
+                result = a + b;
+                zero_internal = (result == 32'b0);
+                negative_internal = result[31];
+                overflow_internal = 1'b0;
+                wire [32:0] sum_33 = {1'b0, a} + {1'b0, b};
+                carry_internal = sum_33[32];
+            end
+            SUB: begin
+                result = a - b;
+                zero_internal = (result == 32'b0);
+                negative_internal = result[31];
+                // Overflow for SUB: if a[31] != b[31] and a[31] != result[31]
+                overflow_internal = (a[31] != b[31]) && (a[31] != result[31]);
+                // Carry for SUB (borrow): if a < b unsigned
+                carry_internal = (a < b);
+            end
+            SUBU: begin
+                result = a - b;
+                zero_internal = (result == 32'b0);
+                negative_internal = result[31];
+                overflow_internal = 1'b0;
+                carry_internal = (a < b);
+            end
+            AND: begin
+                result = a & b;
+                zero_internal = (result == 32'b0);
+                negative_internal = result[31];
+                overflow_internal = 1'b0;
+                carry_internal = 1'b0;
+            end
+            OR: begin
+                result = a | b;
+                zero_internal = (result == 32'b0);
+                negative_internal = result[31];
+                overflow_internal = 1'b0;
+                carry_internal = 1'b0;
+            end
+            XOR: begin
+                result = a ^ b;
+                zero_internal = (result == 32'b0);
+                negative_internal = result[31];
+                overflow_internal = 1'b0;
+                carry_internal = 1'b0;
+            end
+            NOR: begin
+                result = ~(a | b);
+                zero_internal = (result == 32'b0);
+                negative_internal = result[31];
+                overflow_internal = 1'b0;
+                carry_internal = 1'b0;
+            end
+            SLT: begin
+                result = (a_signed < b_signed) ? 32'd1 : 32'd0;
+                zero_internal = (result == 32'b0);
+                negative_internal = 1'b0;
+                overflow_internal = 1'b0;
+                carry_internal = 1'b0;
+                flag_internal = (a_signed < b_signed) ? 1'b1 : 1'b0;
+            end
+            SLTU: begin
+                result = (a < b) ? 32'd1 : 32'd0;
+                zero_internal = (result == 32'b0);
+                negative_internal = 1'b0;
+                overflow_internal = 1'b0;
+                carry_internal = 1'b0;
+                flag_internal = (a < b) ? 1'b1 : 1'b0;
+            end
+            SLL: begin
+                result = a << b[4:0];
+                zero_internal = (result == 32'b0);
+                negative_internal = result[31];
+                overflow_internal = 1'b0;
+                carry_internal = 1'b0;
+            end
+            SRL: begin
+                result = a >> b[4:0];
+                zero_internal = (result == 32'b0);
+                negative_internal = result[31];
+                overflow_internal = 1'b0;
+                carry_internal = 1'b0;
+            end
+            SRA: begin
+                result = $signed(a) >>> b[4:0];
+                zero_internal = (result == 32'b0);
+                negative_internal = result[31];
+                overflow_internal = 1'b0;
+                carry_internal = 1'b0;
+            end
+            SLLV: begin
+                result = a << a[4:0];
+                zero_internal = (result == 32'b0);
+                negative_internal = result[31];
+                overflow_internal = 1'b0;
+                carry_internal = 1'b0;
+            end
+            SRLV: begin
+                result = a >> a[4:0];
+                zero_internal = (result == 32'b0);
+                negative_internal = result[31];
+                overflow_internal = 1'b0;
+                carry_internal = 1'b0;
+            end
+            SRAV: begin
+                result = $signed(a) >>> a[4:0];
+                zero_internal = (result == 32'b0);
+                negative_internal = result[31];
+                overflow_internal = 1'b0;
+                carry_internal = 1'b0;
+            end
+            LUI: begin
+                result = {a[31:16], 16'b0};
+                zero_internal = (result == 32'b0);
+                negative_internal = result[31];
+                overflow_internal = 1'b0;
+                carry_internal = 1'b0;
+            end
+            default: begin
+                result = {32{1'z}};
+                zero_internal = 1'b0;
+                negative_internal = 1'b0;
+                overflow_internal = 1'b0;
+                carry_internal = 1'b0;
+                flag_internal = 1'b0;
+            end
+        endcase
+    end
+
+endmodule
+```

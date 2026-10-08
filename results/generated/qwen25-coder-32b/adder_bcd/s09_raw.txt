@@ -1,0 +1,60 @@
+Certainly! Below is the Verilog code for a 4-bit BCD adder module named `adder_bcd`. This module performs binary addition on the inputs `A`, `B`, and `Cin`, corrects the result if it exceeds 9, and generates the appropriate carry-out.
+
+```verilog
+module adder_bcd (
+    input [3:0] A,    // First BCD input (4-bit, representing a decimal digit from 0 to 9)
+    input [3:0] B,    // Second BCD input (4-bit, representing a decimal digit from 0 to 9)
+    input Cin,        // Carry-in input (1-bit)
+    output [3:0] Sum, // 4-bit output representing the sum of the two BCD inputs, corrected to be a valid BCD digit (0–9)
+    output Cout       // Carry-out output (1-bit), used when the sum exceeds the decimal value of 9
+);
+
+    // Internal wire to hold the initial binary sum
+    wire [4:0] bin_sum;
+
+    // Perform binary addition of A, B, and Cin
+    assign bin_sum = A + B + Cin;
+
+    // Internal wire to hold the corrected BCD sum
+    reg [3:0] corrected_sum;
+
+    // Internal wire to hold the carry-out
+    reg carry_out;
+
+    // Logic to correct the sum if it exceeds 9
+    always @(*) begin
+        if (bin_sum > 9) begin
+            corrected_sum = bin_sum + 6; // Add 6 to correct the BCD sum
+            carry_out = 1;             // Set carry-out to 1
+        end else begin
+            corrected_sum = bin_sum;   // No correction needed
+            carry_out = 0;             // Set carry-out to 0
+        end
+    end
+
+    // Assign the corrected sum and carry-out to the output ports
+    assign Sum = corrected_sum;
+    assign Cout = carry_out;
+
+endmodule
+```
+
+### Explanation:
+1. **Inputs and Outputs:**
+   - `A` and `B` are 4-bit BCD inputs.
+   - `Cin` is the carry-in bit.
+   - `Sum` is the 4-bit BCD output representing the corrected sum.
+   - `Cout` is the carry-out bit indicating if the sum exceeds 9.
+
+2. **Binary Addition:**
+   - The binary sum of `A`, `B`, and `Cin` is calculated and stored in `bin_sum`.
+
+3. **BCD Correction:**
+   - If `bin_sum` exceeds 9, 6 is added to `bin_sum` to correct it to a valid BCD value.
+   - A carry-out (`carry_out`) is set to 1 if the sum exceeds 9, otherwise 0.
+
+4. **Output Assignment:**
+   - The corrected sum is assigned to `Sum`.
+   - The carry-out is assigned to `Cout`.
+
+This module ensures that the sum of two BCD digits, along with an optional carry-in, is always a valid BCD digit and correctly handles carry-out conditions.

@@ -1,0 +1,100 @@
+Certainly! Below is the complete Verilog code for a 16-bit full adder using two 8-bit full adders. This design leverages a smaller 8-bit adder module to construct the larger 16-bit adder.
+
+First, let's define the 8-bit full adder module:
+
+```verilog
+module adder_8bit (
+    input [7:0] a,      // 8-bit input operand A
+    input [7:0] b,      // 8-bit input operand B
+    input Cin,          // Carry-in input
+    output [7:0] y,     // 8-bit output representing the sum
+    output Co           // Carry-out output
+);
+
+    wire [7:0] carry;
+
+    // Full adder for each bit position
+    genvar i;
+    generate
+        for (i = 0; i < 8; i = i + 1) begin : full_adder
+            if (i == 0) begin
+                // First bit uses Cin
+                full_adder_bit fa (
+                    .a(a[0]),
+                    .b(b[0]),
+                    .Cin(Cin),
+                    .y(y[0]),
+                    .Co(carry[0])
+                );
+            end else begin
+                // Subsequent bits use the carry from the previous bit
+                full_adder_bit fa (
+                    .a(a[i]),
+                    .b(b[i]),
+                    .Cin(carry[i-1]),
+                    .y(y[i]),
+                    .Co(carry[i])
+                );
+            end
+        end
+    endgenerate
+
+    // The final carry-out is the carry from the last bit
+    assign Co = carry[7];
+
+endmodule
+
+// Full adder for a single bit
+module full_adder_bit (
+    input a,            // Input A
+    input b,            // Input B
+    input Cin,          // Carry-in
+    output y,           // Sum output
+    output Co           // Carry-out
+);
+
+    assign y = a ^ b ^ Cin;
+    assign Co = (a & b) | (Cin & (a ^ b));
+
+endmodule
+```
+
+Next, we define the 16-bit full adder module that uses two instances of the 8-bit adder:
+
+```verilog
+module adder_16bit (
+    input [15:0] a,     // 16-bit input operand A
+    input [15:0] b,     // 16-bit input operand B
+    input Cin,          // Carry-in input
+    output [15:0] y,    // 16-bit output representing the sum
+    output Co           // Carry-out output
+);
+
+    wire [7:0] y_low, y_high; // Intermediate outputs for the lower and upper 8-bit adders
+    wire Co_low;               // Carry-out from the lower 8-bit adder
+
+    // Lower 8-bit adder
+    adder_8bit lower_adder (
+        .a(a[7:0]),
+        .b(b[7:0]),
+        .Cin(Cin),
+        .y(y_low),
+        .Co(Co_low)
+    );
+
+    // Upper 8-bit adder
+    adder_8bit upper_adder (
+        .a(a[15:8]),
+        .b(b[15:8]),
+        .Cin(Co_low),
+        .y(y_high),
+        .Co(Co)
+    );
+
+    // Concatenate the results from the lower and upper 8-bit adders
+    assign y = {y_high, y_low};
+
+endmodule
+```
+
+This code defines a 16-bit full adder by instantiating two 8-bit full adders. The lower 8-bit adder uses the `Cin` as its carry-in, and the upper 8-bit adder uses the carry-out from the lower adder as its carry-in. The final carry-out from the upper adder is the carry-out of the 16-bit adder.

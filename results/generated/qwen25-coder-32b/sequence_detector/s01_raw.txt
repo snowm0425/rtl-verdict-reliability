@@ -1,0 +1,86 @@
+Certainly! Below is the Verilog implementation of the `sequence_detector` module that detects the specific 4-bit sequence `1001`. The module uses a finite state machine (FSM) with states `IDLE`, `S1`, `S2`, `S3`, and `S4`.
+
+```verilog
+module sequence_detector (
+    input clk,          // Clock signal
+    input reset_n,      // Active-low reset signal
+    input data_in,      // 1-bit binary input signal
+    output reg sequence_detected  // Output signal indicating sequence detection
+);
+
+    // Define the states of the FSM
+    typedef enum reg [1:0] {
+        IDLE = 2'b00,
+        S1 = 2'b01,
+        S2 = 2'b10,
+        S3 = 2'b11
+    } state_t;
+
+    // State variables
+    state_t current_state, next_state;
+
+    // State transition logic
+    always @(posedge clk or negedge reset_n) begin
+        if (!reset_n) begin
+            current_state <= IDLE;
+            sequence_detected <= 0;
+        end else begin
+            current_state <= next_state;
+            sequence_detected <= (current_state == S3 && data_in == 1);
+        end
+    end
+
+    // Next state logic and output logic
+    always @(*) begin
+        next_state = current_state;  // Default: stay in the current state
+
+        case (current_state)
+            IDLE: begin
+                if (data_in == 1)
+                    next_state = S1;
+            end
+            S1: begin
+                if (data_in == 0)
+                    next_state = S2;
+                else if (data_in == 1)
+                    next_state = S1;
+                else
+                    next_state = IDLE;
+            end
+            S2: begin
+                if (data_in == 0)
+                    next_state = S3;
+                else
+                    next_state = IDLE;
+            end
+            S3: begin
+                if (data_in == 1)
+                    next_state = IDLE;
+                else
+                    next_state = S2;
+            end
+            default: begin
+                next_state = IDLE;
+            end
+        endcase
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **State Definition**: The states `IDLE`, `S1`, `S2`, and `S3` are defined using an enumerated type `state_t`. The `S4` state is represented by the output `sequence_detected` being high when `current_state` is `S3` and `data_in` is `1`.
+
+2. **State Transition Logic**: The state transition logic is handled in two `always` blocks:
+   - The first `always` block handles the state transitions based on the clock and reset. It updates the `current_state` and sets `sequence_detected` high when the sequence `1001` is detected.
+   - The second `always` block defines the next state based on the current state and the input `data_in`.
+
+3. **Reset Behavior**: When `reset_n` is low, the state machine is reset to `IDLE`, and `sequence_detected` is set to `0`.
+
+4. **Sequence Detection**: The sequence `1001` is detected as follows:
+   - From `IDLE`, transition to `S1` when `data_in` is `1`.
+   - From `S1`, transition to `S2` when `data_in` is `0`.
+   - From `S2`, transition to `S3` when `data_in` is `0`.
+   - From `S3`, transition to `IDLE` when `data_in` is `1`, setting `sequence_detected` high during this transition.
+
+This implementation ensures that the sequence detector correctly identifies the sequence `1001` and provides the appropriate output.

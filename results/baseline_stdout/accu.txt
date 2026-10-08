@@ -1,0 +1,7 @@
+# stage=sim rc=0
+# STDOUT
+===========Your Design Passed===========
+/home/cvl/Documents/syn/RTLLM/Arithmetic/Accumulator/accu/testbench.v:85: $finish called at 150000 (1ps)
+
+# STDERR
+

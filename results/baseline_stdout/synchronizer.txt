@@ -1,0 +1,7 @@
+# stage=sim rc=0
+# STDOUT
+===========Your Design Passed===========
+/home/cvl/Documents/syn/RTLLM/Miscellaneous/Others/synchronizer/testbench.v:74: $finish called at 1005 (1ns)
+
+# STDERR
+

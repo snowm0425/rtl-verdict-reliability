@@ -1,0 +1,8 @@
+# stage=sim rc=0
+# STDOUT
+WARNING: /home/cvl/Documents/syn/RTLLM/Miscellaneous/RISC-V/alu/testbench.v:43: $readmemh(reference.dat): Not enough words in the file for the requested range [0:31].
+===========Your Design Passed===========
+/home/cvl/Documents/syn/RTLLM/Miscellaneous/RISC-V/alu/testbench.v:86: $finish called at 175000 (1ps)
+
+# STDERR
+

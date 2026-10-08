@@ -1,0 +1,47 @@
+Certainly! Below is the complete Verilog code for the `square_wave` module as per your specifications. This module takes a clock signal and a frequency value to generate a square wave output signal that toggles at the specified frequency.
+
+```verilog
+module square_wave (
+    input clk,          // Clock signal driving the module
+    input [7:0] freq,   // Frequency control value
+    output reg wave_out // Square wave output signal
+);
+
+    reg [7:0] count;  // Counter register to track cycles between wave toggles
+
+    // Always block to handle the counter and wave toggling
+    always @(posedge clk) begin
+        if (freq == 0) begin
+            // If frequency is 0, set wave_out to 0 (or any fixed state)
+            wave_out <= 0;
+            count <= 0;
+        end else begin
+            if (count == (freq - 1)) begin
+                // When count reaches (freq - 1), reset count to 0 and toggle wave_out
+                count <= 0;
+                wave_out <= ~wave_out;
+            end else begin
+                // Otherwise, increment the count
+                count <= count + 1;
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Module Declaration**: The `square_wave` module is declared with the specified input and output ports.
+2. **Internal Register**: A `count` register of 8-bit width is used to keep track of the number of clock cycles.
+3. **Always Block**: The `always @(posedge clk)` block ensures that the logic inside is executed on the rising edge of the clock.
+4. **Frequency Check**: If `freq` is 0, the module sets `wave_out` to 0 and resets `count` to 0 to prevent toggling.
+5. **Count Logic**: 
+   - If `count` reaches `(freq - 1)`, it is reset to 0, and `wave_out` is toggled.
+   - Otherwise, `count` is incremented by 1.
+6. **Wave Toggling**: The `wave_out` signal toggles when `count` reaches `(freq - 1)`, producing a square wave with the specified frequency.
+
+### Note:
+- The higher the `freq` value, the slower the square wave toggles because the counter needs to reach a higher value before toggling `wave_out`.
+- If `freq` is 0, the module sets `wave_out` to a fixed state (0 in this case) to avoid undefined behavior.
+
+You can simulate this module in a Verilog simulator to verify its functionality.

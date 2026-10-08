@@ -1,0 +1,63 @@
+Certainly! Below is the complete Verilog code for the `parallel2serial` module that converts a 4-bit parallel input to a serial output, as per your specifications:
+
+```verilog
+module parallel2serial (
+    input clk,          // Clock signal
+    input rst_n,        // Active-low reset signal
+    input [3:0] d,      // 4-bit parallel data input
+    output reg valid_out, // Valid signal indicating the availability of serial output
+    output reg dout       // Serial output representing the converted data
+);
+
+    reg [1:0] cnt; // Counter to keep track of the bit position
+    reg [3:0] data; // Register to hold the parallel data
+
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            // Reset state
+            cnt <= 2'b00;
+            valid_out <= 0;
+            dout <= 0;
+            data <= 4'b0000;
+        end else begin
+            if (cnt == 2'b11) begin
+                // Last bit of the parallel input is being output
+                valid_out <= 1;
+                cnt <= 2'b00; // Reset counter
+                data <= d; // Load new data
+                dout <= data[3]; // Output MSB
+            end else begin
+                // Output the next bit in the next clock cycle
+                valid_out <= 0;
+                cnt <= cnt + 1; // Increment counter
+                dout <= data[3]; // Output current MSB
+                data <= {data[2:0], 1'b0}; // Shift data to the left
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+- **Registers:**
+  - `cnt`: A 2-bit counter used to track which bit of the parallel data is being output. It ranges from 0 to 3.
+  - `data`: A 4-bit register to store the parallel data that is being shifted out.
+
+- **Reset:**
+  - When `rst_n` is low (active reset), all registers are reset to their initial states.
+
+- **Operation:**
+  - On each rising edge of the clock:
+    - If `cnt` is 3 (binary `11`), it indicates that the last bit of the parallel input has been output.
+      - The `valid_out` signal is set to 1 to indicate that the output is valid.
+      - The `cnt` is reset to 0.
+      - The `data` register is loaded with the new parallel input `d`.
+      - The most significant bit (`data[3]`) of the new data is assigned to `dout`.
+    - Otherwise, the next bit of the parallel data is output:
+      - The `valid_out` signal is set to 0.
+      - The `cnt` is incremented by 1.
+      - The most significant bit (`data[3]`) of the current data is assigned to `dout`.
+      - The `data` register is shifted left by one bit, effectively moving the next bit to the MSB position.
+
+This module will continuously convert 4-bit parallel inputs to a serial output, with `valid_out` indicating the availability of the output data.

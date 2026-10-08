@@ -1,0 +1,58 @@
+Certainly! Below is the complete Verilog code for the `square_wave` module based on your specifications. The module generates a square wave signal with a variable frequency controlled by the `freq` input.
+
+```verilog
+module square_wave (
+    input clk,          // Clock signal that drives the module
+    input [7:0] freq,   // Frequency control, specifying how often the square wave toggles
+    output reg wave_out // Square wave output signal
+);
+
+    reg [7:0] count;    // Counter register used to track cycles between wave toggles
+
+    always @(posedge clk) begin
+        if (count == (freq - 1)) begin
+            count <= 0;         // Reset count to 0
+            wave_out <= ~wave_out; // Toggle wave_out
+        end else begin
+            count <= count + 1; // Increment count
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Inputs and Outputs:**
+   - `clk`: The clock signal that drives the module.
+   - `freq`: An 8-bit input that specifies the frequency control. The higher the value, the slower the toggling rate of the `wave_out`.
+   - `wave_out`: The square wave output signal that toggles based on the `freq` input.
+
+2. **Internal Register:**
+   - `count`: An 8-bit register that increments on each rising edge of the clock. When it reaches `freq - 1`, it resets to 0 and toggles the `wave_out` signal.
+
+3. **Always Block:**
+   - The `always @(posedge clk)` block ensures that the logic inside it executes on every rising edge of the clock.
+   - If `count` equals `freq - 1`, it means the specified number of clock cycles have passed, so it resets `count` to 0 and toggles `wave_out` using the bitwise NOT operator (`~`).
+   - If `count` has not reached `freq - 1`, it simply increments `count` by 1 on the next clock cycle.
+
+### Usage:
+To use this module, instantiate it in your top-level design and provide the necessary clock and frequency inputs. The `wave_out` will generate a square wave based on the `freq` value provided.
+
+### Example Instantiation:
+```verilog
+module top_module (
+    input clk,
+    input [7:0] freq,
+    output reg wave_out
+);
+
+    square_wave square_wave_inst (
+        .clk(clk),
+        .freq(freq),
+        .wave_out(wave_out)
+    );
+
+endmodule
+```
+
+This code should work effectively in a Verilog simulation environment. Adjust the clock and frequency inputs as needed to test the module's behavior.

@@ -1,0 +1,66 @@
+Certainly! Below is the complete Verilog code for the `serial2parallel` module as per your requirements:
+
+```verilog
+module serial2parallel (
+    input wire clk,          // Clock signal.
+    input wire rst_n,        // Reset signal (active low).
+    input wire din_serial,   // Serial input data.
+    input wire din_valid,    // Validity signal for input data.
+    
+    output reg [7:0] dout_parallel,  // Parallel output data (8 bits wide).
+    output reg dout_valid            // Validity signal for the output data.
+);
+
+    reg [2:0] cnt;  // 3-bit counter to count up to 8.
+
+    // Synchronous reset and clock operation
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            dout_parallel <= 8'b0;  // Clear the parallel output on reset.
+            dout_valid <= 0;        // Clear the valid output on reset.
+            cnt <= 3'b0;            // Reset the counter on reset.
+        end else begin
+            if (din_valid) begin
+                // Shift the current value of dout_parallel left by 1 and add the new serial bit.
+                dout_parallel <= {din_serial, dout_parallel[7:1]};
+                cnt <= cnt + 1;  // Increment the counter.
+
+                // Check if 8 bits have been received.
+                if (cnt == 3'd7) begin
+                    dout_valid <= 1;  // Set the valid output to 1.
+                    cnt <= 3'b0;      // Reset the counter.
+                end else begin
+                    dout_valid <= 0;  // Keep the valid output to 0.
+                end
+            end else begin
+                dout_valid <= 0;  // Keep the valid output to 0 if din_valid is 0.
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Inputs and Outputs:**
+   - `clk`: The clock signal.
+   - `rst_n`: The reset signal (active low).
+   - `din_serial`: The serial input data.
+   - `din_valid`: Indicates the validity of the input data.
+   - `dout_parallel`: The 8-bit parallel output data.
+   - `dout_valid`: Indicates the validity of the parallel output data.
+
+2. **Internal Registers:**
+   - `dout_parallel`: Holds the 8-bit parallel data.
+   - `dout_valid`: Indicates the validity of the parallel data.
+   - `cnt`: A 3-bit counter to count the number of serial bits received.
+
+3. **Synchronous Logic:**
+   - The logic is sensitive to the rising edge of `clk` and the falling edge of `rst_n` (active low reset).
+   - On reset, all outputs are cleared, and the counter is reset to 0.
+   - When `din_valid` is high, the module shifts the current `dout_parallel` left by 1 bit and appends the new `din_serial` bit.
+   - The counter `cnt` is incremented with each valid input bit.
+   - When `cnt` reaches 7 (indicating 8 bits have been received), `dout_valid` is set to 1, and the counter is reset.
+   - If `din_valid` is low, `dout_valid` remains low.
+
+This design ensures that the parallel output is valid only when exactly 8 serial bits have been received and processed.

@@ -1,0 +1,59 @@
+Sure, below is the complete Verilog code for the frequency divider module as per your specifications:
+
+```verilog
+module freq_div (
+    input wire CLK_in,
+    input wire RST,
+    output reg CLK_50,
+    output reg CLK_10,
+    output reg CLK_1
+);
+
+    // Counters for CLK_10 and CLK_1 generation
+    reg [3:0] cnt_10;  // Counter for 10MHz generation (counts up to 4)
+    reg [5:0] cnt_100; // Counter for 1MHz generation (counts up to 49)
+
+    // CLK_50 generation
+    always @(posedge CLK_in or posedge RST) begin
+        if (RST) begin
+            CLK_50 <= 0;
+        end else begin
+            CLK_50 <= ~CLK_50; // Toggle CLK_50 on every CLK_in edge
+        end
+    end
+
+    // CLK_10 generation
+    always @(posedge CLK_in or posedge RST) begin
+        if (RST) begin
+            cnt_10 <= 4'b0;
+            CLK_10 <= 0;
+        end else if (cnt_10 == 4'b1001) begin // 4 + 1 = 5, but we count from 0 to 4
+            CLK_10 <= ~CLK_10; // Toggle CLK_10
+            cnt_10 <= 4'b0;
+        end else begin
+            cnt_10 <= cnt_10 + 1;
+        end
+    end
+
+    // CLK_1 generation
+    always @(posedge CLK_in or posedge RST) begin
+        if (RST) begin
+            cnt_100 <= 6'b0;
+            CLK_1 <= 0;
+        end else if (cnt_100 == 6'b110000) begin // 49 + 1 = 50, but we count from 0 to 49
+            CLK_1 <= ~CLK_1; // Toggle CLK_1
+            cnt_100 <= 6'b0;
+        end else begin
+            cnt_100 <= cnt_100 + 1;
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+- **CLK_50 Generation**: This is a simple toggle flip-flop that inverts its output on every positive edge of `CLK_in`. The reset signal (`RST`) sets the output to `0`.
+- **CLK_10 Generation**: A 4-bit counter (`cnt_10`) is used to count up to 4. When it reaches 4, the output `CLK_10` is toggled, and the counter is reset to 0. This effectively divides the `CLK_in` by 5 to produce a 10MHz signal.
+- **CLK_1 Generation**: A 6-bit counter (`cnt_100`) is used to count up to 49. When it reaches 49, the output `CLK_1` is toggled, and the counter is reset to 0. This effectively divides the `CLK_in` by 50 to produce a 1MHz signal.
+
+This module should work correctly with a 100MHz input clock to generate the desired output frequencies.

@@ -1,0 +1,61 @@
+Certainly! Below is the Verilog implementation of an 8-bit adder using a series of bit-level full adders.
+
+```verilog
+// Full Adder Module
+module full_adder (
+    input a,        // First bit of operand A
+    input b,        // First bit of operand B
+    input cin,      // Carry-in from the previous bit
+    output sum,     // Sum of the current bit
+    output cout     // Carry-out to the next bit
+);
+    assign sum = a ^ b ^ cin;       // Sum calculation
+    assign cout = (a & b) | (cin & (a ^ b));  // Carry-out calculation
+endmodule
+
+// 8-bit Adder Module
+module adder_8bit (
+    input [7:0] a,  // 8-bit input operand A
+    input [7:0] b,  // 8-bit input operand B
+    input cin,      // Carry-in input
+    output [7:0] sum,  // 8-bit output representing the sum of A and B
+    output cout      // Carry-out output
+);
+    wire [7:0] carry;  // Internal carry lines
+
+    // Instantiate 8 full adders
+    genvar i;
+    generate
+        for (i = 0; i < 8; i = i + 1) begin : fa_gen
+            if (i == 0) begin
+                // First full adder takes cin as input
+                full_adder fa0 (
+                    .a(a[0]),
+                    .b(b[0]),
+                    .cin(cin),
+                    .sum(sum[0]),
+                    .cout(carry[0])
+                );
+            end else begin
+                // Subsequent full adders take carry from the previous adder
+                full_adder fa (
+                    .a(a[i]),
+                    .b(b[i]),
+                    .cin(carry[i-1]),
+                    .sum(sum[i]),
+                    .cout(carry[i])
+                );
+            end
+        end
+    endgenerate
+
+    // The final carry-out is the last carry in the chain
+    assign cout = carry[7];
+endmodule
+```
+
+### Explanation:
+- **Full Adder Module**: This module takes three inputs (two bits and a carry-in) and produces two outputs (sum and carry-out). The sum is the XOR of the three inputs, and the carry-out is the OR of the AND of the two bits and the AND of the carry-in with the XOR of the two bits.
+- **8-bit Adder Module**: This module uses a generate loop to instantiate eight full adders. The first full adder takes the `cin` as its carry-in, while the subsequent full adders take the carry-out of the previous full adder as their carry-in. The final carry-out of the 8-bit adder is the carry-out of the last full adder in the chain.
+
+This design ensures that the addition operation is performed bit-by-bit, with proper carry propagation from one bit to the next.

@@ -1,0 +1,78 @@
+Certainly! Below is the complete Verilog code for the `barrel_shifter` module. This code includes the `barrel_shifter` module itself and the `mux2X1` submodule used within it.
+
+```verilog
+// 2-to-1 Multiplexer Module
+module mux2X1 (
+    input  sel,    // Selection signal
+    input  [7:0] in0, // Input 0
+    input  [7:0] in1, // Input 1
+    output [7:0] out  // Output
+);
+    assign out = sel ? in1 : in0;
+endmodule
+
+// Barrel Shifter Module
+module barrel_shifter (
+    input  [7:0] in,    // 8-bit input
+    input  [2:0] ctrl,  // 3-bit control signal
+    output [7:0] out    // 8-bit output
+);
+    // Intermediate signals for each stage
+    wire [7:0] shift4, shift2, shift1;
+
+    // Shift by 4 positions
+    assign shift4 = {in[3:0], in[7:4]};
+
+    // First mux stage: select between original input and shift by 4
+    mux2X1 mux4 (
+        .sel (ctrl[2]),
+        .in0 (in),
+        .in1 (shift4),
+        .out (shift2)
+    );
+
+    // Shift by 2 positions
+    assign shift2[7:0] = {shift2[5:0], shift2[7:6]};
+
+    // Second mux stage: select between result from previous stage and shift by 2
+    mux2X1 mux2 (
+        .sel (ctrl[1]),
+        .in0 (shift2),
+        .in1 ({shift2[1:0], shift2[7:2]}),
+        .out (shift1)
+    );
+
+    // Shift by 1 position
+    assign shift1[7:0] = {shift1[6:0], shift1[7]};
+
+    // Third mux stage: select between result from previous stage and shift by 1
+    mux2X1 mux1 (
+        .sel (ctrl[0]),
+        .in0 (shift1),
+        .in1 ({shift1[0], shift1[7:1]}),
+        .out (out)
+    );
+endmodule
+```
+
+### Explanation:
+
+1. **mux2X1 Module**:
+   - This is a simple 2-to-1 multiplexer that selects between two 8-bit inputs (`in0` and `in1`) based on the `sel` signal. If `sel` is high, it outputs `in1`; otherwise, it outputs `in0`.
+
+2. **barrel_shifter Module**:
+   - **Inputs**:
+     - `in [7:0]`: The 8-bit input to be shifted.
+     - `ctrl [2:0]`: The 3-bit control signal that determines the number of positions to shift.
+   - **Outputs**:
+     - `out [7:0]`: The 8-bit shifted output.
+
+   - **Implementation**:
+     - **Shift by 4 Positions**: The input is divided into two halves and swapped. This is done using the assignment `shift4 = {in[3:0], in[7:4]}`.
+     - **First Mux Stage**: A `mux2X1` module selects between the original input and the shifted input by 4 positions based on `ctrl[2]`.
+     - **Shift by 2 Positions**: The intermediate result from the first mux stage is shifted by 2 positions. This is done by rotating the bits.
+     - **Second Mux Stage**: Another `mux2X1` module selects between the result from the first stage and the shifted result by 2 positions based on `ctrl[1]`.
+     - **Shift by 1 Position**: The result from the second mux stage is shifted by 1 position. This is done by rotating the bits.
+     - **Third Mux Stage**: A final `mux2X1` module selects between the result from the second stage and the shifted result by 1 position based on `ctrl[0]`.
+
+This implementation efficiently handles the barrel shift operation using a combination of bit manipulation and multiplexers.

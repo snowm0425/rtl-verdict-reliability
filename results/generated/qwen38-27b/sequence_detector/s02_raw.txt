@@ -1,0 +1,104 @@
+```verilog
+module sequence_detector (
+    input wire clk,
+    input wire reset_n,
+    input wire data_in,
+    output reg sequence_detected
+);
+
+    // State encoding
+    localparam IDLE = 3'b000;
+    localparam S1   = 3'b001;
+    localparam S2   = 3'b010;
+    localparam S3   = 3'b011;
+    localparam S4   = 3'b100;
+
+    reg [2:0] current_state, next_state;
+
+    // Next state logic
+    always @(*) begin
+        next_state = current_state;
+        case (current_state)
+            IDLE: begin
+                if (data_in == 1'b1)
+                    next_state = S1;
+                else
+                    next_state = IDLE;
+            end
+            S1: begin
+                if (data_in == 1'b0)
+                    next_state = S2;
+                else
+                    next_state = S1;
+            end
+            S2: begin
+                if (data_in == 1'b0)
+                    next_state = S3;
+                else
+                    next_state = IDLE;
+            end
+            S3: begin
+                if (data_in == 1'b1)
+                    next_state = S4;
+                else
+                    next_state = IDLE;
+            end
+            S4: begin
+                // After detecting the full sequence, we need to handle overlapping sequences
+                // The sequence is 1001. After S4, we've seen 1-0-0-1.
+                // For overlapping, we need to check if the last bits can form a new sequence start.
+                // The last bit is 1 (from S4 transition). So we can restart from S1 if data_in is 1.
+                // But also need to consider: after 1001, if next bit is 0, we are in state that corresponds to having seen '10' which is S2? No.
+                // Let's think carefully. The sequence is 1001.
+                // After detecting 1001, the state should reflect the longest suffix of the detected sequence that is also a prefix of the target sequence.
+                // The target sequence is 1001.
+                // Suffixes of 1001 that are prefixes of 1001:
+                //   1001 -> prefix 1001 (full, but we're done)
+                //   001  -> not a prefix
+                //   01   -> not a prefix
+                //   1    -> prefix (S1)
+                // So after S4, if we consider the last bit '1' as the start of a new potential sequence, we go to S1.
+                // But we need to handle based on the next input.
+                // Actually, in S4, we've just received the final '1'. The state after detection should be determined by what prefix of the sequence we've matched so far, considering the last bits.
+                // Since the sequence ends with '1', and '1' is the first bit of the sequence, we transition to S1 if we want to allow overlapping.
+                // But the transition from S4 should depend on data_in for the NEXT cycle.
+                // Let me reconsider: In S4, we have just completed the sequence. The next state depends on data_in for the next clock edge.
+                // If data_in is 1, then we've seen ...1001 + 1, and the last '1' could start a new sequence, so next_state = S1.
+                // If data_in is 0, then we've seen ...1001 + 0. The suffix '10' is not a prefix of '1001' (prefixes are '1', '10', '100', '1001'). '10' is a prefix (S2). Wait, '10' is the first two bits, so yes it's S2.
+                // Let's list prefixes: '1' -> S1, '10' -> S2, '100' -> S3, '1001' -> S4.
+                // After 1001, the suffixes that match prefixes:
+                //   Last 1 bit: '1' -> S1
+                //   Last 2 bits: '01' -> no match
+                //   Last 3 bits: '001' -> no match
+                //   Last 4 bits: '1001' -> full sequence, but we're moving on
+                // So the longest proper suffix that is a prefix is '1' (length 1).
+                // But this is for the state AFTER the sequence is fully detected. The transition from S4 should be based on the current data_in.
+                // If data_in == 1, then the new bit extends the suffix. The last bits would be '...1001' + '1'. The relevant suffix for next state: we have '1' (the last bit) which is a prefix, so S1.
+                // If data_in == 0, then the last bits are '...1001' + '0'. The suffix '10' matches prefix '10', so S2.
+                if (data_in == 1'b1)
+                    next_state = S1;
+                else
+                    next_state = S2;
+            end
+            default: next_state = IDLE;
+        endcase
+    end
+
+    // State register
+    always @(posedge clk or negedge reset_n) begin
+        if (!reset_n)
+            current_state <= IDLE;
+        else
+            current_state <= next_state;
+    end
+
+    // Output logic
+    always @(posedge clk or negedge reset_n) begin
+        if (!reset_n)
+            sequence_detected <= 1'b0;
+        else
+            sequence_detected <= (current_state == S4);
+    end
+
+endmodule
+```

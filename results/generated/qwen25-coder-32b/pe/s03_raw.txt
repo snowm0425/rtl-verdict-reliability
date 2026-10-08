@@ -1,0 +1,54 @@
+Certainly! Below is the complete Verilog code for the Multiplying Accumulator (MAC) module as per your requirements:
+
+```verilog
+module pe (
+    input wire clk,          // Clock signal
+    input wire rst,          // Reset signal (active high)
+    input wire [31:0] a,     // 32-bit input operand A
+    input wire [31:0] b,     // 32-bit input operand B
+    output reg [31:0] c      // 32-bit output representing the accumulated result
+);
+
+    // Internal wire to hold the product of a and b
+    wire [63:0] product;
+
+    // Multiplier to compute the product of a and b
+    assign product = a * b;
+
+    // Always block to handle the accumulation and reset logic
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            c <= 0;  // Reset the accumulator to 0
+        end else begin
+            c <= c + product[31:0];  // Accumulate the lower 32 bits of the product
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+
+1. **Inputs and Outputs:**
+   - `clk`: Clock signal for synchronous operations.
+   - `rst`: Reset signal (active high). When `rst` is 1, the accumulator is reset to 0.
+   - `a`: 32-bit input operand A.
+   - `b`: 32-bit input operand B.
+   - `c`: 32-bit output representing the accumulated result.
+
+2. **Internal Signals:**
+   - `product`: A 64-bit wire to hold the result of multiplying `a` and `b`. This is necessary because the product of two 32-bit numbers can result in a 64-bit number.
+
+3. **Multiplier:**
+   - The product of `a` and `b` is computed using the `*` operator and stored in the `product` wire.
+
+4. **Always Block:**
+   - The `always` block is sensitive to both the positive edge of the clock (`posedge clk`) and the positive edge of the reset (`posedge rst`).
+   - If `rst` is high, the accumulator `c` is reset to 0.
+   - If `rst` is low, the lower 32 bits of the `product` are added to the current value of `c`.
+
+### Note:
+- The code assumes that the accumulation will not overflow the 32-bit register `c`. If overflow is a concern, additional logic would be needed to handle it.
+- The `product` is truncated to 32 bits (`product[31:0]`) before being added to `c`. This is a simplification and assumes that only the lower 32 bits of the product are relevant. If you need to handle the full 64-bit product, the accumulator `c` would need to be widened to 64 bits, or additional logic would be required to manage the higher bits.
+
+This code should meet the requirements for a simple 32-bit Multiplying Accumulator in Verilog.

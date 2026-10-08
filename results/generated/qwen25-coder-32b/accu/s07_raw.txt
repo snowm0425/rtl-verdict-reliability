@@ -1,0 +1,71 @@
+Sure, below is the complete Verilog code for the `accu` module as per your specifications:
+
+```verilog
+module accu (
+    input wire clk,
+    input wire rst_n,
+    input wire [7:0] data_in,
+    input wire valid_in,
+    output reg valid_out,
+    output reg [9:0] data_out
+);
+
+    // Internal registers
+    reg [1:0] count; // Counter to keep track of number of valid inputs
+    reg [9:0] accumulator; // Accumulator to sum the data
+
+    // Initialize outputs
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            valid_out <= 0;
+            data_out <= 0;
+            count <= 0;
+            accumulator <= 0;
+        end else begin
+            if (valid_in) begin
+                // Accumulate the input data
+                accumulator <= accumulator + data_in;
+                // Increment the count of valid inputs
+                count <= count + 1;
+            end
+
+            // Check if 4 valid inputs have been received
+            if (count == 3) begin // Count starts from 0, so 3 means 4 inputs
+                // Set the output data and valid signal
+                data_out <= accumulator;
+                valid_out <= 1;
+
+                // Reset the count and accumulator for the next set of inputs
+                count <= 0;
+                accumulator <= 0;
+            end else begin
+                // Otherwise, clear the valid signal
+                valid_out <= 0;
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+
+- **Inputs and Outputs:**
+  - `clk`: Clock signal for synchronization.
+  - `rst_n`: Active-low reset signal.
+  - `data_in[7:0]`: 8-bit input data.
+  - `valid_in`: Signal indicating readiness for new data.
+  - `valid_out`: Signal indicating when 4 inputs have been accumulated.
+  - `data_out[9:0]`: Accumulated sum of 4 input data values.
+
+- **Internal Registers:**
+  - `count`: A 2-bit counter to keep track of the number of valid inputs received.
+  - `accumulator`: A 10-bit register to accumulate the sum of the input data.
+
+- **Behavior:**
+  - On reset (`rst_n` is low), all registers are initialized to 0.
+  - On each clock cycle, if `valid_in` is high, the input data is added to the accumulator, and the count is incremented.
+  - When the count reaches 3 (indicating 4 valid inputs), the accumulated sum is output on `data_out`, and `valid_out` is set to 1 for one cycle.
+  - After outputting the accumulated sum, the count and accumulator are reset for the next set of inputs.
+
+This module ensures that the accumulated sum is output only after receiving 4 valid inputs, and the `valid_out` signal is asserted for only one clock cycle.

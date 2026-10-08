@@ -1,0 +1,73 @@
+Sure, I'll provide you with a complete Verilog implementation of the 8-bit Radix-4 Booth multiplier as per your specifications. This design includes a 5-bit counter to manage the multiplication process and handles the Booth encoding logic.
+
+```verilog
+module multi_booth_8bit (
+    input clk,
+    input reset,
+    input [7:0] a,
+    input [7:0] b,
+    output reg [15:0] p,
+    output reg rdy
+);
+
+    reg [15:0] multiplier;
+    reg [15:0] multiplicand;
+    reg [4:0] ctr;
+
+    always @(posedge clk or posedge reset) begin
+        if (reset) begin
+            // Initialize the registers
+            multiplier <= {{8{a[7]}}, a};
+            multiplicand <= {{8{b[7]}}, b};
+            p <= 16'b0;
+            ctr <= 5'b0;
+            rdy <= 1'b0;
+        end else begin
+            if (ctr < 16) begin
+                // Booth encoding and multiplication logic
+                case ({multiplier[ctr+1], multiplier[ctr]})
+                    2'b01: p <= p + multiplicand; // Positive Booth encoding
+                    2'b10: p <= p - multiplicand; // Negative Booth encoding
+                    default: ; // No action for 00 and 11
+                endcase
+                
+                // Left shift multiplicand by 1
+                multiplicand <= multiplicand << 1;
+                
+                // Increment counter
+                ctr <= ctr + 1;
+                
+                // Set ready signal when multiplication is complete
+                if (ctr == 15) begin
+                    rdy <= 1'b1;
+                end else begin
+                    rdy <= 1'b0;
+                end
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Registers:**
+   - `multiplier`: 16-bit register initialized with the sign-extended multiplicand.
+   - `multiplicand`: 16-bit register initialized with the sign-extended multiplier.
+   - `ctr`: 5-bit counter to keep track of the multiplication steps.
+   - `p`: 16-bit output register to store the product.
+   - `rdy`: Output signal indicating the completion of the multiplication.
+
+2. **Reset Logic:**
+   - On the positive edge of the reset signal, the registers are initialized to their respective values, and the counter and ready signal are reset.
+
+3. **Multiplication Logic:**
+   - The Booth encoding is performed using the two bits from the `multiplier` register.
+   - Depending on the Booth encoding, the `p` register is updated:
+     - `2'b01` (positive Booth encoding): Add `multiplicand` to `p`.
+     - `2'b10` (negative Booth encoding): Subtract `multiplicand` from `p`.
+   - The `multiplicand` register is left-shifted by 1 at each step.
+   - The counter is incremented after each iteration.
+   - Once the counter reaches 16, the multiplication is complete, and the `rdy` signal is set to 1.
+
+This implementation ensures that the multiplication process is correctly handled using the Booth algorithm and is synchronized with the clock signal.

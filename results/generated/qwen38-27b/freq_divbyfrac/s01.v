@@ -1,0 +1,87 @@
+module freq_divbyfrac (
+    input  wire clk,
+    input  wire rst_n,
+    output wire clk_div
+);
+
+    // Parameters for 3.5x division
+    // Total period = 7 clock cycles
+    // Half-integer division: divide by 3.5
+    // We use a 7-cycle counter, generating two phases that are OR-ed together
+
+    // Counter to count 7 clock cycles
+    localparam [2:0] COUNT_MAX = 3'd7;
+
+    reg [2:0] count;
+    reg       clk_div_pos;  // Positive edge triggered divided clock
+    reg       clk_div_neg;  // Negative edge triggered divided clock (phase shifted)
+    reg       clk_div_int;  // Intermediate divided clock
+
+    // Reset the counter
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            count <= 3'd0;
+        end else begin
+            if (count == COUNT_MAX - 1)
+                count <= 3'd0;
+            else
+                count <= count + 1;
+        end
+    end
+
+    // Generate a clock that toggles every 4 cycles on posedge and every 3 cycles on another phase
+    // For 3.5x division: 
+    // Phase A: high for 4 cycles, low for 3 cycles (or vice versa)
+    // We create two phase-shifted versions and OR them
+
+    // Let's create a divided clock with period of 4 cycles (high for 2, low for 2) won't work directly
+    // Better approach: create a clock with 7-cycle period, split into two halves of 4 and 3
+
+    // Create a signal that is high for 4 cycles and low for 3 cycles
+    reg [2:0] count_a;
+    reg       clk_a;
+
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            count_a <= 3'd0;
+            clk_a   <= 1'b0;
+        end else begin
+            if (count_a == 3'd6)
+                count_a <= 3'd0;
+            else
+                count_a <= count_a + 1;
+
+            // clk_a high for 4 cycles (count 0-3), low for 3 cycles (count 4-6)
+            if (count_a < 3'd4)
+                clk_a <= 1'b1;
+            else
+                clk_a <= 1'b0;
+        end
+    end
+
+    // Create a phase-shifted version: high for 3 cycles, low for 4 cycles
+    reg [2:0] count_b;
+    reg       clk_b;
+
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            count_b <= 3'd0;
+            clk_b   <= 1'b0;
+        end else begin
+            if (count_b == 3'd6)
+                count_b <= 3'd0;
+            else
+                count_b <= count_b + 1;
+
+            // clk_b high for 3 cycles (count 0-2), low for 4 cycles (count 3-6)
+            if (count_b < 3'd3)
+                clk_b <= 1'b1;
+            else
+                clk_b <= 1'b0;
+        end
+    end
+
+    // OR the two clocks to get a more uniform output
+    assign clk_div = clk_a | clk_b;
+
+endmodule

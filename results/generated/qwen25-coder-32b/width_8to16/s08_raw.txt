@@ -1,0 +1,64 @@
+Certainly! Below is the complete Verilog code for the `width_8to16` module that performs the described data width conversion:
+
+```verilog
+module width_8to16 (
+    input wire clk,          // Clock signal
+    input wire rst_n,        // Active-low reset signal
+    input wire valid_in,     // Validity of input data
+    input wire [7:0] data_in, // 8-bit input data
+
+    output reg valid_out,    // Validity of output data
+    output reg [15:0] data_out // 16-bit output data
+);
+
+    reg [7:0] data_lock;    // Temporary storage for the first 8-bit input
+    reg flag;              // Flag to indicate if the first data has been captured
+
+    // Reset and clocked logic
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            // Reset conditions
+            data_out <= 16'b0;
+            valid_out <= 1'b0;
+            data_lock <= 8'b0;
+            flag <= 1'b0;
+        end else begin
+            if (valid_in) begin
+                if (flag) begin
+                    // Second valid data received, concatenate and output
+                    data_out <= {data_lock, data_in};
+                    valid_out <= 1'b1;
+                    // Reset flag and clear data_lock
+                    flag <= 1'b0;
+                    data_lock <= 8'b0;
+                end else begin
+                    // First valid data received, store in data_lock
+                    data_lock <= data_in;
+                    flag <= 1'b1;
+                end
+            end else begin
+                // No valid input, clear output and flag
+                valid_out <= 1'b0;
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Registers**:
+   - `data_lock`: Used to temporarily store the first 8-bit input data.
+   - `flag`: Used to indicate whether the first 8-bit data has been received.
+
+2. **Reset and Clock Handling**:
+   - The `always @(posedge clk or negedge rst_n)` block ensures that the module's behavior is synchronized with the clock and responds to the reset signal.
+   - On reset (`!rst_n`), all registers are cleared to their initial states.
+   
+3. **Data Handling**:
+   - When `valid_in` is high, the module checks the `flag`:
+     - If `flag` is high, it means the first 8-bit data has already been stored in `data_lock`. The module then concatenates `data_lock` and `data_in` to form the 16-bit `data_out` and sets `valid_out` to 1.
+     - If `flag` is low, it means this is the first valid data. The module stores `data_in` in `data_lock` and sets `flag` to 1.
+   - If `valid_in` is low, the module sets `valid_out` to 0, indicating that no valid 16-bit data is available yet.
+
+This module ensures that the 8-bit input data is correctly converted to 16-bit output data only when two valid 8-bit inputs are received, and it handles the timing correctly by generating `valid_out` and `data_out` in the next clock cycle after receiving the second valid input.

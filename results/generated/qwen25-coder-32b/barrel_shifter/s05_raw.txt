@@ -1,0 +1,84 @@
+Certainly! Below is the complete Verilog code for the `barrel_shifter` module, including the `mux2X1` submodule used for selecting between the shifted and original inputs at each stage.
+
+### mux2X1 Submodule
+
+First, let's define the `mux2X1` submodule, which is a 2-to-1 multiplexer.
+
+```verilog
+module mux2X1 (
+    input  [7:0] in0,  // First input
+    input  [7:0] in1,  // Second input
+    input        sel,   // Select signal
+    output [7:0] out   // Output
+);
+    assign out = sel ? in1 : in0;
+endmodule
+```
+
+### barrel_shifter Module
+
+Now, let's define the `barrel_shifter` module using the `mux2X1` submodule.
+
+```verilog
+module barrel_shifter (
+    input  [7:0] in,   // 8-bit input
+    input  [2:0] ctrl, // 3-bit control signal
+    output [7:0] out   // 8-bit output
+);
+    wire [7:0] shift_4, shift_2, shift_1;
+
+    // Shift by 4 positions
+    assign shift_4 = {in[3:0], in[7:4]};
+
+    // Shift by 2 positions
+    assign shift_2 = {in[5:0], in[7:6]};
+
+    // Shift by 1 position
+    assign shift_1 = {in[6:0], in[7]};
+
+    // Intermediate signals for multiplexer stages
+    wire [7:0] stage_4, stage_2;
+
+    // Stage 1: Shift by 4 positions if ctrl[2] is high
+    mux2X1 mux4 (
+        .in0(in),
+        .in1(shift_4),
+        .sel(ctrl[2]),
+        .out(stage_4)
+    );
+
+    // Stage 2: Shift by 2 positions if ctrl[1] is high
+    mux2X1 mux2 (
+        .in0(stage_4),
+        .in1({stage_4[5:0], stage_4[7:6]}),
+        .sel(ctrl[1]),
+        .out(stage_2)
+    );
+
+    // Stage 3: Shift by 1 position if ctrl[0] is high
+    mux2X1 mux1 (
+        .in0(stage_2),
+        .in1({stage_2[6:0], stage_2[7]}),
+        .sel(ctrl[0]),
+        .out(out)
+    );
+
+endmodule
+```
+
+### Explanation
+
+1. **Shift Calculations**:
+   - `shift_4` shifts the input by 4 positions.
+   - `shift_2` shifts the intermediate result by 2 positions.
+   - `shift_1` shifts the intermediate result by 1 position.
+
+2. **Multiplexer Stages**:
+   - **Stage 1**: Uses `mux4` to decide whether to apply the 4-position shift.
+   - **Stage 2**: Uses `mux2` to decide whether to apply the 2-position shift on the result of stage 1.
+   - **Stage 3**: Uses `mux1` to decide whether to apply the 1-position shift on the result of stage 2.
+
+3. **Output**:
+   - The final output is determined by the series of multiplexers, based on the `ctrl` signal.
+
+This implementation ensures that the barrel shifter can efficiently perform shifts and rotations based on the control signal.

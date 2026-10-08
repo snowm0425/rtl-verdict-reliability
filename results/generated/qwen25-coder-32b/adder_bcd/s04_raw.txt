@@ -1,0 +1,42 @@
+Certainly! Below is the complete Verilog code for a 4-bit BCD adder module named `adder_bcd`. This module takes two 4-bit BCD inputs (`A` and `B`), and a carry-in (`Cin`), and produces a 4-bit BCD output (`Sum`) and a carry-out (`Cout`).
+
+```verilog
+module adder_bcd (
+    input [3:0] A,    // First BCD input (4-bit, representing a decimal digit from 0 to 9)
+    input [3:0] B,    // Second BCD input (4-bit, representing a decimal digit from 0 to 9)
+    input Cin,        // Carry-in input (1-bit)
+    output [3:0] Sum, // 4-bit output representing the sum of the two BCD inputs, corrected to be a valid BCD digit (0–9)
+    output Cout       // Carry-out output (1-bit), used when the sum exceeds the decimal value of 9
+);
+
+    // Internal signals
+    wire [4:0] bin_sum;    // Binary sum of A, B, and Cin
+    wire [3:0] corrected_sum; // Corrected BCD sum
+    wire bcd_correction;     // Signal to indicate if BCD correction is needed
+
+    // Binary addition of A, B, and Cin
+    assign bin_sum = A + B + Cin;
+
+    // Determine if BCD correction is needed (if bin_sum > 9)
+    assign bcd_correction = (bin_sum > 9);
+
+    // Apply BCD correction if needed
+    assign corrected_sum = bcd_correction ? (bin_sum + 6) : bin_sum;
+
+    // Output the corrected sum and carry-out
+    assign Sum = corrected_sum[3:0];
+    assign Cout = bcd_correction || (corrected_sum > 9);
+
+endmodule
+```
+
+### Explanation:
+1. **Binary Addition**: The module first performs a binary addition of the inputs `A`, `B`, and `Cin`. The result is stored in the 5-bit wire `bin_sum`. The extra bit is to handle cases where the sum exceeds 9.
+
+2. **BCD Correction Check**: The signal `bcd_correction` is a boolean that indicates whether the binary sum exceeds 9. If `bin_sum` is greater than 9, then `bcd_correction` is set to 1.
+
+3. **BCD Correction**: If `bcd_correction` is true, the module adds 6 to the binary sum to correct it back into the BCD range. The result is stored in `corrected_sum`.
+
+4. **Output Assignment**: The final 4-bit BCD sum is assigned to the `Sum` output. The `Cout` output is set to 1 if either the initial binary sum was greater than 9 (indicating a carry-out from the BCD range) or if the corrected sum is still greater than 9.
+
+This module ensures that the output is always a valid BCD digit (0-9) and correctly handles the carry-out when the sum exceeds a single decimal digit.

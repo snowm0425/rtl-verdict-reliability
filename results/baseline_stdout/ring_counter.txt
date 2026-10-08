@@ -1,0 +1,7 @@
+# stage=compile rc=1
+# STDOUT
+
+# STDERR
+/home/cvl/Documents/syn/RTLLM/Control/Counter/ring_counter/testbench.v:20: sorry: Assignment to an entire array or to an array slice is not yet supported.
+Elaboration failed
+

@@ -1,0 +1,80 @@
+Certainly! Below is the complete Verilog code for the `pulse_detect` module as per your requirements. The module uses a state machine to detect a pulse defined by a transition from `0` to `1` to `0` over three clock cycles and sets `data_out` to `1` at the end of the pulse.
+
+```verilog
+module pulse_detect (
+    input clk,      // Clock signal
+    input rst_n,    // Reset signal (active low)
+    input data_in,  // One-bit input signal
+    output reg data_out // Output signal indicating the presence of pulses
+);
+
+    // State encoding
+    typedef enum reg [1:0] {
+        IDLE = 2'b00,
+        RISE = 2'b01,
+        FALL = 2'b10
+    } state_t;
+
+    // State register
+    reg [1:0] state;
+
+    // Next state register
+    reg [1:0] next_state;
+
+    // State machine process
+    always @(posedge clk or negedge rst_n) begin
+        if (~rst_n) begin
+            state <= IDLE;
+            data_out <= 0;
+        end else begin
+            state <= next_state;
+            case (state)
+                IDLE: begin
+                    if (data_in == 1) begin
+                        next_state = RISE;
+                    end else begin
+                        next_state = IDLE;
+                    end
+                    data_out = 0;
+                end
+
+                RISE: begin
+                    if (data_in == 0) begin
+                        next_state = FALL;
+                    end else begin
+                        next_state = RISE;
+                    end
+                    data_out = 0;
+                end
+
+                FALL: begin
+                    if (data_in == 1) begin
+                        next_state = RISE;
+                    end else begin
+                        next_state = IDLE;
+                    end
+                    data_out = 1;
+                end
+
+                default: begin
+                    next_state = IDLE;
+                    data_out = 0;
+                end
+            endcase
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+- **State Encoding**: The state machine uses three states: `IDLE`, `RISE`, and `FALL`. These states are encoded using a 2-bit register.
+- **State Register**: The `state` register holds the current state of the state machine.
+- **Next State Register**: The `next_state` register holds the next state to which the state machine will transition.
+- **State Machine Logic**: The `always` block handles the state transitions and output generation based on the current state and the value of `data_in`.
+  - **IDLE**: Waits for `data_in` to go high.
+  - **RISE**: Detects the rising edge of `data_in`.
+  - **FALL**: Detects the falling edge of `data_in` and sets `data_out` to `1`.
+- **Reset Condition**: When `rst_n` is low, the state machine is reset to `IDLE` and `data_out` is set to `0`.
+
+This module should meet your requirements for detecting a pulse and generating an output signal accordingly.

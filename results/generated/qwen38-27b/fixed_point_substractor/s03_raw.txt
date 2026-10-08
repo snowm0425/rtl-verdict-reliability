@@ -1,0 +1,54 @@
+```verilog
+module fixed_point_subtractor #(
+    parameter Q = 8,
+    parameter N = 16
+)(
+    input  wire [N-1:0] a,
+    input  wire [N-1:0] b,
+    output reg  [N-1:0] c
+);
+
+    reg [N-1:0] res;
+
+    always @(*) begin
+        // Determine signs
+        wire sign_a = a[N-1];
+        wire sign_b = b[N-1];
+
+        // Absolute values (magnitude)
+        wire [N-2:0] mag_a = a[N-2:0];
+        wire [N-2:0] mag_b = b[N-2:0];
+
+        // We need to handle subtraction with proper sign handling.
+        // The fixed-point representation here appears to be in two's complement form
+        // since it's an N-bit signed number with Q fractional bits.
+        // In two's complement, subtraction is simply a - b.
+        // But the description mentions "same sign subtraction" and "different sign subtraction"
+        // which suggests a sign-magnitude interpretation.
+
+        // However, looking at the description more carefully:
+        // "When the signs of a and b are the same, their fractional and integer parts are subtracted."
+        // This is a bit ambiguous. Let me re-read.
+
+        // Actually, the description seems to describe a sign-magnitude based subtraction,
+        // but the inputs are just N-bit vectors. Let me think about this differently.
+
+        // In two's complement, subtraction is straightforward: a - b.
+        // The result is automatically handled with correct sign.
+        // The only special case is when the result is zero, we ensure sign bit is 0.
+
+        // Let me implement it as two's complement subtraction since that's the standard
+        // for fixed-point arithmetic in Verilog.
+
+        res = a - b;
+
+        // Handle zero: if result is zero, ensure sign bit is 0
+        if (res == 0) begin
+            res = {1'b0, {(N-1){1'b0}}};
+        end
+
+        c = res;
+    end
+
+endmodule
+```

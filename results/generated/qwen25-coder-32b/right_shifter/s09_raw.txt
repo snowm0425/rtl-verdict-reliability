@@ -1,0 +1,33 @@
+Certainly! Below is the complete Verilog code for the `right_shifter` module as per your requirements:
+
+```verilog
+module right_shifter (
+    input clk,  // Clock signal
+    input d,    // Input signal to be right-shifted
+    output reg [7:0] q  // Output signal representing the result of the right shift operation
+);
+
+    // Initialize the register q to 0
+    initial begin
+        q = 8'b0;
+    end
+
+    // On each rising edge of the clock, perform the right shift operation
+    always @(posedge clk) begin
+        // Right shift the contents of the register q by 1 bit
+        q <= (q >> 1);
+        // Insert the new input bit d into the most significant position of the register
+        q[7] <= d;
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Module Declaration**: The module `right_shifter` is declared with its input and output ports.
+2. **Register Initialization**: The register `q` is declared as an 8-bit vector and initialized to 0 using the `initial` block.
+3. **Clock-Driven Operation**: The `always @(posedge clk)` block ensures that the operations inside it are triggered on each rising edge of the clock.
+4. **Right Shift Operation**: Inside the `always` block, the contents of the register `q` are right-shifted by one bit using the `>>` operator.
+5. **Insert Input Bit**: The most significant bit (`q[7]`) of the register is then assigned the value of the input signal `d`.
+
+This module will shift the input bit `d` into the most significant bit of the register and shift all other bits to the right on each clock cycle.

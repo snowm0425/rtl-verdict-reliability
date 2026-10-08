@@ -1,0 +1,36 @@
+Certainly! Below is the complete Verilog code for the `square_wave` module as per your specifications:
+
+```verilog
+module square_wave (
+    input clk,          // Clock signal that drives the module
+    input [7:0] freq,   // Frequency control, specifying how often the square wave toggles
+    output reg wave_out   // Square wave output signal
+);
+
+    reg [7:0] count;    // Counter register used to track cycles between wave toggles
+
+    always @(posedge clk) begin
+        if (count == (freq - 1)) begin
+            count <= 0;        // Reset count to 0
+            wave_out <= ~wave_out;  // Toggle wave_out
+        end else begin
+            count <= count + 1;  // Increment count
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **Module Declaration**: The module is named `square_wave` and it takes an input clock signal `clk`, an 8-bit input `freq` to control the frequency, and an output `wave_out` which is a reg type to allow it to be modified inside the module.
+2. **Internal Register**: A register `count` of 8 bits is used to keep track of the number of clock cycles.
+3. **Always Block**: The `always @(posedge clk)` block ensures that the logic inside it is executed on every rising edge of the clock signal.
+4. **Count Logic**:
+   - If `count` reaches `freq - 1`, it means we have completed the required number of cycles to toggle the `wave_out` signal. In this case, `count` is reset to `0` and `wave_out` is toggled using the bitwise NOT operator (`~`).
+   - If `count` has not yet reached `freq - 1`, it is simply incremented by `1` on the next clock cycle.
+
+### Note:
+- The frequency control input `freq` specifies the number of clock cycles between toggles of the `wave_out` signal. Therefore, the actual frequency of the output square wave is inversely proportional to the `freq` value.
+- If `freq` is `0`, the `wave_out` will not toggle at all since `count` will never reach `-1`.
+
+You can simulate this module using a Verilog simulator to verify its functionality.

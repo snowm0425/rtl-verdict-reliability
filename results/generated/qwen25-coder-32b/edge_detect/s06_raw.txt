@@ -1,0 +1,52 @@
+Certainly! Below is the complete Verilog code for the `edge_detect` module that detects rising and falling edges on the input signal `a` and generates the corresponding output signals `rise` and `down`.
+
+```verilog
+module edge_detect (
+    input wire clk,       // Clock signal
+    input wire rst_n,     // Reset signal (active low)
+    input wire a,         // Input signal
+    output reg rise,      // Output signal indicating a rising edge
+    output reg down       // Output signal indicating a falling edge
+);
+
+    reg a_prev; // Previous value of input signal a
+
+    // Synchronize the input signal 'a' with the clock
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            a_prev <= 0; // Reset to 0 when reset is active low
+            rise <= 0;
+            down <= 0;
+        end else begin
+            a_prev <= a; // Capture the current value of 'a'
+
+            // Detect rising edge
+            if (a_prev == 0 && a == 1) begin
+                rise <= 1;
+            end else begin
+                rise <= 0;
+            end
+
+            // Detect falling edge
+            if (a_prev == 1 && a == 0) begin
+                down <= 1;
+            end else begin
+                down <= 0;
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+- **Module Declaration**: The module is named `edge_detect` and includes the specified input and output ports.
+- **Internal Register `a_prev`**: This register is used to store the previous value of the input signal `a`.
+- **Always Block**: The always block is triggered on the positive edge of the clock (`posedge clk`) or when the reset signal `rst_n` is active low (`negedge rst_n`).
+  - **Reset Logic**: When `rst_n` is low, the module resets `a_prev`, `rise`, and `down` to 0.
+  - **Edge Detection**:
+    - **Rising Edge Detection**: If `a_prev` is 0 and `a` is 1, it indicates a rising edge, and `rise` is set to 1. Otherwise, `rise` is set to 0.
+    - **Falling Edge Detection**: If `a_prev` is 1 and `a` is 0, it indicates a falling edge, and `down` is set to 1. Otherwise, `down` is set to 0.
+- **Synchronization**: The logic ensures that the `rise` and `down` signals are synchronized with the clock signal `clk`.
+
+This module will correctly detect and indicate the rising and falling edges of the input signal `a` on the next clock cycle after the edge occurs.

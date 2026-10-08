@@ -1,0 +1,56 @@
+Certainly! Below is the complete Verilog code for an 8-bit multiplier using the shift-and-add method:
+
+```verilog
+module multi_8bit (
+    input [7:0] A,          // First 8-bit input operand (multiplicand)
+    input [7:0] B,          // Second 8-bit input operand (multiplier)
+    output [15:0] product   // 16-bit output representing the product of A and B
+);
+
+    reg [15:0] product_reg; // Internal register to accumulate the product
+
+    // Initialize the product register to zero
+    initial begin
+        product_reg = 16'b0;
+    end
+
+    // Process each bit of the multiplier (B)
+    always @(*) begin
+        product_reg = 16'b0; // Reset the product register at the start of each multiplication
+
+        for (integer i = 0; i < 8; i = i + 1) begin
+            // If the current bit of B is 1, add the shifted multiplicand A to the product
+            if (B[i] == 1'b1) begin
+                product_reg = product_reg + (A << i);
+            end
+        end
+    end
+
+    // Assign the final product to the output port
+    assign product = product_reg;
+
+endmodule
+```
+
+### Explanation:
+1. **Inputs and Outputs**:
+   - `A [7:0]`: The first 8-bit input operand (multiplicand).
+   - `B [7:0]`: The second 8-bit input operand (multiplier).
+   - `product [15:0]`: The 16-bit output representing the product of the two 8-bit inputs.
+
+2. **Internal Register**:
+   - `product_reg [15:0]`: This register is used to accumulate the final product.
+
+3. **Initialization**:
+   - The `initial` block sets `product_reg` to zero initially.
+
+4. **Shift-and-Add Process**:
+   - The `always @(*)` block is triggered whenever there is a change in inputs `A` or `B`.
+   - `product_reg` is reset to zero at the start of each multiplication.
+   - A `for` loop iterates over each bit of the multiplier `B`.
+   - If the current bit of `B` is 1, the multiplicand `A` is shifted left by `i` positions and added to `product_reg`.
+
+5. **Output Assignment**:
+   - The final value of `product_reg` is assigned to the `product` output port.
+
+This module effectively performs multiplication using the shift-and-add method, which is a fundamental technique for binary multiplication.

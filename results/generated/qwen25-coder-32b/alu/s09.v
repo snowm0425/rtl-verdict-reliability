@@ -1,0 +1,84 @@
+module alu (
+    input  wire [31:0] a,    // First operand
+    input  wire [31:0] b,    // Second operand
+    input  wire [5:0]  aluc,  // ALU control signal
+    output reg  [31:0] r,    // Result
+    output wire        zero,  // Zero flag
+    output wire        carry, // Carry flag
+    output wire        negative, // Negative flag
+    output wire        overflow, // Overflow flag
+    output wire        flag   // Flag for SLT and SLTU
+);
+
+    // Parameters for ALU operations
+    parameter ADD = 6'b100000;
+    parameter ADDU = 6'b100001;
+    parameter SUB = 6'b100010;
+    parameter SUBU = 6'b100011;
+    parameter AND = 6'b100100;
+    parameter OR = 6'b100101;
+    parameter XOR = 6'b100110;
+    parameter NOR = 6'b100111;
+    parameter SLT = 6'b101010;
+    parameter SLTU = 6'b101011;
+    parameter SLL = 6'b000000;
+    parameter SRL = 6'b000010;
+    parameter SRA = 6'b000011;
+    parameter SLLV = 6'b000100;
+    parameter SRLV = 6'b000110;
+    parameter SRAV = 6'b000111;
+    parameter LUI = 6'b001111;
+
+    // Signed operands
+    wire [31:0] a_signed = a;
+    wire [31:0] b_signed = b;
+
+    // Result register
+    reg [31:0] res;
+
+    // Flags
+    assign zero = (res == 32'b0);
+    assign negative = res[31];
+    assign flag = (aluc == SLT) ? ($signed(a) < $signed(b)) :
+                  (aluc == SLTU) ? (a < b) :
+                  1'bz;
+
+    // Overflow detection (only for ADD and SUB)
+    wire overflow_add = (a_signed[31] == b_signed[31]) & (a_signed[31] != res[31]);
+    wire overflow_sub = (a_signed[31] != b_signed[31]) & (a_signed[31] != res[31]);
+    assign overflow = (aluc == ADD || aluc == ADDU) ? overflow_add :
+                     (aluc == SUB || aluc == SUBU) ? overflow_sub :
+                     1'b0;
+
+    // Carry detection (only for ADDU and SUBU)
+    wire carry_addu = (a[31] & b[31] & ~res[31]) | (a[31] & ~b[31] & ~res[31]) | (~a[31] & b[31] & ~res[31]);
+    wire carry_subu = (~a[31] & b[31] & res[31]) | (~a[31] & ~b[31] & res[31]) | (a[31] & ~b[31] & res[31]);
+    assign carry = (aluc == ADDU) ? carry_addu :
+                   (aluc == SUBU) ? carry_subu :
+                   1'b0;
+
+    // ALU operations
+    always @(*) begin
+        case (aluc)
+            ADD:  res = a_signed + b_signed;
+            ADDU: res = a + b;
+            SUB:  res = a_signed - b_signed;
+            SUBU: res = a - b;
+            AND:  res = a & b;
+            OR:   res = a | b;
+            XOR:  res = a ^ b;
+            NOR:  res = ~(a | b);
+            SLT:  res = ($signed(a) < $signed(b)) ? 32'b1 : 32'b0;
+            SLTU: res = (a < b) ? 32'b1 : 32'b0;
+            SLL:  res = b << a[4:0];
+            SRL:  res = b >> a[4:0];
+            SRA:  res = b_signed >>> a[4:0];
+            SLLV: res = b << a[5:0];
+            SRLV: res = b >> a[5:0];
+            SRAV: res = b_signed >>> a[5:0];
+            LUI:  res = {a[15:0], 16'b0};
+            default: res = 32'bz;
+        endcase
+    end
+
+endmodule

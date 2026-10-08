@@ -1,0 +1,39 @@
+Certainly! Below is a complete Verilog implementation of a 64-bit subtractor with overflow checking. The module performs binary subtraction and checks for overflow conditions based on the sign bits of the operands and the result.
+
+```verilog
+module sub_64bit (
+    input  [63:0] A,        // First 64-bit input operand
+    input  [63:0] B,        // Second 64-bit input operand
+    output [63:0] result,   // 64-bit output result
+    output       overflow  // 1-bit overflow flag
+);
+
+    // Perform binary subtraction: result = A - B
+    assign result = A - B;
+
+    // Extract the sign bits of A, B, and result
+    wire sign_A = A[63];
+    wire sign_B = B[63];
+    wire sign_result = result[63];
+
+    // Detect overflow conditions
+    // Positive overflow: sign_A == 0, sign_B == 1, sign_result == 1
+    // Negative overflow: sign_A == 1, sign_B == 0, sign_result == 0
+    assign overflow = (sign_A & ~sign_B & ~sign_result) | (~sign_A & sign_B & sign_result);
+
+endmodule
+```
+
+### Explanation:
+1. **Subtraction Operation**:
+   - The subtraction operation is performed using the expression `result = A - B;`. In Verilog, the `-` operator performs two's complement subtraction for signed numbers.
+
+2. **Sign Bit Extraction**:
+   - The sign bit of a 64-bit signed integer is the most significant bit (MSB), which is bit 63. We extract the sign bits of `A`, `B`, and `result` using `sign_A`, `sign_B`, and `sign_result` respectively.
+
+3. **Overflow Detection**:
+   - **Positive Overflow**: Occurs when a positive number (`sign_A == 0`) is subtracted by a negative number (`sign_B == 1`), but the result is negative (`sign_result == 1`). This condition is represented by the expression `sign_A & ~sign_B & ~sign_result`.
+   - **Negative Overflow**: Occurs when a negative number (`sign_A == 1`) is subtracted by a positive number (`sign_B == 0`), but the result is positive (`sign_result == 0`). This condition is represented by the expression `~sign_A & sign_B & sign_result`.
+   - The `overflow` output is set to 1 if either of these conditions is true, indicating an overflow has occurred.
+
+This module can be instantiated in a larger design to handle 64-bit signed integer subtraction with overflow detection.

@@ -1,0 +1,93 @@
+Creating a fractional frequency divider with a 3.5x division factor using Verilog involves generating two different clock cycles (4 and 3 clock cycles) and then combining them with phase shifting to achieve a smooth output. Below is the Verilog code for the `freq_divbyfrac` module:
+
+```verilog
+module freq_divbyfrac (
+    input clk,      // Input clock signal
+    input rst_n,    // Active low reset signal
+    output reg clk_div  // Fractionally divided clock output
+);
+
+    // Parameters for 3.5x division
+    localparam MUL2_DIV_CLK = 7;  // Total cycles to achieve 3.5x division
+    localparam PHASE_SHIFT_CYCLES = 1;  // Cycles to phase shift
+
+    // Internal signals
+    reg [2:0] counter;  // Counter to track clock cycles
+    reg [1:0] phase;  // Phase selector
+    reg clk_4, clk_3;  // Intermediate clocks with different periods
+
+    // Initialize counters and phase selector
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            counter <= 3'b000;
+            phase <= 2'b00;
+            clk_4 <= 1'b0;
+            clk_3 <= 1'b0;
+            clk_div <= 1'b0;
+        end else begin
+            // Increment counter
+            counter <= counter + 1'b1;
+
+            // Generate 4-clock and 3-clock cycles
+            if (counter < 4) begin
+                clk_4 <= ~clk_4;
+                clk_3 <= 1'b0;
+            end else if (counter < 7) begin
+                clk_3 <= ~clk_3;
+                clk_4 <= 1'b0;
+            end else begin
+                clk_4 <= 1'b0;
+                clk_3 <= 1'b0;
+                counter <= 3'b000;  // Reset counter
+            end
+
+            // Phase shifting logic
+            case (phase)
+                2'b00: begin
+                    if (clk_4) phase <= 2'b01;
+                end
+                2'b01: begin
+                    if (clk_3) phase <= 2'b10;
+                end
+                2'b10: begin
+                    if (clk_4) phase <= 2'b11;
+                end
+                2'b11: begin
+                    if (clk_3) phase <= 2'b00;
+                end
+            endcase
+
+            // Generate final divided clock
+            clk_div <= (phase == 2'b00) ? clk_4 : clk_3;
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+
+1. **Parameters:**
+   - `MUL2_DIV_CLK`: Total cycles needed to achieve the fractional division (7 for 3.5x).
+   - `PHASE_SHIFT_CYCLES`: Cycles to phase shift (not directly used in this implementation but can be adjusted).
+
+2. **Internal Signals:**
+   - `counter`: Tracks the number of clock cycles.
+   - `phase`: Selector to determine which phase to use.
+   - `clk_4` and `clk_3`: Intermediate clock signals with different periods.
+
+3. **Reset and Counting:**
+   - On reset, all signals are initialized to zero.
+   - The counter increments on each positive edge of the input clock.
+   - When the counter reaches 4, `clk_4` toggles.
+   - When the counter reaches 7, `clk_3` toggles.
+   - The counter resets to zero after reaching 7.
+
+4. **Phase Shifting:**
+   - The phase selector determines which intermediate clock to use for the final output.
+   - The phase shifts between the two intermediate clocks to achieve a smooth output.
+
+5. **Final Clock Output:**
+   - The final `clk_div` is determined by the phase selector, ensuring a uniform period for the fractional clock output.
+
+This implementation provides a basic structure for a fractional frequency divider with a 3.5x division factor using double-edge clocking and phase shifting. Adjustments can be made to improve duty cycle balance and performance as needed.

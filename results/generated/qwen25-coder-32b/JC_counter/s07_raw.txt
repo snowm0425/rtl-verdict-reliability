@@ -1,0 +1,44 @@
+Sure, I'll provide you with the complete Verilog code for a 64-bit Johnson counter based on your specifications.
+
+```verilog
+module JC_counter (
+    input wire clk,        // Clock signal
+    input wire rst_n,      // Active-low reset signal
+    output reg [63:0] Q    // 64-bit output register
+);
+
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        // Reset condition: set Q to all zeros
+        Q <= 64'b0;
+    end else begin
+        // Normal operation
+        if (Q[0] == 1'b0) begin
+            // If the least significant bit is 0, shift right and append 1 at MSB
+            Q <= {Q[62:0], 1'b1};
+        end else begin
+            // If the least significant bit is 1, shift right and append 0 at MSB
+            Q <= {Q[62:0], 1'b0};
+        end
+    end
+end
+
+endmodule
+```
+
+### Explanation:
+1. **Module Declaration:**
+   - The module is named `JC_counter`.
+   - It has three ports: `clk` (input), `rst_n` (input), and `Q` (output).
+
+2. **Register Declaration:**
+   - The output `Q` is declared as a 64-bit register.
+
+3. **Synchronous Logic:**
+   - The `always` block is triggered on the rising edge of the clock (`posedge clk`) or the falling edge of the reset (`negedge rst_n`).
+   - If `rst_n` is low (`!rst_n`), the register `Q` is set to all zeros (`64'b0`).
+   - If `rst_n` is high, the logic checks the value of the least significant bit (`Q[0]`):
+     - If `Q[0]` is 0, the current value of `Q[63:1]` is shifted right, and a 1 is appended to the most significant bit position.
+     - If `Q[0]` is 1, the current value of `Q[63:1]` is shifted right, and a 0 is appended to the most significant bit position.
+
+This code will implement the 64-bit Johnson counter as described. You can synthesize and simulate this module in any Verilog simulation environment to verify its functionality.

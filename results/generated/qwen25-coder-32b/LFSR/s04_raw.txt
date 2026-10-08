@@ -1,0 +1,56 @@
+Sure, I can help you design a 4-bit Linear Feedback Shift Register (LFSR) in Verilog based on the specifications you provided. Below is the Verilog code for the LFSR module:
+
+```verilog
+module LFSR (
+    input clk,      // Clock signal
+    input rst,      // Active high reset signal
+    output [3:0] out // 4-bit output representing the current state of the LFSR
+);
+
+// Register to hold the current state of the LFSR
+reg [3:0] lfsr_reg;
+
+// Feedback signal calculation
+wire feedback;
+
+// Feedback is the inverted XOR of the MSB (out[3]) and the second MSB (out[2])
+assign feedback = ~(lfsr_reg[3] ^ lfsr_reg[2]);
+
+// Sequential logic to update the LFSR state
+always @(posedge clk or posedge rst) begin
+    if (rst) begin
+        // Initialize the register to zero on reset
+        lfsr_reg <= 4'b0000;
+    end else begin
+        // Shift left and insert the feedback at the LSB
+        lfsr_reg <= {lfsr_reg[2:0], feedback};
+    end
+end
+
+// Assign the current state of the LFSR to the output
+assign out = lfsr_reg;
+
+endmodule
+```
+
+### Explanation:
+
+1. **Module Declaration**:
+   - The module is named `LFSR`.
+   - It has three ports: `clk` (clock), `rst` (reset), and `out` (4-bit output).
+
+2. **Register Declaration**:
+   - `lfsr_reg` is a 4-bit register that holds the current state of the LFSR.
+
+3. **Feedback Calculation**:
+   - The feedback signal is calculated by XORing the most significant bit (`lfsr_reg[3]`) and the second most significant bit (`lfsr_reg[2]`), and then inverting the result using the `~` operator.
+
+4. **Sequential Logic**:
+   - The `always` block is sensitive to the rising edge of the clock (`posedge clk`) and the rising edge of the reset (`posedge rst`).
+   - When the reset signal (`rst`) is high, the `lfsr_reg` is initialized to `4'b0000`.
+   - On the rising edge of the clock, if the reset is low, the register is shifted left, and the feedback value is inserted into the least significant bit (LSB).
+
+5. **Output Assignment**:
+   - The current state of the LFSR (`lfsr_reg`) is assigned to the output `out`.
+
+This code will generate a pseudo-random sequence of 4 bits based on the feedback mechanism described.

@@ -1,0 +1,108 @@
+module mux2X1(
+    input a,
+    input b,
+    input sel,
+    output y
+);
+    assign y = sel ? b : a;
+endmodule
+
+module barrel_shifter(
+    input [7:0] in,
+    input [2:0] ctrl,
+    output [7:0] out
+);
+    // Stage 1: shift by 4 if ctrl[2] is high
+    wire [7:0] stage1;
+    // Shift left by 4: out[i] = in[i-4] for i>=4, else 0? 
+    // Wait, barrel shifter for rotation? The problem says "rotating bits" but also says "shifts".
+    // Let me re-read: "A barrel shifter for rotating bits efficiently."
+    // But the implementation says "shifts the input in based on the value of the ctrl signal."
+    // And "When ctrl[2] is high, the input is shifted by 4 positions."
+    // Typically barrel shifters do logical shifts or rotations. Given the context of using muxes to select between original and shifted, this is likely a left shift (or right shift).
+    // Let's assume left shift for simplicity, as it's common in barrel shifters.
+    // Actually, let me think about this more carefully. A barrel shifter that rotates would need wrap-around. But the description says "shifts" not "rotates" in the implementation details. The title says "rotating" but the implementation says "shifts". 
+    // Let's look at the mux structure: each mux selects between the original bit and a shifted bit. This is characteristic of a shift barrel (not rotate).
+    // For a left shift by 4: stage1[i] = ctrl[2] ? in[i-4] (for i>=4) or 0 (for i<4) : in[i]
+    // But with muxes, we can do: for each output bit i, mux between in[i] and in[i-4] (with wrap or zero-fill).
+    // Since it says "shifts" and not "rotates", I'll assume logical left shift (zero-fill).
+    
+    // Let's implement left shifts:
+    // Stage 1: shift left by 4 if ctrl[2]
+    // stage1[i] = ctrl[2] ? (i >= 4 ? in[i-4] : 0) : in[i]
+    // But we need to use mux2X1 for each bit.
+    
+    // Let me generate the stages properly.
+    
+    wire [7:0] s0;
+    wire [7:0] s1;
+    wire [7:0] s2;
+    
+    assign s0 = in;
+    
+    // Stage 1: shift left by 4 if ctrl[2]
+    // For each bit i, s1[i] = ctrl[2] ? (i >= 4 ? s0[i-4] : 0) : s0[i]
+    genvar i;
+    generate
+        for (i = 0; i < 8; i = i + 1) begin : stage1_gen
+            if (i >= 4) begin : stage1_high
+                mux2X1 u_mux_s1 (
+                    .a(s0[i]),
+                    .b(s0[i-4]),
+                    .sel(ctrl[2]),
+                    .y(s1[i])
+                );
+            end else begin : stage1_low
+                mux2X1 u_mux_s1 (
+                    .a(s0[i]),
+                    .b(1'b0),
+                    .sel(ctrl[2]),
+                    .y(s1[i])
+                );
+            end
+        end
+    endgenerate
+    
+    // Stage 2: shift left by 2 if ctrl[1]
+    generate
+        for (i = 0; i < 8; i = i + 1) begin : stage2_gen
+            if (i >= 2) begin : stage2_high
+                mux2X1 u_mux_s2 (
+                    .a(s1[i]),
+                    .b(s1[i-2]),
+                    .sel(ctrl[1]),
+                    .y(s2[i])
+                );
+            end else begin : stage2_low
+                mux2X1 u_mux_s2 (
+                    .a(s1[i]),
+                    .b(1'b0),
+                    .sel(ctrl[1]),
+                    .y(s2[i])
+                );
+            end
+        end
+    endgenerate
+    
+    // Stage 3: shift left by 1 if ctrl[0]
+    generate
+        for (i = 0; i < 8; i = i + 1) begin : stage3_gen
+            if (i >= 1) begin : stage3_high
+                mux2X1 u_mux_s3 (
+                    .a(s2[i]),
+                    .b(s2[i-1]),
+                    .sel(ctrl[0]),
+                    .y(out[i])
+                );
+            end else begin : stage3_low
+                mux2X1 u_mux_s3 (
+                    .a(s2[i]),
+                    .b(1'b0),
+                    .sel(ctrl[0]),
+                    .y(out[i])
+                );
+            end
+        end
+    endgenerate
+    
+endmodule

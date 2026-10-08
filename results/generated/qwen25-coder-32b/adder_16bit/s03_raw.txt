@@ -1,0 +1,99 @@
+Certainly! To implement a 16-bit full adder using a smaller 8-bit adder, we can break down the problem into two 8-bit additions and then handle the carry between these two parts. Below is the complete Verilog code for the `adder_16bit` module, which uses an 8-bit adder as a submodule.
+
+First, let's define the 8-bit adder module:
+
+```verilog
+module adder_8bit (
+    input [7:0] a,    // 8-bit input operand A
+    input [7:0] b,    // 8-bit input operand B
+    input       cin,  // Carry-in input
+    output [7:0] y,   // 8-bit output representing the sum of A and B
+    output      cout  // Carry-out output
+);
+    // Internal signals
+    wire [7:0] sum;
+    wire       carry;
+
+    // Full adder for each bit position
+    genvar i;
+    generate
+        for (i = 0; i < 8; i = i + 1) begin : bit_adder
+            if (i == 0) begin
+                // For the least significant bit, use cin
+                full_adder fa (
+                    .a(a[i]),
+                    .b(b[i]),
+                    .cin(cin),
+                    .sum(sum[i]),
+                    .carry(carry)
+                );
+            end else begin
+                // For other bits, use the carry from the previous bit
+                full_adder fa (
+                    .a(a[i]),
+                    .b(b[i]),
+                    .cin(carry),
+                    .sum(sum[i]),
+                    .carry(carry)
+                );
+            end
+        end
+    endgenerate
+
+    // Assign the final sum and carry out
+    assign y = sum;
+    assign cout = carry;
+endmodule
+
+// Full adder for a single bit
+module full_adder (
+    input a,    // 1-bit input A
+    input b,    // 1-bit input B
+    input cin,  // Carry-in input
+    output sum, // Sum output
+    output carry // Carry-out output
+);
+    assign sum = a ^ b ^ cin;
+    assign carry = (a & b) | (cin & (a ^ b));
+endmodule
+```
+
+Now, let's define the 16-bit adder module using the 8-bit adder:
+
+```verilog
+module adder_16bit (
+    input [15:0] a,    // 16-bit input operand A
+    input [15:0] b,    // 16-bit input operand B
+    input        cin,  // Carry-in input
+    output [15:0] y,   // 16-bit output representing the sum of A and B
+    output       cout  // Carry-out output
+);
+    // Internal signals for the 8-bit adders
+    wire [7:0] y_low;
+    wire [7:0] y_high;
+    wire       carry_low;
+
+    // Instantiate two 8-bit adders
+    adder_8bit adder_low (
+        .a(a[7:0]),
+        .b(b[7:0]),
+        .cin(cin),
+        .y(y_low),
+        .cout(carry_low)
+    );
+
+    adder_8bit adder_high (
+        .a(a[15:8]),
+        .b(b[15:8]),
+        .cin(carry_low),
+        .y(y_high),
+        .cout(cout)
+    );
+
+    // Assign the final output
+    assign y[7:0] = y_low;
+    assign y[15:8] = y_high;
+endmodule
+```
+
+This design breaks down the 16-bit addition into two 8-bit additions, handles the carry between them, and produces the final result. The `adder_8bit` module uses a `full_adder` module to perform the addition for each bit position.

@@ -1,0 +1,78 @@
+Sure, below is the complete Verilog code for the `pulse_detect` module that detects a pulse as specified:
+
+```verilog
+module pulse_detect (
+    input wire clk,      // Clock signal
+    input wire rst_n,    // Reset signal (active low)
+    input wire data_in,  // One-bit input signal
+    output reg data_out  // Output signal indicating the presence of pulses
+);
+
+    // States for the pulse detection state machine
+    typedef enum reg [1:0] {
+        IDLE    = 2'b00,
+        DETECT1 = 2'b01,
+        DETECT2 = 2'b10
+    } pulse_state_t;
+
+    // Register to keep track of the current state
+    reg [1:0] state;
+
+    // State machine process
+    always @(posedge clk or negedge rst_n) begin
+        if (~rst_n) begin
+            // Reset condition
+            state <= IDLE;
+            data_out <= 0;
+        end else begin
+            case (state)
+                IDLE: begin
+                    if (data_in == 1'b1) begin
+                        state <= DETECT1;
+                    end else begin
+                        state <= IDLE;
+                    end
+                    data_out <= 0;
+                end
+                DETECT1: begin
+                    if (data_in == 1'b0) begin
+                        state <= DETECT2;
+                    end else begin
+                        state <= DETECT1;
+                    end
+                    data_out <= 0;
+                end
+                DETECT2: begin
+                    if (data_in == 1'b1) begin
+                        state <= DETECT1;
+                    end else begin
+                        state <= IDLE;
+                    end
+                    data_out <= 1; // Pulse detected, set data_out to 1
+                end
+                default: begin
+                    state <= IDLE;
+                    data_out <= 0;
+                end
+            endcase
+        end
+    end
+endmodule
+```
+
+### Explanation:
+1. **State Machine Definition**:
+   - `IDLE`: Waiting for the initial rising edge of `data_in`.
+   - `DETECT1`: Detected the rising edge of `data_in` and waiting for the falling edge.
+   - `DETECT2`: Detected the falling edge of `data_in` after the rising edge. This is the final state where a pulse is detected.
+
+2. **State Transition**:
+   - When `data_in` goes from `0` to `1`, the state transitions from `IDLE` to `DETECT1`.
+   - When `data_in` goes from `1` to `0`, the state transitions from `DETECT1` to `DETECT2`, where `data_out` is set to `1`.
+   - If `data_in` remains `1` in `DETECT1`, it stays in `DETECT1`.
+   - If `data_in` goes back to `1` in `DETECT2`, it transitions back to `DETECT1`.
+
+3. **Reset**:
+   - On the negative edge of `rst_n`, the state is reset to `IDLE` and `data_out` is set to `0`.
+
+This code effectively detects the specified pulse pattern and sets `data_out` to `1` at the end of the pulse.

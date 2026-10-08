@@ -1,0 +1,7 @@
+# stage=sim rc=0
+# STDOUT
+===========Your Design Passed===========
+/home/cvl/Documents/syn/RTLLM/Arithmetic/Multiplier/multi_pipe_4bit/testbench.v:55: $finish called at 3010 (1ns)
+
+# STDERR
+

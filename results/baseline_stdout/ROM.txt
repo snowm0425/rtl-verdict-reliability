@@ -1,0 +1,8 @@
+# stage=sim rc=0
+# STDOUT
+Starting ROM Testbench...
+=========== Your Design Passed ===========
+/home/cvl/Documents/syn/RTLLM/Miscellaneous/RISC-V/ROM/testbench.v:56: $finish called at 40 (1s)
+
+# STDERR
+

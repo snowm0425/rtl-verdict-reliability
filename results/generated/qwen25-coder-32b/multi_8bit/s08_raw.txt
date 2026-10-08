@@ -1,0 +1,33 @@
+Certainly! Below is the Verilog code for an 8-bit multiplier using the shift-and-add method:
+
+```verilog
+module multi_8bit (
+    input  [7:0] A,        // First 8-bit input operand (multiplicand)
+    input  [7:0] B,        // Second 8-bit input operand (multiplier)
+    output [15:0] product  // 16-bit output representing the product of A and B
+);
+
+    reg [15:0] product_reg; // Internal register to store the product
+
+    always @(*) begin
+        product_reg = 16'b0; // Initialize product to zero
+
+        for (int i = 0; i < 8; i = i + 1) begin
+            if (B[i]) begin
+                product_reg = product_reg + (A << i); // Add shifted multiplicand to product if current bit of B is 1
+            end
+        end
+    end
+
+    assign product = product_reg; // Assign the final product to the output port
+
+endmodule
+```
+
+### Explanation:
+- **Inputs and Outputs**: The module has two 8-bit inputs, `A` and `B`, and a 16-bit output, `product`.
+- **Internal Register**: `product_reg` is used to accumulate the result of the multiplication.
+- **Shift-and-Add Process**: The `always @(*)` block ensures that the multiplication logic is combinational. It initializes `product_reg` to zero and iterates through each bit of `B`. If a bit of `B` is set (1), it adds the multiplicand `A` (shifted left by the current bit position `i`) to `product_reg`.
+- **Output Assignment**: Finally, the accumulated result in `product_reg` is assigned to the output port `product`.
+
+This module effectively performs multiplication using the shift-and-add method, which is a fundamental technique in digital design for handling multiplication without using dedicated multiplication hardware.

@@ -1,0 +1,7 @@
+# stage=sim rc=0
+# STDOUT
+===========Your Design Passed===========
+/home/cvl/Documents/syn/RTLLM/Memory/Shifter/right_shifter/testbench.v:45: $finish called at 90 (1ns)
+
+# STDERR
+

@@ -1,0 +1,110 @@
+  qwen25-coder-32b/JC_counter
+  qwen25-coder-32b/LFSR
+  qwen25-coder-32b/RAM
+  qwen25-coder-32b/ROM
+  qwen25-coder-32b/accu
+  qwen25-coder-32b/adder_16bit
+  qwen25-coder-32b/adder_32bit
+  qwen25-coder-32b/adder_8bit
+  qwen25-coder-32b/adder_bcd
+  qwen25-coder-32b/adder_pipe_64bit
+  qwen25-coder-32b/alu
+  qwen25-coder-32b/barrel_shifter
+  qwen25-coder-32b/calendar
+  qwen25-coder-32b/comparator_3bit
+  qwen25-coder-32b/comparator_4bit
+  qwen25-coder-32b/counter_12
+  qwen25-coder-32b/div_16bit
+  qwen25-coder-32b/edge_detect
+  qwen25-coder-32b/fixed_point_adder
+  qwen25-coder-32b/fixed_point_substractor
+  qwen25-coder-32b/float_multi
+  qwen25-coder-32b/freq_div
+  qwen25-coder-32b/freq_divbyeven
+  qwen25-coder-32b/freq_divbyfrac
+  qwen25-coder-32b/freq_divbyodd
+  qwen25-coder-32b/fsm
+  qwen25-coder-32b/instr_reg
+  qwen25-coder-32b/multi_16bit
+  qwen25-coder-32b/multi_8bit
+  qwen25-coder-32b/multi_booth_8bit
+  qwen25-coder-32b/multi_pipe_4bit
+  qwen25-coder-32b/multi_pipe_8bit
+  qwen25-coder-32b/parallel2serial
+  qwen25-coder-32b/pe
+  qwen25-coder-32b/pulse_detect
+  qwen25-coder-32b/right_shifter
+  qwen25-coder-32b/sequence_detector
+  qwen25-coder-32b/serial2parallel
+  qwen25-coder-32b/signal_generator
+  qwen25-coder-32b/square_wave
+  qwen25-coder-32b/sub_64bit
+  qwen25-coder-32b/synchronizer
+  qwen25-coder-32b/traffic_light
+  qwen25-coder-32b/up_down_counter
+  qwen25-coder-32b/width_8to16
+  qwen38-27b/JC_counter
+  qwen38-27b/LFSR
+  qwen38-27b/RAM
+  qwen38-27b/ROM
+  qwen38-27b/accu
+  qwen38-27b/adder_16bit
+  qwen38-27b/adder_32bit
+  qwen38-27b/adder_8bit
+  qwen38-27b/adder_bcd
+  qwen38-27b/adder_pipe_64bit
+  qwen38-27b/alu
+  qwen38-27b/barrel_shifter
+  qwen38-27b/calendar
+  qwen38-27b/comparator_3bit
+  qwen38-27b/comparator_4bit
+  qwen38-27b/counter_12
+  qwen38-27b/div_16bit
+  qwen38-27b/edge_detect
+  qwen38-27b/fixed_point_adder
+  qwen38-27b/fixed_point_substractor
+  qwen38-27b/float_multi
+  qwen38-27b/freq_div
+  qwen38-27b/freq_divbyeven
+  qwen38-27b/freq_divbyfrac
+  qwen38-27b/freq_divbyodd
+  qwen38-27b/fsm
+  qwen38-27b/instr_reg
+  qwen38-27b/multi_16bit
+  qwen38-27b/multi_8bit
+  qwen38-27b/multi_booth_8bit
+  qwen38-27b/multi_pipe_4bit
+  qwen38-27b/multi_pipe_8bit
+  qwen38-27b/parallel2serial
+  qwen38-27b/pe
+  qwen38-27b/pulse_detect
+  qwen38-27b/right_shifter
+  qwen38-27b/sequence_detector
+  qwen38-27b/serial2parallel
+  qwen38-27b/signal_generator
+  qwen38-27b/square_wave
+  qwen38-27b/sub_64bit
+  qwen38-27b/synchronizer
+  qwen38-27b/traffic_light
+  qwen38-27b/up_down_counter
+  qwen38-27b/width_8to16
+
+=== differential pass rate by seed ===
+  qwen25-coder-32b       n=450  seed1=158(35.1%)  seed2=158(35.1%)  seed3=148(32.9%)  
+  qwen38-27b             n=225  seed1=101(44.9%)  seed2=101(44.9%)  seed3=97(43.1%)  
+
+verdict-unstable samples: 14/675 (2.1%)
+  qwen25-coder-32b/synchronizer/s00: pass pass fail
+  qwen25-coder-32b/synchronizer/s01: pass pass fail
+  qwen25-coder-32b/synchronizer/s02: pass pass fail
+  qwen25-coder-32b/synchronizer/s03: pass pass fail
+  qwen25-coder-32b/synchronizer/s04: pass pass fail
+  qwen25-coder-32b/synchronizer/s05: pass pass fail
+  qwen25-coder-32b/synchronizer/s06: pass pass fail
+  qwen25-coder-32b/synchronizer/s07: pass pass fail
+  qwen25-coder-32b/synchronizer/s08: pass pass fail
+  qwen25-coder-32b/synchronizer/s09: pass pass fail
+  qwen38-27b/synchronizer/s00: pass pass fail
+  qwen38-27b/synchronizer/s01: pass pass fail
+  qwen38-27b/synchronizer/s02: pass pass fail
+  qwen38-27b/synchronizer/s03: pass pass fail

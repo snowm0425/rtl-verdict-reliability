@@ -1,0 +1,7 @@
+# stage=sim rc=0
+# STDOUT
+=========== Your Design Passed ===========
+/home/cvl/Documents/syn/RTLLM/Memory/Shifter/LFSR/testbench.v:23: $finish called at 215 (1s)
+
+# STDERR
+

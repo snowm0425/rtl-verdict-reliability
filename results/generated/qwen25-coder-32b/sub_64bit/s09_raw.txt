@@ -1,0 +1,41 @@
+Certainly! Below is the complete Verilog code for a 64-bit subtractor with overflow checking. This module takes two 64-bit signed integers as input, performs the subtraction, and checks for overflow conditions.
+
+```verilog
+module sub_64bit (
+    input  [63:0] A,        // First 64-bit input operand
+    input  [63:0] B,        // Second 64-bit input operand
+    output [63:0] result,   // 64-bit output representing the difference (A - B)
+    output        overflow  // 1-bit output indicating overflow
+);
+
+    // Perform the subtraction: result = A - B
+    assign result = A - B;
+
+    // Overflow detection logic
+    // Overflow occurs if:
+    // 1. A is positive, B is negative, and result is negative
+    // 2. A is negative, B is positive, and result is positive
+
+    // Sign bits of A, B, and result
+    wire sign_A = A[63];
+    wire sign_B = B[63];
+    wire sign_result = result[63];
+
+    // Overflow condition: (sign_A != sign_B) && (sign_A != sign_result)
+    assign overflow = (sign_A ^ sign_B) & (sign_A ^ sign_result);
+
+endmodule
+```
+
+### Explanation:
+1. **Subtraction Operation**:
+   - The subtraction operation is performed using the expression `result = A - B;`.
+   - Verilog automatically handles the signed nature of the operands when using the subtraction operator.
+
+2. **Overflow Detection**:
+   - The overflow condition is checked by examining the sign bits of the operands and the result.
+   - `sign_A`, `sign_B`, and `sign_result` are the most significant bits of `A`, `B`, and `result` respectively, which represent their signs.
+   - Overflow occurs if `A` and `B` have different signs and the result has a sign different from `A`.
+   - This is captured by the expression `(sign_A ^ sign_B) & (sign_A ^ sign_result)`, where `^` is the XOR operator.
+
+This module ensures that the subtraction is performed correctly and that overflow conditions are detected accurately for 64-bit signed integers.

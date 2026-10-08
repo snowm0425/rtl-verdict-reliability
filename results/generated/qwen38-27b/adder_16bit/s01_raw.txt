@@ -1,0 +1,55 @@
+```verilog
+module adder_8bit (
+    input  [7:0] a,
+    input  [7:0] b,
+    input        cin,
+    output [7:0] sum,
+    output       cout
+);
+    // Use a simple ripple-carry adder using Verilog's + operator
+    // but to be explicit, we can use a 9-bit addition
+    wire [8:0] result;
+    assign result = {1'b0, a} + {1'b0, b} + cin;
+    assign sum = result[7:0];
+    assign cout = result[8];
+endmodule
+
+module adder_16bit (
+    input  [15:0] a,
+    input  [15:0] b,
+    input         Cin,
+    output [15:0] y,
+    output        Co
+);
+    wire [7:0] a_low  = a[7:0];
+    wire [7:0] a_high = a[15:8];
+    wire [7:0] b_low  = b[7:0];
+    wire [7:0] b_high = b[15:8];
+
+    wire [7:0] sum_low;
+    wire       carry_mid;
+    wire [7:0] sum_high;
+    wire       cout;
+
+    // Lower 8-bit adder
+    adder_8bit adder_low (
+        .a    (a_low),
+        .b    (b_low),
+        .cin  (Cin),
+        .sum  (sum_low),
+        .cout (carry_mid)
+    );
+
+    // Upper 8-bit adder
+    adder_8bit adder_high (
+        .a    (a_high),
+        .b    (b_high),
+        .cin  (carry_mid),
+        .sum  (sum_high),
+        .cout (cout)
+    );
+
+    assign y  = {sum_high, sum_low};
+    assign Co = cout;
+endmodule
+```

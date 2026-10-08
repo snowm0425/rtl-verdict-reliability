@@ -1,0 +1,55 @@
+Certainly! Below is the complete Verilog code for the `serial2parallel` module. This module takes a serial input and converts it into an 8-bit parallel output, with proper handling of the validity signals and clock synchronization.
+
+```verilog
+module serial2parallel (
+    input wire clk,          // Clock signal
+    input wire rst_n,        // Reset signal (active low)
+    input wire din_serial,   // Serial input data
+    input wire din_valid,    // Validity signal for input data
+    output reg [7:0] dout_parallel, // Parallel output data (8 bits wide)
+    output reg dout_valid    // Validity signal for the output data
+);
+
+    reg [2:0] cnt; // 3-bit counter to count up to 8
+
+    // Synchronous always block
+    always @(posedge clk or negedge rst_n) begin
+        if (~rst_n) begin
+            // Reset the counter and parallel output
+            cnt <= 3'b000;
+            dout_parallel <= 8'b0;
+            dout_valid <= 0;
+        end else if (din_valid) begin
+            // Shift the serial input into the parallel output
+            dout_parallel <= {dout_parallel[6:0], din_serial};
+            // Increment the counter
+            cnt <= cnt + 1;
+            // Check if 8 bits have been received
+            if (cnt == 3'b111) begin
+                dout_valid <= 1; // Set the output valid signal
+                cnt <= 3'b000; // Reset the counter
+            end else begin
+                dout_valid <= 0; // Keep the output valid signal low
+            end
+        end
+    end
+
+endmodule
+```
+
+### Explanation:
+
+1. **Reset Handling:**
+   - The module uses an active-low reset signal `rst_n`. When `rst_n` is low, it resets the counter `cnt`, the parallel output `dout_parallel`, and the validity signal `dout_valid`.
+
+2. **Counting the Serial Inputs:**
+   - A 3-bit counter `cnt` is used to keep track of the number of serial input bits received. The counter is incremented every time a valid serial bit is received (`din_valid` is high).
+
+3. **Shifting the Serial Input:**
+   - The serial input `din_serial` is shifted into the parallel output `dout_parallel` using concatenation. The most significant bit of `dout_parallel` is updated with the new serial input, and the rest of the bits are shifted left.
+
+4. **Output Validity Signal:**
+   - When the counter reaches 7 (binary `111`), it indicates that 8 serial bits have been received. At this point, `dout_valid` is set to 1, indicating that the parallel output is valid. The counter is then reset to 0 for the next set of serial inputs.
+   - If less than 8 bits have been received, `dout_valid` remains 0.
+
+This module is designed to operate synchronously with the rising edge of the clock signal `clk` and ensures that the parallel output is only valid when all 8 serial bits have been received.

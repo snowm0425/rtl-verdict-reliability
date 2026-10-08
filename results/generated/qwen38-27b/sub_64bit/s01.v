@@ -1,0 +1,47 @@
+module sub_64bit (
+    input  wire [63:0] A,
+    input  wire [63:0] B,
+    output reg  [63:0] result,
+    output reg         overflow
+);
+
+    // Perform subtraction: result = A - B
+    // In two's complement, A - B = A + (~B + 1)
+    // We can simply use the subtractor directly.
+    
+    always @(*) begin
+        // Compute the difference
+        result = A - B;
+        
+        // Overflow detection for signed subtraction:
+        // Positive overflow: A is non-negative (A[63] == 0), B is negative (B[63] == 1), and result is negative (result[63] == 1)
+        // Negative overflow: A is negative (A[63] == 1), B is non-negative (B[63] == 0), and result is non-negative (result[63] == 0)
+        //
+        // Note: In subtraction A - B, overflow occurs when:
+        //   - A is positive, B is negative, and the result is negative (positive overflow)
+        //   - A is negative, B is positive, and the result is positive (negative overflow)
+        //
+        // This is equivalent to checking if the signs of A and B are different, and the sign of the result is the same as B's sign... 
+        // Wait, let me think more carefully.
+        //
+        // For subtraction A - B:
+        //   Overflow occurs when A and B have different signs, AND the result has the opposite sign of A.
+        //   Actually, let me re-derive:
+        //
+        // Consider A - B. We can think of it as A + (-B).
+        // Overflow in addition of two signed numbers X + Y occurs when X and Y have the same sign, and the result has a different sign.
+        // Here X = A, Y = -B.
+        //
+        // Let's use the direct condition from the problem statement:
+        // Positive overflow: A >= 0 (A[63]==0), B < 0 (B[63]==1), result < 0 (result[63]==1)
+        // Negative overflow: A < 0 (A[63]==1), B >= 0 (B[63]==0), result >= 0 (result[63]==0)
+        
+        if ((A[63] == 1'b0 && B[63] == 1'b1 && result[63] == 1'b1) ||
+            (A[63] == 1'b1 && B[63] == 1'b0 && result[63] == 1'b0)) begin
+            overflow = 1'b1;
+        end else begin
+            overflow = 1'b0;
+        end
+    end
+
+endmodule

@@ -1,0 +1,152 @@
+Creating a complete 32-bit floating-point multiplier in Verilog that adheres to the IEEE-754 standard is quite complex due to the numerous edge cases and precise requirements. Below is a simplified version of the `float_multi` module. This version includes the basic structure and handles some key aspects such as extracting the sign, exponent, and mantissa, performing multiplication, and handling overflow and underflow. However, it does not cover all IEEE-754 special cases like NaN and infinity in full detail. For a production-grade design, these would need to be handled with additional logic.
+
+```verilog
+module float_multi (
+    input clk,
+    input rst,
+    input [31:0] a,
+    input [31:0] b,
+    output reg [31:0] z
+);
+
+    // Internal signals
+    reg [2:0] counter;
+    reg [23:0] a_mantissa, b_mantissa, z_mantissa;
+    reg [9:0] a_exponent, b_exponent, z_exponent;
+    reg a_sign, b_sign, z_sign;
+    reg [49:0] product;
+    reg guard_bit, round_bit, sticky;
+
+    // State encoding
+    parameter IDLE = 3'b000;
+    parameter EXTRACT = 3'b001;
+    parameter MULTIPLY = 3'b010;
+    parameter NORMALIZE = 3'b011;
+    parameter ROUND_ADJUST = 3'b100;
+    parameter OUTPUT = 3'b101;
+
+    // State machine
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            counter <= IDLE;
+        end else begin
+            case (counter)
+                IDLE: counter <= EXTRACT;
+                EXTRACT: counter <= MULTIPLY;
+                MULTIPLY: counter <= NORMALIZE;
+                NORMALIZE: counter <= ROUND_ADJUST;
+                ROUND_ADJUST: counter <= OUTPUT;
+                OUTPUT: counter <= IDLE;
+                default: counter <= IDLE;
+            endcase
+        end
+    end
+
+    // Extract sign, exponent, and mantissa
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            a_sign <= 0;
+            a_exponent <= 0;
+            a_mantissa <= 0;
+            b_sign <= 0;
+            b_exponent <= 0;
+            b_mantissa <= 0;
+        end else if (counter == EXTRACT) begin
+            a_sign <= a[31];
+            a_exponent <= a[30:23];
+            a_mantissa <= {1'b1, a[22:0]}; // Implicit 1 for normalized numbers
+            b_sign <= b[31];
+            b_exponent <= b[30:23];
+            b_mantissa <= {1'b1, b[22:0]};
+        end
+    end
+
+    // Perform multiplication
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            product <= 0;
+        end else if (counter == MULTIPLY) begin
+            product <= a_mantissa * b_mantissa;
+        end
+    end
+
+    // Normalize result
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            z_mantissa <= 0;
+            z_exponent <= 0;
+        end else if (counter == NORMALIZE) begin
+            int shift_amount;
+            if (product[49]) begin
+                z_mantissa <= product[48:26];
+                shift_amount = 1;
+            end else if (product[48]) begin
+                z_mantissa <= product[47:25];
+                shift_amount = 0;
+            end else begin
+                shift_amount = 0;
+                for (int i = 47; i >= 25; i = i - 1) begin
+                    if (product[i]) begin
+                        shift_amount = 47 - i;
+                        break;
+                    end
+                end
+                z_mantissa <= product[47-shift_amount:25-shift_amount];
+            end
+            z_exponent <= a_exponent + b_exponent - 127 + shift_amount;
+        end
+    end
+
+    // Rounding and adjustment
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            guard_bit <= 0;
+            round_bit <= 0;
+            sticky <= 0;
+        end else if (counter == ROUND_ADJUST) begin
+            guard_bit <= product[25-shift_amount];
+            round_bit <= product[24-shift_amount];
+            sticky <= |product[23-shift_amount:0];
+            if (guard_bit & (round_bit | sticky)) begin
+                z_mantissa <= z_mantissa + 1;
+            end
+            if (z_mantissa[23]) begin // Overflow in mantissa
+                z_mantissa <= z_mantissa >> 1;
+                z_exponent <= z_exponent + 1;
+            end
+        end
+    end
+
+    // Output generation
+    always @(posedge clk or posedge rst) begin
+        if (rst) begin
+            z <= 0;
+        end else if (counter == OUTPUT) begin
+            z_sign <= a_sign ^ b_sign;
+            if (z_exponent == 255) begin // Handle overflow
+                z <= {z_sign, 255, 23'b0};
+            end else if (z_exponent == 0) begin // Handle underflow
+                z <= {z_sign, 0, z_mantissa[22:0]};
+            end else begin
+                z <= {z_sign, z_exponent, z_mantissa[22:0]};
+            end
+        end
+    end
+
+endmodule
+```
+
+### Key Points:
+1. **State Machine**: The module uses a state machine to sequence the operations.
+2. **Input Extraction**: The sign, exponent, and mantissa are extracted from the inputs.
+3. **Multiplication**: The mantissas are multiplied to produce a 49-bit product.
+4. **Normalization**: The product is normalized and the exponent is adjusted.
+5. **Rounding**: The result is rounded based on the guard, round, and sticky bits.
+6. **Output Generation**: The final result is formatted according to the IEEE-754 standard.
+
+### Limitations:
+- This design does not handle NaN and infinity cases.
+- It assumes the inputs are valid and normalized.
+- It does not handle gradual underflow.
+
+For a complete and robust design, additional logic would be required to handle these cases and ensure compliance with the IEEE-754 standard.

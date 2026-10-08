@@ -1,0 +1,91 @@
+Sure, I'll provide you with the complete Verilog code for the `barrel_shifter` module, including the `mux2X1` submodule used for selecting between the shifted and unshifted inputs at each stage.
+
+Here is the code for the `mux2X1` submodule:
+
+```verilog
+// mux2X1.v
+module mux2X1(
+    input sel,          // 1-bit selection signal
+    input [7:0] in0,    // 8-bit input 0
+    input [7:0] in1,    // 8-bit input 1
+    output reg [7:0] out // 8-bit output
+);
+    always @(*) begin
+        if (sel)
+            out = in1;
+        else
+            out = in0;
+    end
+endmodule
+```
+
+And here is the code for the `barrel_shifter` module:
+
+```verilog
+// barrel_shifter.v
+module barrel_shifter(
+    input [7:0] in,     // 8-bit input to be shifted
+    input [2:0] ctrl,   // 3-bit control signal
+    output [7:0] out    // 8-bit shifted output
+);
+    wire [7:0] shift1, shift2, shift4;
+
+    // Shift by 4 positions
+    assign shift4 = {in[3:0], in[7:4]};
+
+    // Shift by 2 positions
+    assign shift2 = {in[6:0], in[7]};
+
+    // Shift by 1 position
+    assign shift1 = {in[7:1], in[0]};
+
+    wire [7:0] m4_out, m2_out, m1_out;
+
+    // Mux to select between original input and shifted by 4
+    mux2X1 m4(
+        .sel(ctrl[2]),
+        .in0(in),
+        .in1(shift4),
+        .out(m4_out)
+    );
+
+    // Mux to select between previous result and shifted by 2
+    mux2X1 m2(
+        .sel(ctrl[1]),
+        .in0(m4_out),
+        .in1(shift2),
+        .out(m2_out)
+    );
+
+    // Mux to select between previous result and shifted by 1
+    mux2X1 m1(
+        .sel(ctrl[0]),
+        .in0(m2_out),
+        .in1(shift1),
+        .out(m1_out)
+    );
+
+    // Final output
+    assign out = m1_out;
+endmodule
+```
+
+### Explanation:
+
+1. **mux2X1 Submodule:**
+   - This submodule takes two 8-bit inputs (`in0` and `in1`) and a 1-bit selection signal (`sel`).
+   - If `sel` is high, it selects `in1`; otherwise, it selects `in0`.
+   - The result is outputted as `out`.
+
+2. **barrel_shifter Module:**
+   - **Shift Operations:**
+     - `shift4`: Rotates the input by 4 positions.
+     - `shift2`: Rotates the input by 2 positions.
+     - `shift1`: Rotates the input by 1 position.
+   - **Multiplexer Stages:**
+     - `m4`: Selects between the original input and the result of the 4-position shift based on `ctrl[2]`.
+     - `m2`: Selects between the result of `m4` and the result of the 2-position shift based on `ctrl[1]`.
+     - `m1`: Selects between the result of `m2` and the result of the 1-position shift based on `ctrl[0]`.
+   - The final output of the `barrel_shifter` is the result of the last multiplexer stage (`m1_out`).
+
+This implementation efficiently performs the barrel shift using a series of multiplexers and shift operations, controlled by the `ctrl` signal.

@@ -1,0 +1,101 @@
+Certainly! Below is the complete Verilog code for a 32-bit ALU as per the specifications you provided:
+
+```verilog
+module alu (
+    input wire [31:0] a,
+    input wire [31:0] b,
+    input wire [5:0] aluc,
+    output reg [31:0] r,
+    output reg zero,
+    output reg carry,
+    output reg negative,
+    output reg overflow,
+    output reg flag
+);
+
+    // Parameters for ALU control signals
+    parameter ADD = 6'b100000;
+    parameter ADDU = 6'b100001;
+    parameter SUB = 6'b100010;
+    parameter SUBU = 6'b100011;
+    parameter AND = 6'b100100;
+    parameter OR = 6'b100101;
+    parameter XOR = 6'b100110;
+    parameter NOR = 6'b100111;
+    parameter SLT = 6'b101010;
+    parameter SLTU = 6'b101011;
+    parameter SLL = 6'b000000;
+    parameter SRL = 6'b000010;
+    parameter SRA = 6'b000011;
+    parameter SLLV = 6'b000100;
+    parameter SRLV = 6'b000110;
+    parameter SRAV = 6'b000111;
+    parameter LUI = 6'b001111;
+
+    // Internal registers to store results
+    reg [32:0] res; // 33 bits to capture carry for overflow detection
+
+    // Default assignments
+    always @(*) begin
+        case (aluc)
+            ADD, ADDU: begin
+                res = a + b;
+                carry = res[32];
+                overflow = (a[31] == b[31]) && (a[31] != res[31]);
+            end
+            SUB, SUBU: begin
+                res = a - b;
+                carry = ~res[32];
+                overflow = (a[31] != b[31]) && (a[31] != res[31]);
+            end
+            AND: res = a & b;
+            OR: res = a | b;
+            XOR: res = a ^ b;
+            NOR: res = ~(a | b);
+            SLT: begin
+                res = ($signed(a) < $signed(b)) ? 32'b1 : 32'b0;
+                flag = res[0];
+            end
+            SLTU: begin
+                res = (a < b) ? 32'b1 : 32'b0;
+                flag = res[0];
+            end
+            SLL: res = a << b[4:0];
+            SRL: res = a >> b[4:0];
+            SRA: res = {a[31], a[31:1]} >> b[4:0];
+            SLLV: res = a << b;
+            SRLV: res = a >> b;
+            SRAV: res = {a[31], a[31:1]} >> b;
+            LUI: res = {a[15:0], 16'b0};
+            default: res = 33'bZ;
+        endcase
+
+        // Assign the lower 32 bits of res to the output r
+        r = res[31:0];
+
+        // Set zero, negative flags
+        zero = (res[31:0] == 32'b0);
+        negative = res[31];
+
+        // Set flag to 'z' for operations other than SLT and SLTU
+        if (aluc != SLT && aluc != SLTU) begin
+            flag = 1'bz;
+        end
+    end
+endmodule
+```
+
+### Explanation:
+1. **Parameters**: The control signals for the various operations are defined as parameters.
+2. **Internal Register**: A 33-bit register `res` is used to store the result of the operations, which helps in detecting carry and overflow.
+3. **Always Block**: The always block uses a case statement to perform the appropriate operation based on the control signal `aluc`.
+   - **ADD and ADDU**: Perform addition and handle carry and overflow.
+   - **SUB and SUBU**: Perform subtraction and handle carry and overflow.
+   - **AND, OR, XOR, NOR**: Perform bitwise operations.
+   - **SLT, SLTU**: Perform signed and unsigned less-than comparisons, respectively.
+   - **SLL, SRL, SRA, SLLV, SRLV, SRAV**: Perform various types of shifts.
+   - **LUI**: Load upper immediate, shifts the lower 16 bits of `a` to the upper 16 bits of the result.
+4. **Flags**: The `zero`, `carry`, `negative`, and `overflow` flags are set based on the result of the operation.
+5. **Default Case**: If the control signal does not match any defined operation, the result is set to high-impedance (`33'bZ`).
+
+This implementation should meet the requirements specified for the ALU module.

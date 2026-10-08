@@ -1,0 +1,65 @@
+Certainly! Below is a complete Verilog implementation of the Mealy FSM that detects the sequence "10011" in a continuous input stream. The FSM will output `MATCH` as 1 when the sequence is detected and 0 otherwise. The FSM will also reset to the initial state when `RST` is active.
+
+```verilog
+module fsm (
+    input CLK,
+    input RST,
+    input IN,
+    output reg MATCH
+);
+
+    // Define the states of the FSM
+    typedef enum reg [2:0] { S0, S1, S2, S3, S4 } state_t;
+    state_t state, next_state;
+
+    // State transition logic
+    always @(posedge CLK or posedge RST) begin
+        if (RST) begin
+            state <= S0;
+            MATCH <= 0;
+        end else begin
+            state <= next_state;
+            case (next_state)
+                S4: MATCH <= 1; // Match detected
+                default: MATCH <= 0;
+            endcase
+        end
+    end
+
+    // Next state logic
+    always @(*) begin
+        case (state)
+            S0: begin
+                if (IN == 1) next_state = S1;
+                else next_state = S0;
+            end
+            S1: begin
+                if (IN == 0) next_state = S2;
+                else next_state = S1;
+            end
+            S2: begin
+                if (IN == 0) next_state = S3;
+                else next_state = S1;
+            end
+            S3: begin
+                if (IN == 1) next_state = S4;
+                else next_state = S1;
+            end
+            S4: begin
+                if (IN == 1) next_state = S4; // Stay in S4 if another '1' is detected
+                else next_state = S1; // Go back to S1 if '0' is detected
+            end
+            default: next_state = S0;
+        endcase
+    end
+
+endmodule
+```
+
+### Explanation:
+1. **State Encoding**: The FSM has 5 states (`S0` to `S4`). `S0` is the initial state.
+2. **State Transition Logic**: The state transitions are handled by the `always @(posedge CLK or posedge RST)` block. If `RST` is active, the FSM resets to `S0` and `MATCH` is set to 0. Otherwise, the state transitions based on the current state and input `IN`.
+3. **Next State Logic**: The `always @(*)` block determines the next state based on the current state and input `IN`. The FSM checks the input sequence and transitions through the states accordingly.
+4. **Output Logic**: The `MATCH` signal is set to 1 only when the FSM reaches state `S4`, indicating that the sequence "10011" has been detected.
+
+This FSM will continuously check the input stream for the sequence "10011" and output `MATCH` as 1 when the sequence is detected, allowing for loop detection as required.

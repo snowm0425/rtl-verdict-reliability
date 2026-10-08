@@ -1,0 +1,144 @@
+module adder_32bit (
+    input  [31:0] A,
+    input  [31:0] B,
+    output [31:0] S,
+    output        C32
+);
+
+    // Intermediate carries between 16-bit CLA blocks
+    wire C16;
+
+    // Lower 16-bit CLA
+    cla_16bit u_cla_lower (
+        .A   (A[15:0]),
+        .B   (B[15:0]),
+        .Cin (1'b0),
+        .S   (S[15:0]),
+        .Cout(C16)
+    );
+
+    // Upper 16-bit CLA
+    cla_16bit u_cla_upper (
+        .A   (A[31:16]),
+        .B   (B[31:16]),
+        .Cin (C16),
+        .S   (S[31:16]),
+        .Cout(C32)
+    );
+
+endmodule
+
+module cla_16bit (
+    input  [15:0] A,
+    input  [15:0] B,
+    input         Cin,
+    output [15:0] S,
+    output        Cout
+);
+
+    // Generate and Propagate signals for each bit
+    wire [15:0] G;
+    wire [15:0] P;
+
+    // Each bit's generate and propagate
+    assign G = A & B;
+    assign P = A ^ B;
+
+    // Carry-lookahead logic for 16 bits
+    // We compute carries C1 through C15, and Cout (C16)
+    // Using the CLA formula:
+    // C1 = G0 | (P0 & Cin)
+    // C2 = G1 | (P1 & G0) | (P1 & P0 & Cin)
+    // ...
+    // To avoid deep logic, we can use hierarchical CLA or direct expansion.
+    // For 16 bits, direct expansion is feasible but long. Let's use a 4-bit CLA block hierarchy.
+
+    // Actually, let's implement 16-bit CLA using 4 instances of 4-bit CLA blocks with a 4-bit CLA for carry generation between them.
+
+    // 4-bit CLA block for bits 0-3
+    wire [3:0] S0_3;
+    wire C4;
+    cla_4bit u_cla_0_3 (
+        .A   (A[3:0]),
+        .B   (B[3:0]),
+        .Cin (Cin),
+        .S   (S0_3),
+        .Cout(C4)
+    );
+
+    // 4-bit CLA block for bits 4-7
+    wire [3:0] S4_7;
+    wire C8;
+    cla_4bit u_cla_4_7 (
+        .A   (A[7:4]),
+        .B   (B[7:4]),
+        .Cin (C4),
+        .S   (S4_7),
+        .Cout(C8)
+    );
+
+    // 4-bit CLA block for bits 8-11
+    wire [3:0] S8_11;
+    wire C12;
+    cla_4bit u_cla_8_11 (
+        .A   (A[11:8]),
+        .B   (B[11:8]),
+        .Cin (C8),
+        .S   (S8_11),
+        .Cout(C12)
+    );
+
+    // 4-bit CLA block for bits 12-15
+    wire [3:0] S12_15;
+    wire C16;
+    cla_4bit u_cla_12_15 (
+        .A   (A[15:12]),
+        .B   (B[15:12]),
+        .Cin (C12),
+        .S   (S12_15),
+        .Cout(C16)
+    );
+
+    assign S[3:0]   = S0_3;
+    assign S[7:4]   = S4_7;
+    assign S[11:8]  = S8_11;
+    assign S[15:12] = S12_15;
+    assign Cout     = C16;
+
+endmodule
+
+module cla_4bit (
+    input  [3:0] A,
+    input  [3:0] B,
+    input         Cin,
+    output [3:0] S,
+    output        Cout
+);
+
+    // Generate and Propagate for each bit
+    wire [3:0] G;
+    wire [3:0] P;
+
+    assign G = A & B;
+    assign P = A ^ B;
+
+    // Carry lookahead for 4 bits
+    // C1 = G0 | (P0 & Cin)
+    // C2 = G1 | (P1 & G0) | (P1 & P0 & Cin)
+    // C3 = G2 | (P2 & G1) | (P2 & P1 & G0) | (P2 & P1 & P0 & Cin)
+    // C4 (Cout) = G3 | (P3 & G2) | (P3 & P2 & G1) | (P3 & P2 & P1 & G0) | (P3 & P2 & P1 & P0 & Cin)
+
+    wire C1, C2, C3;
+
+    assign C1 = G[0] | (P[0] & Cin);
+    assign C2 = G[1] | (P[1] & G[0]) | (P[1] & P[0] & Cin);
+    assign C3 = G[2] | (P[2] & G[1]) | (P[2] & P[1] & G[0]) | (P[2] & P[1] & P[0] & Cin);
+    assign Cout = G[3] | (P[3] & G[2]) | (P[3] & P[2] & G[1]) | (P[3] & P[2] & P[1] & G[0]) | (P[3] & P[2] & P[1] & P[0] & Cin);
+
+    // Sum for each bit
+    assign S[0] = P[0] ^ Cin;
+    assign S[1] = P[1] ^ C1;
+    assign S[2] = P[2] ^ C2;
+    assign S[3] = P[3] ^ C3;
+
+endmodule

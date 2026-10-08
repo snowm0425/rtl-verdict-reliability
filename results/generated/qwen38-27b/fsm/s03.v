@@ -1,0 +1,136 @@
+module fsm (
+    input  wire IN,
+    input  wire CLK,
+    input  wire RST,
+    output reg MATCH
+);
+
+    // State encoding for the FSM
+    // We need to detect the sequence "10011"
+    // States:
+    // S0: Initial state, no bits matched
+    // S1: Matched '1'
+    // S2: Matched '10'
+    // S3: Matched '100'
+    // S4: Matched '1001'
+    // S5: Matched '10011' -> MATCH is asserted, but we stay in a state that allows overlap
+    
+    // Let's think about the state transitions carefully.
+    // We want to detect overlapping sequences.
+    // Sequence: 1 0 0 1 1
+    // 
+    // State 0: No prefix matched
+    //   IN=0 -> State 0
+    //   IN=1 -> State 1
+    //
+    // State 1: Matched '1'
+    //   IN=0 -> State 2
+    //   IN=1 -> State 1 (since '1' is a prefix of '10011')
+    //
+    // State 2: Matched '10'
+    //   IN=0 -> State 3
+    //   IN=1 -> State 0? No, '1' doesn't start '10011' from '10'... wait.
+    //   If we have '10' and next is 1, we have '101'. Does '101' contain a prefix of '10011'? 
+    //   Prefixes of '10011': '', '1', '10', '100', '1001', '10011'
+    //   '101' ends with '1', so we go to State 1.
+    //
+    // State 3: Matched '100'
+    //   IN=0 -> State 0? '1000' - no prefix matches except ''. So State 0.
+    //   IN=1 -> State 4
+    //
+    // State 4: Matched '1001'
+    //   IN=0 -> State 0? '10010' - no prefix. State 0.
+    //   IN=1 -> State 5 (Match!)
+    //
+    // State 5: Matched '10011'
+    //   We've just matched. Now we need to handle the next input for overlap.
+    //   The last few bits are '10011'. 
+    //   If IN=0: '100110'. Longest suffix that is a prefix of '10011'? 
+    //     Suffixes: '0', '10', '110', '0110', '1110', '00110', '100110'
+    //     Prefixes: '1', '10', '100', '1001', '10011'
+    //     '10' is a suffix and a prefix. So State 2.
+    //   If IN=1: '100111'. Longest suffix that is a prefix?
+    //     Suffixes: '1', '11', '111', '0111', '1111', '01111', '100111'
+    //     '1' is a suffix and a prefix. So State 1.
+    
+    localparam S0 = 3'd0;
+    localparam S1 = 3'd1;
+    localparam S2 = 3'd2;
+    localparam S3 = 3'd3;
+    localparam S4 = 3'd4;
+    localparam S5 = 3'd5;
+    
+    reg [2:0] current_state;
+    reg [2:0] next_state;
+    
+    // Mealy output: MATCH depends on current_state and IN
+    // MATCH is 1 when current_state is S4 and IN is 1 (completing '10011')
+    // Wait, let me re-examine. 
+    // State S4 means we've matched '1001'. If IN=1, we complete '10011'.
+    // So MATCH should be 1 when current_state == S4 and IN == 1.
+    
+    always @(posedge CLK or posedge RST) begin
+        if (RST)
+            current_state <= S0;
+        else
+            current_state <= next_state;
+    end
+    
+    always @(*) begin
+        case (current_state)
+            S0: begin
+                if (IN)
+                    next_state = S1;
+                else
+                    next_state = S0;
+            end
+            S1: begin
+                if (IN)
+                    next_state = S1;
+                else
+                    next_state = S2;
+            end
+            S2: begin
+                if (IN)
+                    next_state = S1;
+                else
+                    next_state = S3;
+            end
+            S3: begin
+                if (IN)
+                    next_state = S4;
+                else
+                    next_state = S0;
+            end
+            S4: begin
+                if (IN)
+                    next_state = S1; // After matching '10011', the suffix '1' is a prefix
+                else
+                    next_state = S0;
+            end
+            S5: begin
+                // S5 is not really needed if we handle it in S4
+                // Let me reconsider.
+                // Actually, I don't need S5. When we are in S4 and IN=1, we match.
+                // The next state should be based on the longest suffix of '10011' that is a prefix.
+                // '10011' suffixes: '1', '11', '111', '0111', '1111', '01111', '10011'
+                // Prefixes of '10011': '1', '10', '100', '1001', '10011'
+                // '1' matches. So next_state = S1.
+                // So S5 is not needed. Let me remove it.
+                next_state = S0; // Should never reach here
+            end
+            default: next_state = S0;
+        endcase
+    end
+    
+    // Mealy output
+    always @(*) begin
+        if (RST)
+            MATCH = 1'b0;
+        else if (current_state == S4 && IN == 1'b1)
+            MATCH = 1'b1;
+        else
+            MATCH = 1'b0;
+    end
+
+endmodule
