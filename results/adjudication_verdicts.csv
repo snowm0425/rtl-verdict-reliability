@@ -1,0 +1,9 @@
+case,kind,model,design,sample,kill_rate,verdict
+1,TB_PASS_DIFF_FAIL,qwen38-27b,fsm,s03,73.0769,differential
+2,TB_PASS_DIFF_FAIL,qwen38-27b,adder_bcd,s03,100.0,official_tb
+4,TB_PASS_DIFF_FAIL,qwen38-27b,multi_pipe_4bit,s00,75.0,differential
+6,TB_PASS_DIFF_FAIL,qwen25-coder-32b,square_wave,s07,0.0,differential
+7,TB_PASS_DIFF_FAIL,qwen25-coder-32b,multi_booth_8bit,s07,81.8182,differential
+8,TB_PASS_DIFF_FAIL,qwen38-27b,accu,s01,68.1818,official_tb
+9,TB_PASS_DIFF_FAIL,qwen25-coder-32b,width_8to16,s02,50.0,differential
+10,TB_PASS_DIFF_FAIL,qwen25-coder-32b,comparator_4bit,s06,83.3333,differential
