@@ -21,6 +21,7 @@ AI for Chip Design).
 - `results/adjudication_index.csv`, `results/adjudication.txt` — the 14 adjudicated cases
 - `results/case_square_wave.txt` — the false-pass case study (Figure 1)
 - `results/baseline_stdout/` — official testbench output for the baseline run
+- `results/v21_check/lfsr.txt` — LFSR candidates re-run against the v2.1 harness
 - `tool_versions.txt` — run log with versions, commits and headline numbers
 
 Simulation logs under `results/` contain absolute paths from the machine on
@@ -33,6 +34,16 @@ commits and place them at `RTLLM/` and `GateTruth/` under this directory
 
     python3 -m harness.run_diff
     python3 -m harness.final_stats
+
+### RTLLM v2.1 cross-check
+v2.1 (commit 51ed553) replaces the positional instantiation in the LFSR
+testbench with named connections; the other three positional harnesses and
+the vacuous-pass testbench are byte-identical to v2.0. Re-running the fifteen
+LFSR candidates against the v2.1 harness turns 0/15 passes into 14/15 —
+exactly the candidates our differential oracle accepts:
+
+    git clone https://github.com/hkust-zhiyao/RTLLM.git /tmp/rtllm21
+    RTLLM21_DIR=/tmp/rtllm21 python3 -m harness.check_v21_lfsr
 
 ## License
 MIT (see LICENSE). RTLLM, the GateTruth audit and both models remain under

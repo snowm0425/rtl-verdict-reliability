@@ -1,0 +1,23 @@
+pass_string: '=========== Your Design Passed ==========='
+candidates: 15
+
+v2.0: 0/15 pass
+    qwen25-coder-32b s00 compile
+    qwen25-coder-32b s01 compile
+    qwen25-coder-32b s02 compile
+    qwen25-coder-32b s03 compile
+    qwen25-coder-32b s04 compile
+    qwen25-coder-32b s05 compile
+    qwen25-coder-32b s06 compile
+    qwen25-coder-32b s07 compile
+    qwen25-coder-32b s08 compile
+    qwen25-coder-32b s09 compile
+    qwen38-27b s00 compile
+    qwen38-27b s01 compile
+    qwen38-27b s02 compile
+    qwen38-27b s03 compile
+    qwen38-27b s04 compile
+
+v2.1: 14/15 pass
+    qwen25-coder-32b s02 compile
+
